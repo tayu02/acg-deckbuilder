@@ -2722,6 +2722,7 @@ function resetDeck() {
   if (!confirm("デッキをすべてリセットしますか？")) return;
   deck = {};
   deckSide = {};
+  deckName = "";
   updateDeckTotal();
   renderDeckView();
 }
