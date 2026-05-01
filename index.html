@@ -2651,17 +2651,33 @@ function sortByType(entries) {
   entries.forEach(([code, cnt]) => {
     const card = cards.find(c => c.code === code);
     if (!card) return;
-    const type = typeOrder.find(t => card.type.includes(t)) || "その他";
+    // 複合タイプ（例：動物&縄張り）は最初のタイプで分類
+    const type = typeOrder.find(t => (card.type || "").includes(t)) || "その他";
     grouped[type].push([code, cnt]);
   });
 
   const result = [];
-  typeOrder.forEach(t => {
-    result.push(...sortCards(grouped[t]));
-  });
+  typeOrder.forEach(t => result.push(...sortCards(grouped[t])));
   result.push(...sortCards(grouped["その他"]));
   return result;
 }
+
+// =============== カード並び順（コスト→条件数→コード順） ===============
+function sortCards(entries) {
+  return entries.sort(([codeA], [codeB]) => {
+    const cardA = cards.find(c => c.code === codeA);
+    const cardB = cards.find(c => c.code === codeB);
+    if (!cardA || !cardB) return 0;
+    const costA = parseInt(cardA.cost) || 0;
+    const costB = parseInt(cardB.cost) || 0;
+    if (costA !== costB) return costA - costB;
+    const condA = (cardA.condition || "").replace(/[^山水森平夜無]/g, "").length;
+    const condB = (cardB.condition || "").replace(/[^山水森平夜無]/g, "").length;
+    if (condA !== condB) return condA - condB;
+    return codeA.localeCompare(codeB);
+  });
+}
+
 
 // =============== デッキ画像生成 ===============
 async function generateDeckImage() {
@@ -3055,10 +3071,6 @@ if (window.location.search) {
 
 </body>
 </html>
-
-
-
-
 
 
 
