@@ -2381,9 +2381,7 @@ function populateDropdown() {
   dropdown.innerHTML = '<option value="">発売弾</option>';
   const setList = new Set();
   cards.forEach(card => {
-    if (card.type !== "領土") {
-      setList.add(card.code.split("-")[0]);
-    }
+    if (card.type !== "領土") setList.add(card.code.split("-")[0]);
   });
   setList.forEach(setName => {
     const option = document.createElement("option");
@@ -2428,7 +2426,7 @@ function filterAndRender() {
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
-      <img src="${card.image || 'https://acgtcg.com/img/' + card.code}" onerror="this.src='https://via.placeholder.com/105x148/112233/88cc88?text=${encodeURIComponent(card.name)}'">
+      <img src="${card.image}" onerror="this.src='https://via.placeholder.com/105x148/112233/88cc88?text=${encodeURIComponent(card.name)}'">
       <div class="card-controls">
         <button class="btn-minus">−</button>
         <div class="count">0</div>
@@ -2480,7 +2478,7 @@ function filterAndRender() {
 
 // =============== カード詳細モーダル ===============
 function showDetail(card) {
-  document.getElementById("modalImage").src = card.image || `https://acgtcg.com/img/${card.code}`;
+  document.getElementById("modalImage").src = card.image;
   document.getElementById("modalName").textContent = card.name;
   document.getElementById("modalInfo").innerHTML = `番号: ${card.code}<br>タイプ: ${card.type}<br>種族: ${card.tribe || '－'}<br>ステータス: ${card.stats || '－'}`;
   document.getElementById("modalEffect").innerHTML = (card.effect || "").replace(/\n/g, '<br>');
@@ -2568,7 +2566,7 @@ function sortByType(entries) {
   return result;
 }
 
-// =============== デッキ画像生成 ===============
+// =============== デッキ画像生成（テキスト形式・CORS回避） ===============
 async function generateDeckImage() {
   const mainEntries = sortByType(getDeckMain());
   const sideEntries = sortByType(getDeckSide());
@@ -2581,9 +2579,9 @@ async function generateDeckImage() {
   const MAIN_COLS = 6;
   const SUB_COLS = 3;
 
-  const mainRows = Math.ceil(mainEntries.length / MAIN_COLS);
-  const sideRows = Math.ceil(sideEntries.length / SUB_COLS);
-  const terrRows = Math.ceil(territoryEntries.length / SUB_COLS);
+  const mainRows = Math.ceil(Math.max(mainEntries.length, 1) / MAIN_COLS);
+  const sideRows = Math.ceil(Math.max(sideEntries.length, 1) / SUB_COLS);
+  const terrRows = Math.ceil(Math.max(territoryEntries.length, 1) / SUB_COLS);
 
   const LABEL_H = 22;
   const HEADER_H = 50;
@@ -2597,33 +2595,19 @@ async function generateDeckImage() {
   const terrAreaH = LABEL_H + terrRows * (CARD_H + PAD) + PAD;
   const rightH = sideAreaH + BORDER + terrAreaH;
   const mainAreaH = LABEL_H + mainRows * (CARD_H + PAD) + PAD;
-  const leftH = mainAreaH;
 
-  const TOTAL_H = HEADER_H + Math.max(leftH, rightH) + FOOTER_H;
+  const TOTAL_H = HEADER_H + Math.max(mainAreaH, rightH) + FOOTER_H;
 
   const canvas = document.createElement("canvas");
   canvas.width = TOTAL_W;
   canvas.height = TOTAL_H;
   const ctx = canvas.getContext("2d");
 
-  await new Promise(resolve => {
-    const bg = new Image();
-    bg.crossOrigin = "anonymous";
-    bg.onload = () => {
-      ctx.drawImage(bg, 0, 0, TOTAL_W, TOTAL_H);
-      resolve();
-    };
-    bg.onerror = () => {
-      ctx.fillStyle = "#0f1a24";
-      ctx.fillRect(0, 0, TOTAL_W, TOTAL_H);
-      resolve();
-    };
-    bg.src = "https://tayu02.github.io/acg-deckbuilder/IMG_6935.png";
-  });
-
-  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  // 背景
+  ctx.fillStyle = "#0f1a24";
   ctx.fillRect(0, 0, TOTAL_W, TOTAL_H);
 
+  // タイトル
   ctx.fillStyle = "#a8e0a8";
   ctx.font = "bold 18px sans-serif";
   ctx.textAlign = "center";
@@ -2637,9 +2621,10 @@ async function generateDeckImage() {
     ctx.strokeRect(x + BORDER/2, y + BORDER/2, w - BORDER, h - BORDER);
   }
 
-  async function drawCards(entries, startX, startY, cols, label, labelColor) {
+  // カードをテキストで描画（CORS問題を完全回避）
+  function drawCardsText(entries, startX, startY, cols, label, labelColor) {
     ctx.fillStyle = labelColor;
-    ctx.font = "bold 13px sans-serif";
+    ctx.font = "bold 12px sans-serif";
     ctx.textAlign = "left";
     ctx.fillText(label, startX + PAD, startY + 15);
 
@@ -2651,63 +2636,90 @@ async function generateDeckImage() {
       const x = startX + PAD + col * (CARD_W + PAD);
       const y = startY + LABEL_H + row * (CARD_H + PAD);
 
-      await new Promise(resolve => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => {
-          ctx.drawImage(img, x, y, CARD_W, CARD_H);
-          ctx.fillStyle = "rgba(0,0,0,0.75)";
-          ctx.fillRect(x + CARD_W - 20, y, 20, 16);
-          ctx.fillStyle = "#ffdd88";
-          ctx.font = "bold 10px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(`×${cnt}`, x + CARD_W - 10, y + 12);
-          resolve();
-        };
-        img.onerror = () => {
-          ctx.fillStyle = "#1f2a2f";
-          ctx.fillRect(x, y, CARD_W, CARD_H);
-          ctx.fillStyle = "#aaa";
-          ctx.font = "9px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(card ? card.name.substring(0,6) : code, x + CARD_W/2, y + CARD_H/2);
-          ctx.fillStyle = "rgba(0,0,0,0.75)";
-          ctx.fillRect(x + CARD_W - 20, y, 20, 16);
-          ctx.fillStyle = "#ffdd88";
-          ctx.font = "bold 10px sans-serif";
-          ctx.fillText(`×${cnt}`, x + CARD_W - 10, y + 12);
-          resolve();
-        };
-        img.src = card ? card.image : "";
-      });
+      // カード背景
+      ctx.fillStyle = "#1f2a3f";
+      ctx.fillRect(x, y, CARD_W, CARD_H);
+
+      // カード枠
+      ctx.strokeStyle = "#3a6a4a";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, CARD_W, CARD_H);
+
+      // カード名（折り返し）
+      ctx.fillStyle = "#e0e8d0";
+      ctx.font = "bold 8px sans-serif";
+      ctx.textAlign = "center";
+      const name = card ? card.name : code;
+      const maxWidth = CARD_W - 4;
+      let line = "";
+      let lineY = y + 14;
+      for (const char of name) {
+        const test = line + char;
+        if (ctx.measureText(test).width > maxWidth && line !== "") {
+          ctx.fillText(line, x + CARD_W/2, lineY);
+          line = char;
+          lineY += 10;
+          if (lineY > y + CARD_H - 20) break;
+        } else {
+          line = test;
+        }
+      }
+      if (line) ctx.fillText(line, x + CARD_W/2, lineY);
+
+      // コード
+      ctx.fillStyle = "#88aacc";
+      ctx.font = "7px sans-serif";
+      ctx.textAlign = "center";
+      if (card) {
+        ctx.fillText(card.code.split("-").pop(), x + CARD_W/2, y + CARD_H - 18);
+      }
+
+      // コスト
+      if (card && card.cost) {
+        ctx.fillStyle = "#ffdd44";
+        ctx.font = "bold 9px sans-serif";
+        ctx.fillText(`コスト${card.cost}`, x + CARD_W/2, y + CARD_H - 8);
+      }
+
+      // 枚数バッジ
+      ctx.fillStyle = "rgba(0,0,0,0.85)";
+      ctx.fillRect(x + CARD_W - 18, y, 18, 14);
+      ctx.fillStyle = "#ffdd88";
+      ctx.font = "bold 10px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`×${cnt}`, x + CARD_W - 9, y + 11);
     }
   }
 
+  // メインデッキエリア
   drawBorder(0, startY, LEFT_W, mainAreaH, "#4a8a4a");
-  await drawCards(mainEntries, 0, startY, MAIN_COLS,
+  drawCardsText(mainEntries, 0, startY, MAIN_COLS,
     `🃏 メインデッキ (${mainEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#a8e0a8");
 
-  ctx.strokeStyle = "#666";
+  // 区切り線
+  ctx.strokeStyle = "#444";
   ctx.lineWidth = BORDER;
   ctx.beginPath();
   ctx.moveTo(LEFT_W, startY);
-  ctx.lineTo(LEFT_W, startY + Math.max(leftH, rightH));
+  ctx.lineTo(LEFT_W, startY + Math.max(mainAreaH, rightH));
   ctx.stroke();
 
+  // サイドデッキエリア
   drawBorder(LEFT_W, startY, RIGHT_W, sideAreaH, "#6a6a9a");
-  await drawCards(sideEntries, LEFT_W, startY, SUB_COLS,
-    `📦 サイドデッキ (${sideEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#aaccff");
+  drawCardsText(sideEntries, LEFT_W, startY, SUB_COLS,
+    `📦 サイド (${sideEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#aaccff");
 
-  ctx.strokeStyle = "#666";
+  ctx.strokeStyle = "#444";
   ctx.lineWidth = BORDER;
   ctx.beginPath();
   ctx.moveTo(LEFT_W, startY + sideAreaH);
   ctx.lineTo(LEFT_W + RIGHT_W, startY + sideAreaH);
   ctx.stroke();
 
+  // 領土デッキエリア
   drawBorder(LEFT_W, startY + sideAreaH, RIGHT_W, terrAreaH, "#8a6a2a");
-  await drawCards(territoryEntries, LEFT_W, startY + sideAreaH, SUB_COLS,
-    `🌍 領土デッキ (${territoryEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#e0c060");
+  drawCardsText(territoryEntries, LEFT_W, startY + sideAreaH, SUB_COLS,
+    `🌍 領土 (${territoryEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#e0c060");
 
   return canvas;
 }
@@ -2725,10 +2737,9 @@ async function showDeckImage() {
   container.appendChild(canvas);
 }
 
-// =============== 画像をスマホに保存 ===============
+// =============== 画像保存 ===============
 function saveDeckImage() {
-  const container = document.getElementById("deckImageContainer");
-  const canvas = container.querySelector("canvas");
+  const canvas = document.querySelector("#deckImageContainer canvas");
   if (!canvas) { alert("先に画像を生成してください"); return; }
   const a = document.createElement("a");
   a.href = canvas.toDataURL("image/png");
@@ -2752,19 +2763,18 @@ function renderDeckView() {
     const isTerritory = card?.type === "領土";
     const other = location === "main" ? "side" : "main";
     const otherLabel = location === "main" ? "→サイド" : "→本";
-
     const moveBtn = isTerritory ? "" : `
       <button onclick="moveDeck('${code}','${other}')" style="padding:2px 8px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:12px;cursor:pointer;">${otherLabel}</button>`;
 
     return `
       <div style="display:flex; align-items:center; gap:10px; padding:4px 0; border-bottom:1px solid #2a4a3a;">
-        <img src="${img}" style="width:48px; height:68px; object-fit:cover; border-radius:6px; background:#112233;">
+        <img src="${img}" onerror="this.src='https://via.placeholder.com/48x68/112233/88cc88?text=?'" style="width:48px; height:68px; object-fit:cover; border-radius:6px; background:#112233;">
         <div style="flex:1;">
           <div style="font-size:14px; color:#e0e8d0;">${name}</div>
           <div style="font-size:12px; color:#aaa;">${code}</div>
         </div>
         <div style="display:flex; align-items:center; gap:6px;">
-          <button onclick="changeDeckCount('${code}',-1)" style="width:24px;height:24px;background:#c85a5a;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">−</button>
+          <button onclick="changeDeckCount('${code}',-1)" style="width:24px;height:24px;background:#c85a5a;border:none;borde-radius:4px;color:white;font-size:14px;cursor:pointer;">−</button>
           <span style="color:#ffdd88;font-weight:bold;min-width:20px;text-align:center;">${cnt}</span>
           <button onclick="changeDeckCount('${code}',1)" style="width:24px;height:24px;background:#4caf50;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">＋</button>
           ${moveBtn}
@@ -2775,17 +2785,15 @@ function renderDeckView() {
   const mainHTML = mainEntries.length === 0
     ? "<p style='color:#666;font-size:13px;'>カードがありません</p>"
     : mainEntries.map(([code, cnt]) => cardHTML(code, cnt, "main")).join("");
-
   const territoryHTML = territoryEntries.length === 0
     ? "<p style='color:#666;font-size:13px;'>カードがありません</p>"
     : territoryEntries.map(([code, cnt]) => cardHTML(code, cnt, "territory")).join("");
-
   const sideHTML = sideEntries.length === 0
     ? "<p style='color:#666;font-size:13px;'>カードがありません</p>"
     : sideEntries.map(([code, cnt]) => cardHTML(code, cnt, "side")).join("");
 
   document.getElementById("deckView").innerHTML = `
-    <div style="padding:4px 16px; overflow-y:auto;">
+    <div style="padding:4px 16px 100px; overflow-y:auto; height:calc(100vh - 60px);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; margin-top:4px;">
         <input id="deckNameInput" type="text" placeholder="デッキ名を入力..." value="${deckName}"
           onchange="deckName=this.value"
@@ -2811,7 +2819,7 @@ function renderDeckView() {
         <h2 style="color:#e0c060; font-size:16px; margin-bottom:12px;">
           🌍 領土デッキ
           <span style="color:${territoryTotal <= 10 ? '#ffdd88' : '#ff4444'}; font-size:14px; margin-left:8px;">
-            ${territoryTotal}枚 ${territoryTotal > 10 ? '⚠️ 10枚超過' : '/ 10枚'}
+            ${territoryTotal}枚 / 10枚 ${territoryTotal > 10 ? '⚠️' : ''}
           </span>
         </h2>
         ${territoryHTML}
@@ -2821,7 +2829,7 @@ function renderDeckView() {
         <h2 style="color:#aaccff; font-size:16px; margin-bottom:12px;">
           📦 サイドデッキ
           <span style="color:${sideTotal <= 15 ? '#88aaff' : '#ff4444'}; font-size:14px; margin-left:8px;">
-            ${sideTotal}枚 ${sideTotal > 15 ? '⚠️ 15枚超過' : '/ 15枚'}
+            ${sideTotal}枚 / 15枚 ${sideTotal > 15 ? '⚠️' : ''}
           </span>
         </h2>
         ${sideHTML}
@@ -2845,10 +2853,7 @@ function changeDeckCount(code, delta) {
 function moveDeck(code, target) {
   if (target === "side") {
     const sideTotal = Object.values(sideDeck).reduce((a, b) => a + b, 0);
-    if (sideTotal >= 15) {
-      alert("サイドデッキは15枚までです");
-      return;
-    }
+    if (sideTotal >= 15) { alert("サイドデッキは15枚までです"); return; }
     if ((deck[code] || 0) > 0) {
       deck[code]--;
       if (deck[code] === 0) delete deck[code];
@@ -2888,8 +2893,6 @@ function showTab(tab) {
     deckView.style.display = "none";
     tabSearch.style.background = "#3a6a3a";
     tabDeck.style.background = "#1f2a35";
-    cardListEl.style.height = "calc(100vh - 290px)";
-    cardListEl.style.padding = "12px 16px 100px";
     header.style.position = "sticky";
     header.style.top = "0";
     filterAndRender();
@@ -2901,7 +2904,8 @@ function showTab(tab) {
     cardListEl.style.height = "0";
     cardListEl.style.padding = "0";
     cardListEl.innerHTML = "";
-    header.style.position = "relative";
+    header.style.position = "sticky";
+    header.style.top = "0";
     renderDeckView();
   }
 }
@@ -2911,12 +2915,21 @@ let deckName = "";
 
 // =============== URL生成・読み込み（LZString使用） ===============
 function encodeDeck() {
+  const mainEntries = getDeckMain();
+  const sideEntries = getDeckSide();
+  const territoryEntries = getDeckTerritory();
+
+  // コードを短いインデックスに変換
+  const codeToIdx = {};
+  cards.forEach((card, i) => { codeToIdx[card.code] = i; });
+
   const data = {
     n: deckName || "",
-    m: Object.fromEntries(getDeckMain()),
-    s: Object.fromEntries(getDeckSide()),
-    t: Object.fromEntries(getDeckTerritory())
+    m: mainEntries.map(([code, cnt]) => [codeToIdx[code], cnt]),
+    s: sideEntries.map(([code, cnt]) => [codeToIdx[code], cnt]),
+    t: territoryEntries.map(([code, cnt]) => [codeToIdx[code], cnt])
   };
+
   const jsonStr = JSON.stringify(data);
   const compressed = LZString.compressToEncodedURIComponent(jsonStr);
   return window.location.href.split("?")[0] + "?d=" + compressed;
@@ -2929,13 +2942,16 @@ function decodeDeck(url) {
   try {
     const jsonStr = LZString.decompressFromEncodedURIComponent(compressed);
     const data = JSON.parse(jsonStr);
+    const idxToCode = cards.map(c => c.code);
     if (data.n) deckName = data.n;
-    if (data.m) Object.assign(deck, data.m);
-    if (data.s) Object.assign(sideDeck, data.s);
-    if (data.t) {
-      Object.assign(deck, data.t);
-      Object.keys(data.t).forEach(code => deckSide[code] = "territory");
-    }
+    if (data.m) data.m.forEach(([idx, cnt]) => { if (idxToCode[idx]) deck[idxToCode[idx]] = cnt; });
+    if (data.s) data.s.forEach(([idx, cnt]) => { if (idxToCode[idx]) sideDeck[idxToCode[idx]] = cnt; });
+    if (data.t) data.t.forEach(([idx, cnt]) => {
+      if (idxToCode[idx]) {
+        deck[idxToCode[idx]] = cnt;
+        deckSide[idxToCode[idx]] = "territory";
+      }
+    });
     updateDeckTotal();
   } catch(e) {
     console.error("デッキ読み込み失敗", e);
@@ -2963,12 +2979,24 @@ if (window.location.search) {
   decodeDeck(window.location.href);
 }
 
-
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 
-<!-- デッキ画像モーダル -->
+<!-- トップに戻るボタン -->
+<button id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})"
+  style="display:none; position:fixed; bottom:24px; right:16px; z-index:500;
+         width:44px; height:44px; border-radius:50%; background:#3a6a3a;
+         border:2px solid #4a8a4a; color:#a8e0a8; font-size:20px; cursor:pointer;
+         box-shadow:0 4px 12px rgba(0,0,0,0.5);">↑</button>
+
+<script>
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('scrollTopBtn');
+  btn.style.display = window.scrollY > 200 ? 'block' : 'none';
+});
+</script>
+
 
 <div id="deckImageModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:2000; padding:20px; overflow-y:auto; flex-direction:column; align-items:center; justify-content:flex-start;">
   <div style="max-width:500px; width:100%; margin:0 auto;">
@@ -2980,6 +3008,7 @@ if (window.location.search) {
     </div>
   </div>
 </div>
+
 
 </body>
 
