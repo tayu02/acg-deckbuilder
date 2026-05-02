@@ -8,7 +8,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #0f1a24; color: #e0e8d0; min-height: 100vh; }
-  #header { background: linear-gradient(to right, #1f2f1f, #1a2a3a); padding: 12px 16px; border-bottom: 3px solid #4a8a4a; position: sticky; top: 0; z-index: 300; display: flex; justify-content: space-between; align-items: center; }
+  #header { background: linear-gradient(to right, #1f2f1f, #1a2a3a); padding: 12px 16px; border-bottom: 3px solid #4a8a4a; z-index: 300; display: flex; justify-content: space-between; align-items: center; }
   h1 { font-size: 19px; color: #a8e0a8; }
   #deckTotal { font-size: 16px; color: #ffcc77; font-weight: bold; }
   .search-area { padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -36,7 +36,7 @@
 }
 
 .card-controls { margin-top: auto; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 4px 6px; background: rgba(0,0,0,0.4); flex-direction: row; flex-wrap: nowrap; }
-.card-controls button { width: 22px; height: 22px; font-size: 14px; border: none; border-radius: 4px; color: white; cursor: pointer; flex-shrink: 0; }
+.card-controls button { width: 28px; height: 28px; font-size: 14px; border: none; border-radius: 4px; color: white; cursor: pointer; flex-shrink: 0; }
 .btn-minus { background: #c85a5a; }
 .btn-plus { background: #4caf50; }
 .count { font-size: 13px; font-weight: bold; color: #ffdd88; min-width: 16px; text-align: center; flex-shrink: 0; }
@@ -2320,145 +2320,13 @@ const cards = [
 "reading": "りんじゅうのほうこう",
 "image": "https://acgtcg.com/img/ACG-150"
 },
-{
-"code": "キメサイ-ACG-151","name": "言伝","type": "縄張り","tribe": "","stats": "","cost": "0","condition": "平水森",
-"effect": "【誘発（戦場）】［日没フェイズ開始時、あなたの戦場の動物1体とこれを生贄に捧げて発動する。］あなたのデッキからカード1枚を探して手札に加える。",
-"route_search": [],
-"general_effect": ["サーチ"],
-"reading": "ことづて",
-"image": "https://acgtcg.com/img/ACG-151"
-},
-{
-"code": "キメサイ-ACG-152","name": "脱獄","type": "特技","tribe": "","stats": "","cost": "1","condition": "平／夜",
-"effect": "【プレイ】あなたのデッキからコスト1以下の動物カード1枚を探して手札に加える。",
-"route_search": [],
-"general_effect": ["サーチ"],
-"reading": "だつごく",
-"image": "https://acgtcg.com/img/ACG-152"
-},
-{
-"code": "キメサイ-ACG-153","name": "救援物資","type": "場面","tribe": "","stats": "","cost": "0","condition": "平平",
-"effect": "【プレイ】［①か②を支払って発動する。］あなたのデッキからコストXで条件を達成している動物カード1枚を探してあなたの戦場に出す。Xはこの効果で支払ったコストの量に等しい。",
-"route_search": [],
-"general_effect": ["サーチ"],
-"reading": "きゅうえんぶっし",
-"image": "https://acgtcg.com/img/ACG-153"
-},
-{
-"code": "キメサイ-ACG-154","name": "袋小路の捨て犬","type": "動物","tribe": "イヌ","stats": "ATK 1／DEF 1","cost": "1","condition": "平",
-"effect": "【起動（戦場）】［<ムーブ>、①を支払って、あなたの手札のコスト2以下のカード1枚を捨てて、これを生贄に捧げて発動する。］あなたのデッキからコストXで条件を達成している動物カード1枚を探してあなたの戦場に出す。Xはこの効果で捨てたカードのコストの値に等しい。",
-"route_search": [],
-"general_effect": ["サーチ"],
-"reading": "ふくろこうじのすていぬ",
-"image": "https://acgtcg.com/img/ACG-154"
-},
-{
-"code": "キメサイ-ACG-155","name": "猫又","type": "動物","tribe": "ネコ","stats": "ATK 1／DEF 1","cost": "1","condition": "山",
-"effect": "【誘発（戦場）】［これが戦場に出た時に発動してもよい。］あなたのデッキから特技カード以外のコスト3以上のカード1枚を探して除外する。 【起動（戦場）】［これを生贄に捧げて、これの誘発能力の効果で除外したカード1枚を対象に発動する。］このターン中、あなたはそれを除外領域からプレイしてもよい。",
-"route_search": [],
-"general_effect": ["サーチ"],
-"reading": "ねこまた",
-"image": "https://acgtcg.com/img/ACG-155"
-},
-{
-"code": "キメサイ-ACG-156","name": "テングザル","type": "動物","tribe": "サル","stats": "ATK 1／DEF 1","cost": "1","condition": "森",
-"effect": "【誘発（戦場）】［これが戦場に出た時に発動してもよい。］あなたのデッキの上からカード5枚を公開して、縄張りカードや道具カードの内1枚を手札に加えて、残りをデッキの下に任意の順で置く。",
-"route_search": ["鉄鴉ルート","ガラクタルート"],
-"general_effect": ["サーチ"],
-"reading": "てんぐざる",
-"image": "https://acgtcg.com/img/ACG-156"
-},
-{
-"code": "キメサイ-ACG-157","name": "玩具の申し子","type": "動物","tribe": "キツネ","stats": "ATK 1／DEF 1","cost": "2","condition": "平森",
-"effect": "【誘発（戦場）】［あなたの準備フェイズ開始時、あなたの手札のカード1枚を捨てて発動してもよい。］あなたのデッキからコスト1の《装備》を持つ道具カード1枚を探して、これに装備している状態であなたの戦場に出す。 【誘発（墓地）】［道具が装備されていないこれが戦場から墓地に置かれた時に発動してもよい。］あなたのデッキから動物カード1枚を探して手札に加える。",
-"route_search": ["獅子舞ルート"],
-"general_effect": ["サーチ"],
-"reading": "がんぐのもうしご",
-"image": "https://acgtcg.com/img/ACG-157"
-},
-{
-"code": "キメサイ-ACG-158","name": "明日色のカメレオン","type": "動物","tribe": "カメレオン","stats": "ATK 0／DEF 1","cost": "1","condition": "平山水森",
-"effect": "《早業》（【常時（戦場）】これは行動待機の影響を受けずに発動コストでムーブできる。） 【固有】［これをプレイする時、あなたの手札の「明日色のカメレオン」カード以外のカード1枚を公開して適用してもよい。］これの条件をこの効果で公開したカードの条件と同じ種類と数だけ軽減する。 【起動（戦場）】［<ムーブ>、あなたの手札のカード1枚を捨てて発動する。］あなたはカード1枚を引く。あなたはこの効果で捨てたカードの条件の種類の内1つを選ぶ。ターン終了時まで、これは選ばれた条件に応じた条件キーワード能力を得る。",
-"route_search": ["カメレオンルート"],
-"general_effect": [],
-"reading": "あすいろのかめれおん",
-"image": "https://acgtcg.com/img/ACG-158"
-},
-{
-"code": "キメサイ-ACG-159","name": "鉄洗いグマ","type": "動物","tribe": "アライグマ","stats": "ATK 0／DEF 1","cost": "1","condition": "森無",
-"effect": "【誘発（戦場）】［これが戦場に出た時かあなたの準備フェイズ開始時に発動してもよい。］あなたのデッキから「鉄クズ」カード1枚を探してあなたの戦場に出す。 【起動（戦場）】［<ムーブ>、あなたの戦場の1つ以上のすべての「鉄クズ」道具を生贄に捧げて発動する。］あなたのデッキから道具カードX枚を探して墓地に置く。Xはこの効果で生贄に捧げた道具の数に等しい。",
-"route_search": ["鉄鴉ルート","ガラクタルート"],
-"general_effect": ["サーチ"],
-"reading": "てつあらいぐま",
-"image": "https://acgtcg.com/img/ACG-159"
-},
-{
-"code": "キメサイ-ACG-160","name": "鉄クズ","type": "道具","tribe": "","stats": "","cost": "0","condition": "無",
-"effect": "【起動（墓地）】［①を支払って、あなたの墓地の1枚以上のすべての「鉄クズ」カードを除外して、あなたの墓地のコストX以下の道具カード1枚を対象に発動する。］それを手札に加える。Xはこの効果で除外したカードの数に等しい。",
-"route_search": ["鉄鴉ルート","ガラクタルート"],
-"general_effect": ["サーチ"],
-"reading": "てつくず",
-"image": "https://acgtcg.com/img/ACG-160"
-},
-{
-"code": "キメサイ-ACG-161","name": "鉄鴉","type": "動物&道具","tribe": "カラス","stats": "ATK 0／DEF 0","cost": "0","condition": "平山山",
-"effect": "《唯一》《早業》《有翼》 【固有】［これが戦場に出る時に適用する。］これはATK+1/DEF+1カウンターX個が置かれた状態で戦場に出る。Xはこのターン中にあなたの墓地に置かれた道具カードの数に等しい。 【常時】これのプレイは妨害されない。 【起動（戦場）】［<ムーブ>して発動する。］相手にX点ダメージを与える。Xはこの動物のATKの値に等しい。",
-"route_search": ["鉄鴉ルート","ガラクタルート","狐ルート"],
-"general_effect": ["火力"],
-"reading": "てつがらす",
-"image": "https://acgtcg.com/img/ACG-161"
-},
-{
-"code": "キメサイ-ACG-162","name": "カメレオンの永地","type": "縄張り","tribe": "カメレオン","stats": "","cost": "2","condition": "平山水森",
-"effect": "【常時（戦場）】あなたが効果でゲームに敗北するなら、代わりにこれを生贄に捧げる。 【誘発（戦場）】［これが戦場に出た時、あなたの戦場のカメレオン動物1体を生贄に捧げて発動してもよい。］あなたのデッキからカメレオン動物カード1枚を探して墓地に置いて、あなたのデッキからカメレオン動物カード1枚を探してあなたの戦場に出す。 【誘発（墓地）】［これがこれの常時能力の効果で戦場から墓地に置かれた時に発動する。］あなたの戦場のすべてのカメレオン存在を生贄に捧げる。",
-"route_search": ["カメレオンルート"],
-"general_effect": [],
-"reading": "かめれおんのえいち",
-"image": "https://acgtcg.com/img/ACG-162"
-},
-{
-"code": "キメサイ-ACG-163","name": "此岸色のカメレオン","type": "動物","tribe": "カメレオン","stats": "ATK 1／DEF 2","cost": "1","condition": "平山水森",
-"effect": "【誘発（戦場）】［これが戦場に出た時、あなたの墓地のカメレオン動物カード1枚を除外して発動してもよい。］この効果で除外した動物カードの複製トークン1体を相手の戦場に出す。 【誘発（戦場）】［これが戦場から離れた時、相手の戦場のカメレオン動物トークン1体を対象に発動する。］それをあなたの戦場に移す。 （複製トークンは、複製元のコスト以外のすべての元の情報を持つトークンである。）",
-"route_search": ["カメレオンルート"],
-"general_effect": ["コピー"],
-"reading": "しがんいろのかめれおん",
-"image": "https://acgtcg.com/img/ACG-163"
-},
-{
-"code": "キメサイ-ACG-164","name": "彼岸色のカメレオン","type": "動物","tribe": "カメレオン","stats": "ATK 0／DEF 1","cost": "2","condition": "平山水森",
-"effect": "《隠密》（【常時（戦場）】これの攻撃は防御されない。） 【常時（戦場）】これはATK+Xを得る。Xはあなたの戦場のトークン以外のそれぞれの存在の条件の数の最大値を合計した値に等しい。 【誘発（戦場）】［あなたの日没フェイズ開始時に発動する。］これに彼岸カウンター1個以上が置かれているなら、あなたはゲームに敗北する。これに彼岸カウンターが置かれていないなら、これに彼岸カウンター1個を置く。",
-"route_search": ["カメレオンルート"],
-"general_effect": [],
-"reading": "ひがんいろのかめれおん",
-"image": "https://acgtcg.com/img/ACG-164"
-},
-{"code":"RYO-001","name":"平野","type":"領土","tribe":"基礎","stats":"","cost":"","condition":"","effect":"《平野》（これはあなたがカードをプレイする時、平野条件の1つとして数えられる。）\n【起動（領地）】［ムーブ］これを夜にする。","territory_type":["平野"],"reading":"へいや","image":"https://acgtcg.com/img/RYO-001"},
-{"code":"RYO-002","name":"山岳","type":"領土","tribe":"基礎","stats":"","cost":"","condition":"","effect":"《山岳》（これはあなたがカードをプレイする時、山岳条件の1つとして数えられる。）\n【起動（領地）】［ムーブ］これを夜にする。","territory_type":["山岳"],"reading":"さんがく","image":"https://acgtcg.com/img/RYO-002"},
-{"code":"RYO-003","name":"水生","type":"領土","tribe":"基礎","stats":"","cost":"","condition":"","effect":"《水生》（これはあなたがカードをプレイする時、水生条件の1つとして数えられる。）\n【起動（領地）】［ムーブ］これを夜にする。","territory_type":["水生"],"reading":"すいせい","image":"https://acgtcg.com/img/RYO-003"},
-{"code":"RYO-004","name":"森林","type":"領土","tribe":"基礎","stats":"","cost":"","condition":"","effect":"《森林》（これはあなたがカードをプレイする時、森林条件の1つとして数えられる。）\n【起動（領地）】［ムーブ］これを夜にする。","territory_type":["森林"],"reading":"しんりん","image":"https://acgtcg.com/img/RYO-004"},
-{"code":"RYO-005","name":"払暁の荒野","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《平野》（これはあなたがカードをプレイする時、平野条件の1つとして数えられる。）\n【固有】［これが領地に出る時に適用してもよい。］これを夜状態で領地に出す。","territory_type":["平野"],"reading":"ふつぎょうのこうや","image":"https://acgtcg.com/img/RYO-005"},
-{"code":"RYO-006","name":"夜明けの山脈","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《山岳》（これはあなたがカードをプレイする時、山岳条件の1つとして数えられる。）\n【固有】［これが領地に出る時に適用してもよい。］これを夜状態で領地に出す。","territory_type":["山岳"],"reading":"よあけのさんみゃく","image":"https://acgtcg.com/img/RYO-006"},
-{"code":"RYO-007","name":"朝焼けの海","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《水生》（これはあなたがカードをプレイする時、水生条件の1つとして数えられる。）\n【固有】［これが領地に出る時に適用してもよい。］これを夜状態で領地に出す。","territory_type":["水生"],"reading":"あさやけのうみ","image":"https://acgtcg.com/img/RYO-007"},
-{"code":"RYO-008","name":"目覚めの森","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《森林》（これはあなたがカードをプレイする時、森林条件の1つとして数えられる。）\n【固有】［これが領地に出る時に適用してもよい。］これを夜状態で領地に出す。","territory_type":["森林"],"reading":"めざめのもり","image":"https://acgtcg.com/img/RYO-008"},
-{"code":"RYO-009","name":"平原の櫓","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《平野》（これはあなたがカードをプレイする時、平野条件の1つとして数えられる。）\n【誘発（領地）】［これが領地に出た時に発動する。］あなたの領土デッキの上からカード1枚を見て、それを領土デッキの上か下に置く。","territory_type":["平野"],"reading":"へいげんのやぐら","image":"https://acgtcg.com/img/RYO-009"},
-{"code":"RYO-010","name":"山脈の頂","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《山岳》（これはあなたがカードをプレイする時、山岳条件の1つとして数えられる。）\n【誘発（領地）】［これが領地に出た時に発動する。］あなたの領土デッキの上からカード1枚を見て、それを領土デッキの上か下に置く。","territory_type":["山岳"],"reading":"さんみゃくのいただき","image":"https://acgtcg.com/img/RYO-010"},
-{"code":"RYO-011","name":"彼方の水平線","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《水生》（これはあなたがカードをプレイする時、水生条件の1つとして数えられる。）\n【誘発（領地）】［これが領地に出た時に発動する。］あなたの領土デッキの上からカード1枚を見て、それを領土デッキの上か下に置く。","territory_type":["水生"],"reading":"かなたのすいへいせん","image":"https://acgtcg.com/img/RYO-011"},
-{"code":"RYO-012","name":"森の中の大樹","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《森林》（これはあなたがカードをプレイする時、森林条件の1つとして数えられる。）\n【誘発（領地）】［これが領地に出た時に発動する。］あなたの領土デッキの上からカード1枚を見て、それを領土デッキの上か下に置く。","territory_type":["森林"],"reading":"もりのなかのたいじゅ","image":"https://acgtcg.com/img/RYO-012"},
-{"code":"RYO-013","name":"砂丘","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《平野》《山岳》\n【固有】［あなたの領地の領土が2つ以上なら、これが領地に出る時に適用する。］これをムーブ状態で領地に出す。","territory_type":["平野","山岳"],"reading":"さきゅう","image":"https://acgtcg.com/img/RYO-013"},
-{"code":"RYO-014","name":"湿原","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《平野》《水生》\n【固有】［あなたの領地の領土が2つ以上なら、これが領地に出る時に適用する。］これをムーブ状態で領地に出す。","territory_type":["平野","水生"],"reading":"しつげん","image":"https://acgtcg.com/img/RYO-014"},
-{"code":"RYO-015","name":"樹海","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《平野》《森林》\n【固有】［あなたの領地の領土が2つ以上なら、これが領地に出る時に適用する。］これをムーブ状態で領地に出す。","territory_type":["平野","森林"],"reading":"じゅかい","image":"https://acgtcg.com/img/RYO-015"},
-{"code":"RYO-016","name":"渓谷","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《山岳》《水生》\n【固有】［あなたの領地の領土が2つ以上なら、これが領地に出る時に適用する。］これをムーブ状態で領地に出す。","territory_type":["山岳","水生"],"reading":"けいこく","image":"https://acgtcg.com/img/RYO-016"},
-{"code":"RYO-017","name":"山林","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《山岳》《森林》\n【固有】［あなたの領地の領土が2つ以上なら、これが領地に出る時に適用する。］これをムーブ状態で領地に出す。","territory_type":["山岳","森林"],"reading":"さんりん","image":"https://acgtcg.com/img/RYO-017"},
-{"code":"RYO-018","name":"沼地","type":"領土","tribe":"","stats":"","cost":"","condition":"","effect":"《水生》《森林》\n【固有】［あなたの領地の領土が2つ以上なら、これが領地に出る時に適用する。］これをムーブ状態で領地に出す。","territory_type":["水生","森林"],"reading":"ぬまち","image":"https://acgtcg.com/img/RYO-018"}
 
-
-]; 
+];
 
 const maxCopies = 4;
-let deck = {};      // 本デッキの枚数
-let sideDeck = {};  // サイドデッキの枚数
-let deckSide = {};  // territory判定用
-
+let deck = {};
+let sideDeck = {};
+let deckSide = {};
 
 // =============== DOM取得 ===============
 const cardListEl = document.getElementById("cardList");
@@ -2600,12 +2468,10 @@ document.getElementById("clearBtn").addEventListener("click", () => {
   filterAndRender();
 });
 
-// =============== デッキ合計枚数更新 ===============
+// =============== デッキ合計枚数更新（メインデッキのみカウント） ===============
 function updateDeckTotal() {
-  const mainTotal = Object.values(deck).reduce((a, b) => a + b, 0);
-  const sideTotal = Object.values(sideDeck).reduce((a, b) => a + b, 0);
-  const total = mainTotal + sideTotal;
-  document.getElementById("deckTotal").textContent = `デッキ：${total} 枚`;
+  const mainTotal = getDeckMain().reduce((a, [, cnt]) => a + cnt, 0);
+  document.getElementById("deckTotal").textContent = `デッキ：${mainTotal} 枚`;
 }
 
 // =============== デッキ振り分け取得 ===============
@@ -2633,8 +2499,8 @@ function sortCards(entries) {
     const costA = parseInt(cardA.cost) || 0;
     const costB = parseInt(cardB.cost) || 0;
     if (costA !== costB) return costA - costB;
-    const condA = (cardA.condition || "").length;
-    const condB = (cardB.condition || "").length;
+    const condA = (cardA.condition || "").replace(/[^山水森平夜無]/g, "").length;
+    const condB = (cardB.condition || "").replace(/[^山水森平夜無]/g, "").length;
     if (condA !== condB) return condA - condB;
     return codeA.localeCompare(codeB);
   });
@@ -2647,37 +2513,17 @@ function sortByType(entries) {
   const grouped = {};
   typeOrder.forEach(t => grouped[t] = []);
   grouped["その他"] = [];
-
   entries.forEach(([code, cnt]) => {
     const card = cards.find(c => c.code === code);
     if (!card) return;
-    // 複合タイプ（例：動物&縄張り）は最初のタイプで分類
     const type = typeOrder.find(t => (card.type || "").includes(t)) || "その他";
     grouped[type].push([code, cnt]);
   });
-
   const result = [];
   typeOrder.forEach(t => result.push(...sortCards(grouped[t])));
   result.push(...sortCards(grouped["その他"]));
   return result;
 }
-
-// =============== カード並び順（コスト→条件数→コード順） ===============
-function sortCards(entries) {
-  return entries.sort(([codeA], [codeB]) => {
-    const cardA = cards.find(c => c.code === codeA);
-    const cardB = cards.find(c => c.code === codeB);
-    if (!cardA || !cardB) return 0;
-    const costA = parseInt(cardA.cost) || 0;
-    const costB = parseInt(cardB.cost) || 0;
-    if (costA !== costB) return costA - costB;
-    const condA = (cardA.condition || "").replace(/[^山水森平夜無]/g, "").length;
-    const condB = (cardB.condition || "").replace(/[^山水森平夜無]/g, "").length;
-    if (condA !== condB) return condA - condB;
-    return codeA.localeCompare(codeB);
-  });
-}
-
 
 // =============== デッキ画像生成 ===============
 async function generateDeckImage() {
@@ -2685,114 +2531,140 @@ async function generateDeckImage() {
   const sideEntries = sortByType(getDeckSide());
   const territoryEntries = sortCards(getDeckTerritory());
 
-  const CARD_W = 63;
-  const CARD_H = 88;
-  const PAD = 6;
-  const COLS = 10;
+  const CARD_W = 56;
+  const CARD_H = 78;
+  const PAD = 4;
+  const BORDER = 3;
+  const MAIN_COLS = 6;
+  const SUB_COLS = 3;
 
-  // メインデッキの行数計算
-  const mainRows = Math.ceil(mainEntries.length / COLS);
-  const sideRows = Math.ceil(sideEntries.length / COLS);
-  const terrRows = Math.ceil(territoryEntries.length / COLS);
+  const mainRows = Math.ceil(mainEntries.length / MAIN_COLS);
+  const sideRows = Math.ceil(sideEntries.length / SUB_COLS);
+  const terrRows = Math.ceil(territoryEntries.length / SUB_COLS);
 
-  const HEADER_H = 60;
-  const SECTION_LABEL_H = 24;
+  const LABEL_H = 22;
+  const HEADER_H = 50;
   const FOOTER_H = 10;
 
-  const totalH = HEADER_H
-    + (mainEntries.length > 0 ? SECTION_LABEL_H + mainRows * (CARD_H + PAD) + PAD : 0)
-    + (sideEntries.length > 0 ? SECTION_LABEL_H + sideRows * (CARD_H + PAD) + PAD : 0)
-    + (territoryEntries.length > 0 ? SECTION_LABEL_H + terrRows * (CARD_H + PAD) + PAD : 0)
-    + FOOTER_H;
+  const LEFT_W = PAD + MAIN_COLS * (CARD_W + PAD) + PAD;
+  const RIGHT_W = PAD + SUB_COLS * (CARD_W + PAD) + PAD;
+  const TOTAL_W = LEFT_W + BORDER + RIGHT_W;
 
-  const totalW = COLS * (CARD_W + PAD) + PAD;
+  const sideAreaH = LABEL_H + sideRows * (CARD_H + PAD) + PAD;
+  const terrAreaH = LABEL_H + terrRows * (CARD_H + PAD) + PAD;
+  const rightH = sideAreaH + BORDER + terrAreaH;
+  const mainAreaH = LABEL_H + mainRows * (CARD_H + PAD) + PAD;
+  const leftH = mainAreaH;
+
+  const TOTAL_H = HEADER_H + Math.max(leftH, rightH) + FOOTER_H;
 
   const canvas = document.createElement("canvas");
-  canvas.width = totalW;
-  canvas.height = totalH;
+  canvas.width = TOTAL_W;
+  canvas.height = TOTAL_H;
   const ctx = canvas.getContext("2d");
 
-  // 背景画像
   await new Promise(resolve => {
     const bg = new Image();
     bg.crossOrigin = "anonymous";
     bg.onload = () => {
-      ctx.drawImage(bg, 0, 0, totalW, totalH);
+      ctx.drawImage(bg, 0, 0, TOTAL_W, TOTAL_H);
       resolve();
     };
     bg.onerror = () => {
       ctx.fillStyle = "#0f1a24";
-      ctx.fillRect(0, 0, totalW, totalH);
+      ctx.fillRect(0, 0, TOTAL_W, TOTAL_H);
       resolve();
     };
     bg.src = "https://tayu02.github.io/acg-deckbuilder/IMG_6935.png";
   });
 
-  // 半透明オーバーレイ
-  ctx.fillStyle = "rgba(0,0,0,0.55)";
-  ctx.fillRect(0, 0, totalW, totalH);
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(0, 0, TOTAL_W, TOTAL_H);
 
-  // デッキ名
   ctx.fillStyle = "#a8e0a8";
-  ctx.font = "bold 20px sans-serif";
+  ctx.font = "bold 18px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(deckName || "デッキレシピ", totalW / 2, 38);
+  ctx.fillText(deckName || "デッキレシピ", TOTAL_W / 2, 32);
 
-  let y = HEADER_H;
+  const startY = HEADER_H;
 
-  async function drawSection(entries, label, labelColor) {
-    if (entries.length === 0) return;
+  function drawBorder(x, y, w, h, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = BORDER;
+    ctx.strokeRect(x + BORDER/2, y + BORDER/2, w - BORDER, h - BORDER);
+  }
+
+  async function drawCards(entries, startX, startY, cols, label, labelColor) {
     ctx.fillStyle = labelColor;
-    ctx.font = "bold 14px sans-serif";
+    ctx.font = "bold 13px sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(label, PAD, y + 16);
-    y += SECTION_LABEL_H;
+    ctx.fillText(label, startX + PAD, startY + 15);
 
     for (let i = 0; i < entries.length; i++) {
       const [code, cnt] = entries[i];
       const card = cards.find(c => c.code === code);
-      const x = PAD + (i % COLS) * (CARD_W + PAD);
-      const cy = y + Math.floor(i / COLS) * (CARD_H + PAD);
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = startX + PAD + col * (CARD_W + PAD);
+      const y = startY + LABEL_H + row * (CARD_H + PAD);
 
       await new Promise(resolve => {
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = () => {
-          ctx.drawImage(img, x, cy, CARD_W, CARD_H);
-          // 枚数バッジ
-          ctx.fillStyle = "rgba(0,0,0,0.7)";
-          ctx.fillRect(x + CARD_W - 22, cy, 22, 18);
+          ctx.drawImage(img, x, y, CARD_W, CARD_H);
+          ctx.fillStyle = "rgba(0,0,0,0.75)";
+          ctx.fillRect(x + CARD_W - 20, y, 20, 16);
           ctx.fillStyle = "#ffdd88";
-          ctx.font = "bold 11px sans-serif";
+          ctx.font = "bold 10px sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText(`×${cnt}`, x + CARD_W - 11, cy + 13);
+          ctx.fillText(`×${cnt}`, x + CARD_W - 10, y + 12);
           resolve();
         };
         img.onerror = () => {
           ctx.fillStyle = "#1f2a2f";
-          ctx.fillRect(x, cy, CARD_W, CARD_H);
+          ctx.fillRect(x, y, CARD_W, CARD_H);
           ctx.fillStyle = "#aaa";
-          ctx.font = "10px sans-serif";
+          ctx.font = "9px sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText(card ? card.name : code, x + CARD_W/2, cy + CARD_H/2);
-          ctx.fillStyle = "rgba(0,0,0,0.7)";
-          ctx.fillRect(x + CARD_W - 22, cy, 22, 18);
+          ctx.fillText(card ? card.name.substring(0,6) : code, x + CARD_W/2, y + CARD_H/2);
+          ctx.fillStyle = "rgba(0,0,0,0.75)";
+          ctx.fillRect(x + CARD_W - 20, y, 20, 16);
           ctx.fillStyle = "#ffdd88";
-          ctx.font = "bold 11px sans-serif";
-          ctx.fillText(`×${cnt}`, x + CARD_W - 11, cy + 13);
+          ctx.font = "bold 10px sans-serif";
+          ctx.fillText(`×${cnt}`, x + CARD_W - 10, y + 12);
           resolve();
         };
         img.src = card ? card.image : "";
       });
     }
-
-    const rows = Math.ceil(entries.length / COLS);
-    y += rows * (CARD_H + PAD) + PAD;
   }
 
-  await drawSection(mainEntries, `🃏 本デッキ (${mainEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#a8e0a8");
-  await drawSection(sideEntries, `📦 サイドデッキ (${sideEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#aaccff");
-  await drawSection(territoryEntries, `🌍 領土デッキ (${territoryEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#e0c060");
+  drawBorder(0, startY, LEFT_W, mainAreaH, "#4a8a4a");
+  await drawCards(mainEntries, 0, startY, MAIN_COLS,
+    `🃏 メインデッキ (${mainEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#a8e0a8");
+
+  ctx.strokeStyle = "#666";
+  ctx.lineWidth = BORDER;
+  ctx.beginPath();
+  ctx.moveTo(LEFT_W, startY);
+  ctx.lineTo(LEFT_W, startY + Math.max(leftH, rightH));
+  ctx.stroke();
+
+  drawBorder(LEFT_W, startY, RIGHT_W, sideAreaH, "#6a6a9a");
+  await drawCards(sideEntries, LEFT_W, startY, SUB_COLS,
+    `📦 サイドデッキ (${sideEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#aaccff");
+
+  ctx.strokeStyle = "#666";
+  ctx.lineWidth = BORDER;
+  ctx.beginPath();
+  ctx.moveTo(LEFT_W, startY + sideAreaH);
+  ctx.lineTo(LEFT_W + RIGHT_W, startY + sideAreaH);
+  ctx.stroke();
+
+  drawBorder(LEFT_W, startY + sideAreaH, RIGHT_W, terrAreaH, "#8a6a2a");
+  await drawCards(territoryEntries, LEFT_W, startY + sideAreaH, SUB_COLS,
+    `🌍 領土デッキ (${territoryEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#e0c060");
 
   return canvas;
 }
@@ -2803,7 +2675,6 @@ async function showDeckImage() {
   const container = document.getElementById("deckImageContainer");
   container.innerHTML = "<p style='color:#aaa;padding:20px;'>画像生成中...</p>";
   modal.style.display = "flex";
-
   const canvas = await generateDeckImage();
   canvas.style.maxWidth = "100%";
   canvas.style.borderRadius = "8px";
@@ -2872,7 +2743,7 @@ function renderDeckView() {
       <div style="background:#1a2a1a; border:2px solid #4a8a4a; border-radius:12px; padding:14px; margin-bottom:16px;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
           <h2 style="color:#a8e0a8; font-size:16px;">
-            🃏 本デッキ
+            🃏 メインデッキ
             <span style="color:${mainTotal >= 40 ? '#88ff88' : '#ffaa44'}; font-size:14px; margin-left:8px;">
               ${mainTotal}枚 ${mainTotal >= 40 ? '✅' : '(40枚以上必要)'}
             </span>
@@ -2919,6 +2790,11 @@ function changeDeckCount(code, delta) {
 // =============== 本デッキ↔サイドデッキ移動（1枚ずつ） ===============
 function moveDeck(code, target) {
   if (target === "side") {
+    const sideTotal = Object.values(sideDeck).reduce((a, b) => a + b, 0);
+    if (sideTotal >= 15) {
+      alert("サイドデッキは15枚までです");
+      return;
+    }
     if ((deck[code] || 0) > 0) {
       deck[code]--;
       if (deck[code] === 0) delete deck[code];
@@ -2961,6 +2837,8 @@ function showTab(tab) {
     cardListEl.style.height = "calc(100vh - 290px)";
     cardListEl.style.padding = "12px 16px 100px";
     header.style.position = "sticky";
+    header.style.top = "0";
+    filterAndRender();
   } else {
     searchView.style.display = "none";
     deckView.style.display = "block";
@@ -3030,6 +2908,14 @@ function decodeDeck(url) {
 }
 
 function copyDeckURL() {
+  const url = encodeDeck();
+  navigator.clipboard.writeText(url).then(() => {
+    alert("URLをコピーしました！");
+  }).catch(() => {
+    prompt("このURLをコピーしてください：", url);
+  });
+}
+
 // =============== URLコピーしてデッキ画像を閉じる ===============
 function copyDeckURLAndClose() {
   const url = encodeDeck();
@@ -3040,18 +2926,10 @@ function copyDeckURLAndClose() {
   });
   document.getElementById("deckImageModal").style.display = "none";
 }
-  const url = encodeDeck();
-  navigator.clipboard.writeText(url).then(() => {
-    alert("URLをコピーしました！");
-  }).catch(() => {
-    prompt("このURLをコピーしてください：", url);
-  });
-}
 
 // =============== 初期化処理 ===============
 populateDropdown();
 setTimeout(() => filterAndRender(), 100);
-// URLにデッキデータがあれば読み込む
 if (window.location.search) {
   decodeDeck(window.location.href);
 }
@@ -3071,6 +2949,10 @@ if (window.location.search) {
 
 </body>
 </html>
+
+
+
+
 
 
 
