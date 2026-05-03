@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+つ<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -3009,7 +3009,48 @@ window.addEventListener('scroll', () => {
   </div>
 </div>
 
+<script>
+// === デッキ短縮URL生成（追加部分）===
+async function generateShortDeckURL() {
+  // ★★★ ここをあなたの現在のデッキデータに合わせてください ★★★
+  const deckData = {
+    name: "デッキ名をここに入力",
+    main: [],   // ここにあなたのメイン Deck の配列を入れる
+    // extra, side など必要な項目があれば追加
+  };
 
+  // 以下は変更不要
+  try {
+    const jsonStr = JSON.stringify(deckData);
+    
+    const compressed = await new Response(
+      new Blob([jsonStr]).stream().pipeThrough(new CompressionStream("gzip"))
+    ).arrayBuffer();
+
+    let base64 = btoa(String.fromCharCode(...new Uint8Array(compressed)));
+    base64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('deck', base64);
+
+    const finalUrl = url.toString();
+
+    alert("短縮URLが生成されました！\n\n" + finalUrl);
+    console.log("生成URL:", finalUrl);
+    
+    // 必要ならクリップボードに自動コピー
+    await navigator.clipboard.writeText(finalUrl);
+    alert("URLをクリップボードにコピーしました！");
+    
+  } catch (e) {
+    alert("エラーが発生しました");
+    console.error(e);
+  }
+}
+</script>
+
+<!-- ボタン例（任意の場所に追加） -->
+<button onclick="generateShortDeckURL()">このデッキを短いURLで保存・共有</button>
 </body>
 
 </html>
