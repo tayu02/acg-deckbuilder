@@ -7,8 +7,8 @@
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #0f1a24; color: #e0e8d0; min-height: 100vh; }
-  #header { background: linear-gradient(to right, #1f2f1f, #1a2a3a); padding: 12px 16px; border-bottom: 3px solid #4a8a4a; z-index: 300; display: flex; justify-content: space-between; align-items: center; }
+  body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #0f1a24; color: #e0e8d0; height: 100vh; overflow: hidden; }
+ #header { background: linear-gradient(to right, #1f2f1f, #1a2a3a); padding: 12px 16px; border-bottom: 3px solid #4a8a4a; z-index: 300; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; }
   h1 { font-size: 19px; color: #a8e0a8; }
   #deckTotal { font-size: 16px; color: #ffcc77; font-weight: bold; }
   .search-area { padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -46,6 +46,7 @@
   .modal-scroll img { width: 100%; height: auto; display: block; }
   .modal-body { padding: 20px; line-height: 1.7; }
 #clearBtn { width: auto; padding: 6px 12px; background: #3a3a1a; border: 1px solid #8a8a3a; border-radius: 10px; color: #ffee88; font-size: 14px; font-weight: bold; cursor: pointer; }
+#deckView {height: calc(100vh - 60px); overflow-y: auto;}
 
 </style>
 </head>
@@ -2794,7 +2795,7 @@ function renderDeckView() {
     : sideEntries.map(([code, cnt]) => cardHTML(code, cnt, "side")).join("");
 
   document.getElementById("deckView").innerHTML = `
-    <div style="padding:4px 16px 100px; overflow-y:auto; height:calc(100vh - 60px);">
+    <div style="padding:4px 16px 100px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; margin-top:4px;">
         <input id="deckNameInput" type="text" placeholder="デッキ名を入力..." value="${deckName}"
           onchange="deckName=this.value"
@@ -2889,13 +2890,14 @@ function showTab(tab) {
   const tabSearch = document.getElementById("tabSearch");
   const tabDeck = document.getElementById("tabDeck");
   const header = document.getElementById("header");
-  if (tab === "search") {
+ if (tab === "search") {
     searchView.style.display = "block";
     deckView.style.display = "none";
     tabSearch.style.background = "#3a6a3a";
     tabDeck.style.background = "#1f2a35";
-    header.style.position = "sticky";
-    header.style.top = "0";
+    cardListEl.style.height = "";
+    cardListEl.style.padding = "";
+    document.body.style.overflow = "";  // ←追加
     filterAndRender();
   } else {
     searchView.style.display = "none";
@@ -2905,10 +2907,10 @@ function showTab(tab) {
     cardListEl.style.height = "0";
     cardListEl.style.padding = "0";
     cardListEl.innerHTML = "";
-    header.style.position = "sticky";
-    header.style.top = "0";
+    document.body.style.overflow = "hidden";  // ←追加
     renderDeckView();
   }
+
 }
 
 // =============== デッキ名管理 ===============
@@ -2985,17 +2987,20 @@ if (window.location.search) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 
 <!-- トップに戻るボタン -->
-<button id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})"
+<button id="scrollTopBtn" onclick="document.getElementById('searchView').scrollTop=0; document.getElementById('deckView').scrollTop=0; window.scrollTo({top:0,behavior:'smooth'});"
   style="display:none; position:fixed; bottom:24px; right:16px; z-index:500;
          width:44px; height:44px; border-radius:50%; background:#3a6a3a;
          border:2px solid #4a8a4a; color:#a8e0a8; font-size:20px; cursor:pointer;
          box-shadow:0 4px 12px rgba(0,0,0,0.5);">↑</button>
 
 <script>
-window.addEventListener('scroll', () => {
+document.addEventListener('scroll', (e) => {
   const btn = document.getElementById('scrollTopBtn');
-  btn.style.display = window.scrollY > 200 ? 'block' : 'none';
-});
+  const target = e.target;
+  const scrollTop = target.scrollTop || window.scrollY;
+  btn.style.display = scrollTop > 200 ? 'block' : 'none';
+}, true);
+
 </script>
 
 
