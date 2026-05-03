@@ -1,4 +1,4 @@
-つ<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -171,6 +171,24 @@
 </div>
 
 <script>
+
+// =============== 画像URL生成 ===============
+function getImageUrl(code) {
+  const base = "https://raw.githubusercontent.com/tayu02/acg-deckbuilder/main";
+  if (code.startsWith("BP4-")) return `${base}/BT4/${code}.png`;
+  if (code.startsWith("BP3-")) return `${base}/BT3/${code}.png`;
+  if (code.startsWith("BP2-")) return `${base}/BT2/${code}.png`;
+  if (code.startsWith("BP1-")) return `${base}/BT1/${code}.png`;
+  if (code.startsWith("RYO-")) return `${base}/領土/${code}.png`;
+  const m = code.match(/ACG-(\d+)/);
+  if (m) {
+    const num = parseInt(m[1]);
+    const acgCode = "ACG-" + String(num).padStart(3, "0");
+    const folder = num <= 30 ? "ST1ー1" : num <= 60 ? "ST1ー2" : num <= 90 ? "ST1ー3" : "ST2";
+    return `${base}/${folder}/${acgCode}.png`;
+  }
+  return "";
+}
 
 // =============== カードデータ =============== 
 // ============= BT4カードデータ =============
@@ -2181,7 +2199,7 @@ const cards = [
 },
 {
 "code": "蔵馬-ACG-131","name": "マウント・ゴリラ","type": "動物","tribe": "ゴリラ","stats": "ATK 3／DEF 4","cost": "3","condition": "平平",
-"effect": "常時（戦場）：これはコスト1のカードの効果の対象にならない。常時（戦場）：これの単独攻撃は集団防御されない。誘発（戦場）：これが戦場に出た時、戦場のコスト3以下の存在1つを対象に発動してもよい。それを破壊する。",
+"effect": "常時（戦場）：これはコスト1のカードの効果の対象にならない。常時（戦場）：これの単独攻撃は集団防御されない。誘発（戦場）これが戦場に出た時、戦場のコスト3以下の存在1つを対象に発動してもよい。それを破壊する。",
 "route_search": [],
 "general_effect": ["除去"],
 "reading": "まうんとごりら",
@@ -2331,9 +2349,8 @@ const cards = [
 "effect": "【常時（戦場）】これが戦場から墓地に置かれるなら、代わりにこれを除外する。 【誘発（戦場）】［カードがプレイされた時、あなたの手札のカードが0枚なら、あなたのデッキの上からカード1枚を公開して、そのプレイ1つを対象に発動する。］この効果でカードを公開していて、それがコストXなら、それを手札に戻して、それのコントローラーは自身の領地の領土Xつをウェイクする。Xはこの効果で公開しているカードのコストの値に等しい。 【起動（墓地）】［あなたの手札のカードが0枚なら、①を支払って発動する。］これをあなたの戦場に出す。出したなら、あなたはカード1枚を引く。このターン中、あなたはカードをプレイできない。",
 "route_search": ["咆哮ルート","フェニックスルート","赤猫ルート"],
 "general_effect": [],
-"reading": "とうかなけんえつもう",
-"image": "https://acgtcg.com/img/ACG-149"
-},
+"reading": "とうかなけんえつもう"},
+
 {
 "code": "キメサイ-ACG-150","name": "臨終の咆哮","type": "特技","tribe": "","stats": "","cost": "1","condition": "山山無",
 "effect": "【プレイ】［任意の1つを対象に発動する。］それにX点ダメージを与える。Xはこのターン中にあなたがプレイした「咆哮」を含むカードの数に等しい。 【起動（墓地）】［あなたの手札の2枚以上のすべてのカードを捨てて発動する。］これをコストを無視してプレイする。",
@@ -2426,7 +2443,7 @@ function filterAndRender() {
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
-      <img src="${card.image}" onerror="this.src='https://via.placeholder.com/105x148/112233/88cc88?text=${encodeURIComponent(card.name)}'">
+  <img src="${getImageUrl(card.code)}" onerror="this.src='https://via.placeholder.com/105x148/112233/88cc88?text=${encodeURIComponent(card.name)}'">
       <div class="card-controls">
         <button class="btn-minus">−</button>
         <div class="count">0</div>
@@ -2478,7 +2495,7 @@ function filterAndRender() {
 
 // =============== カード詳細モーダル ===============
 function showDetail(card) {
-  document.getElementById("modalImage").src = card.image;
+  document.getElementById("modalImage").src = getImageUrl(card.code);
   document.getElementById("modalName").textContent = card.name;
   document.getElementById("modalInfo").innerHTML = `番号: ${card.code}<br>タイプ: ${card.type}<br>種族: ${card.tribe || '－'}<br>ステータス: ${card.stats || '－'}`;
   document.getElementById("modalEffect").innerHTML = (card.effect || "").replace(/\n/g, '<br>');
@@ -2566,7 +2583,7 @@ function sortByType(entries) {
   return result;
 }
 
-// =============== デッキ画像生成（テキスト形式・CORS回避） ===============
+// =============== デッキ画像生成（GitHub画像使用） ===============
 async function generateDeckImage() {
   const mainEntries = sortByType(getDeckMain());
   const sideEntries = sortByType(getDeckSide());
@@ -2621,8 +2638,8 @@ async function generateDeckImage() {
     ctx.strokeRect(x + BORDER/2, y + BORDER/2, w - BORDER, h - BORDER);
   }
 
-  // カードをテキストで描画（CORS問題を完全回避）
-  function drawCardsText(entries, startX, startY, cols, label, labelColor) {
+  // カード画像を読み込んで描画
+  async function drawCards(entries, startX, startY, cols, label, labelColor) {
     ctx.fillStyle = labelColor;
     ctx.font = "bold 12px sans-serif";
     ctx.textAlign = "left";
@@ -2636,64 +2653,47 @@ async function generateDeckImage() {
       const x = startX + PAD + col * (CARD_W + PAD);
       const y = startY + LABEL_H + row * (CARD_H + PAD);
 
-      // カード背景
-      ctx.fillStyle = "#1f2a3f";
-      ctx.fillRect(x, y, CARD_W, CARD_H);
-
-      // カード枠
-      ctx.strokeStyle = "#3a6a4a";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, CARD_W, CARD_H);
-
-      // カード名（折り返し）
-      ctx.fillStyle = "#e0e8d0";
-      ctx.font = "bold 8px sans-serif";
-      ctx.textAlign = "center";
-      const name = card ? card.name : code;
-      const maxWidth = CARD_W - 4;
-      let line = "";
-      let lineY = y + 14;
-      for (const char of name) {
-        const test = line + char;
-        if (ctx.measureText(test).width > maxWidth && line !== "") {
-          ctx.fillText(line, x + CARD_W/2, lineY);
-          line = char;
-          lineY += 10;
-          if (lineY > y + CARD_H - 20) break;
-        } else {
-          line = test;
-        }
-      }
-      if (line) ctx.fillText(line, x + CARD_W/2, lineY);
-
-      // コード
-      ctx.fillStyle = "#88aacc";
-      ctx.font = "7px sans-serif";
-      ctx.textAlign = "center";
-      if (card) {
-        ctx.fillText(card.code.split("-").pop(), x + CARD_W/2, y + CARD_H - 18);
-      }
-
-      // コスト
-      if (card && card.cost) {
-        ctx.fillStyle = "#ffdd44";
-        ctx.font = "bold 9px sans-serif";
-        ctx.fillText(`コスト${card.cost}`, x + CARD_W/2, y + CARD_H - 8);
-      }
-
-      // 枚数バッジ
-      ctx.fillStyle = "rgba(0,0,0,0.85)";
-      ctx.fillRect(x + CARD_W - 18, y, 18, 14);
-      ctx.fillStyle = "#ffdd88";
-      ctx.font = "bold 10px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(`×${cnt}`, x + CARD_W - 9, y + 11);
+      await new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          // カード画像を描画
+          ctx.drawImage(img, x, y, CARD_W, CARD_H);
+          // 枚数バッジ
+          ctx.fillStyle = "rgba(0,0,0,0.8)";
+          ctx.fillRect(x + CARD_W - 20, y, 20, 16);
+          ctx.fillStyle = "#ffdd88";
+          ctx.font = "bold 10px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(`×${cnt}`, x + CARD_W - 10, y + 12);
+          resolve();
+        };
+        img.onerror = () => {
+          // 画像読み込み失敗時はテキスト表示
+          ctx.fillStyle = "#1f2a3f";
+          ctx.fillRect(x, y, CARD_W, CARD_H);
+          ctx.strokeStyle = "#3a6a4a";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, CARD_W, CARD_H);
+          ctx.fillStyle = "#e0e8d0";
+          ctx.font = "bold 8px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(card ? card.name.substring(0, 6) : code, x + CARD_W/2, y + CARD_H/2);
+          ctx.fillStyle = "rgba(0,0,0,0.8)";
+          ctx.fillRect(x + CARD_W - 20, y, 20, 16);
+          ctx.fillStyle = "#ffdd88";
+          ctx.font = "bold 10px sans-serif";
+          ctx.fillText(`×${cnt}`, x + CARD_W - 10, y + 12);
+          resolve();
+        };
+        img.src = getImageUrl(code);
+      });
     }
   }
 
-  // メインデッキエリア
+  // メインデッキ描画
   drawBorder(0, startY, LEFT_W, mainAreaH, "#4a8a4a");
-  drawCardsText(mainEntries, 0, startY, MAIN_COLS,
+  await drawCards(mainEntries, 0, startY, MAIN_COLS,
     `🃏 メインデッキ (${mainEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#a8e0a8");
 
   // 区切り線
@@ -2704,11 +2704,12 @@ async function generateDeckImage() {
   ctx.lineTo(LEFT_W, startY + Math.max(mainAreaH, rightH));
   ctx.stroke();
 
-  // サイドデッキエリア
+  // サイドデッキ描画
   drawBorder(LEFT_W, startY, RIGHT_W, sideAreaH, "#6a6a9a");
-  drawCardsText(sideEntries, LEFT_W, startY, SUB_COLS,
+  await drawCards(sideEntries, LEFT_W, startY, SUB_COLS,
     `📦 サイド (${sideEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#aaccff");
 
+  // 区切り線
   ctx.strokeStyle = "#444";
   ctx.lineWidth = BORDER;
   ctx.beginPath();
@@ -2716,9 +2717,9 @@ async function generateDeckImage() {
   ctx.lineTo(LEFT_W + RIGHT_W, startY + sideAreaH);
   ctx.stroke();
 
-  // 領土デッキエリア
+  // 領土デッキ描画
   drawBorder(LEFT_W, startY + sideAreaH, RIGHT_W, terrAreaH, "#8a6a2a");
-  drawCardsText(territoryEntries, LEFT_W, startY + sideAreaH, SUB_COLS,
+  await drawCards(territoryEntries, LEFT_W, startY + sideAreaH, SUB_COLS,
     `🌍 領土 (${territoryEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#e0c060");
 
   return canvas;
@@ -2759,7 +2760,7 @@ function renderDeckView() {
   function cardHTML(code, cnt, location) {
     const card = cards.find(c => c.code === code);
     const name = card ? card.name : code;
-    const img = card ? card.image : "";
+    const img = card ? getImageUrl(card.code) : "";
     const isTerritory = card?.type === "領土";
     const other = location === "main" ? "side" : "main";
     const otherLabel = location === "main" ? "→サイド" : "→本";
@@ -2774,7 +2775,7 @@ function renderDeckView() {
           <div style="font-size:12px; color:#aaa;">${code}</div>
         </div>
         <div style="display:flex; align-items:center; gap:6px;">
-          <button onclick="changeDeckCount('${code}',-1)" style="width:24px;height:24px;background:#c85a5a;border:none;borde-radius:4px;color:white;font-size:14px;cursor:pointer;">−</button>
+          <button onclick="changeDeckCount('${code}',-1)" style="width:24px;height:24px;background:#c85a5a;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">−</button>
           <span style="color:#ffdd88;font-weight:bold;min-width:20px;text-align:center;">${cnt}</span>
           <button onclick="changeDeckCount('${code}',1)" style="width:24px;height:24px;background:#4caf50;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">＋</button>
           ${moveBtn}
@@ -3009,48 +3010,7 @@ window.addEventListener('scroll', () => {
   </div>
 </div>
 
-<script>
-// === デッキ短縮URL生成（追加部分）===
-async function generateShortDeckURL() {
-  // ★★★ ここをあなたの現在のデッキデータに合わせてください ★★★
-  const deckData = {
-    name: "デッキ名をここに入力",
-    main: [],   // ここにあなたのメイン Deck の配列を入れる
-    // extra, side など必要な項目があれば追加
-  };
 
-  // 以下は変更不要
-  try {
-    const jsonStr = JSON.stringify(deckData);
-    
-    const compressed = await new Response(
-      new Blob([jsonStr]).stream().pipeThrough(new CompressionStream("gzip"))
-    ).arrayBuffer();
-
-    let base64 = btoa(String.fromCharCode(...new Uint8Array(compressed)));
-    base64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-    const url = new URL(window.location.href);
-    url.searchParams.set('deck', base64);
-
-    const finalUrl = url.toString();
-
-    alert("短縮URLが生成されました！\n\n" + finalUrl);
-    console.log("生成URL:", finalUrl);
-    
-    // 必要ならクリップボードに自動コピー
-    await navigator.clipboard.writeText(finalUrl);
-    alert("URLをクリップボードにコピーしました！");
-    
-  } catch (e) {
-    alert("エラーが発生しました");
-    console.error(e);
-  }
-}
-</script>
-
-<!-- ボタン例（任意の場所に追加） -->
-<button onclick="generateShortDeckURL()">このデッキを短いURLで保存・共有</button>
 </body>
 
 </html>
