@@ -2978,10 +2978,13 @@ function copyDeckURLAndClose() {
 
 // =============== 初期化処理 ===============
 populateDropdown();
-setTimeout(() => filterAndRender(), 100);
-if (window.location.search) {
-  decodeDeck(window.location.href);
-}
+setTimeout(() => {
+  filterAndRender();
+  if (window.location.search) {
+    decodeDeck(window.location.href);
+  }
+}, 100);
+
 
 </script>
 
