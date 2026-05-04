@@ -49,6 +49,9 @@
 #deckView { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 #searchView { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
+
+
+
 </style>
 </head>
 <body>
@@ -2800,7 +2803,8 @@ function renderDeckView() {
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; margin-top:4px;">
         <input id="deckNameInput" type="text" placeholder="デッキ名を入力..." value="${deckName}"
           onchange="deckName=this.value"
-          style="flex:1; margin-right:8px; padding:6px 10px; background:#1f2a35; border:1px solid #4a8a4a; border-radius:8px; color:white; font-size:14px;">
+          style="flex:1; margin-right:8px; padding:6px 10px; background:#1f2a35; border:1px solid #4a8a4a; border-(tab) {
+  const searchView = documentradius:8px; color:white; font-size:14px;">
         <button onclick="copyDeckURL()" style="padding:6px 12px; background:#1a3a5a; border:1px solid #4a8aaa; border-radius:8px; color:#88ccff; font-size:13px; cursor:pointer; margin-right:8px;">🔗 URL</button>
         <button onclick="resetDeck()" style="padding:6px 12px; background:#5a1a1a; border:1px solid #aa4444; border-radius:8px; color:#ffaaaa; font-size:14px; cursor:pointer;">🗑</button>
       </div>
@@ -2890,28 +2894,32 @@ function showTab(tab) {
   const deckView = document.getElementById("deckView");
   const tabSearch = document.getElementById("tabSearch");
   const tabDeck = document.getElementById("tabDeck");
-  const header = document.getElementById("header");
- if (tab === "search") {
+
+  if (tab === "search") {
     searchView.style.display = "block";
     deckView.style.display = "none";
     tabSearch.style.background = "#3a6a3a";
     tabDeck.style.background = "#1f2a35";
-    cardListEl.style.height = "";
-    cardListEl.style.padding = "";
-    document.body.style.overflow = "";  // ←追加
+
+    // 検索タブ用スクロール設定（元の調整を尊重）
+    document.body.style.overflow = "auto";
+    cardListEl.style.height = "";           // 自動に戻す
+    cardListEl.style.padding = "8px 8px 100px";  // 元の値に戻す
+
     filterAndRender();
   } else {
     searchView.style.display = "none";
     deckView.style.display = "block";
     tabSearch.style.background = "#1f2a35";
     tabDeck.style.background = "#3a6a3a";
+
+    // デッキタブ用スクロール設定
+    document.body.style.overflow = "auto";
     cardListEl.style.height = "0";
     cardListEl.style.padding = "0";
-    cardListEl.innerHTML = "";
-    document.body.style.overflow = "hidden";  // ←追加
+
     renderDeckView();
   }
-
 }
 
 // =============== デッキ名管理 ===============
@@ -2984,7 +2992,6 @@ setTimeout(() => {
     decodeDeck(window.location.href);
   }
 }, 100);
-
 
 </script>
 
