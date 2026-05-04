@@ -2799,7 +2799,7 @@ function renderDeckView() {
     : sideEntries.map(([code, cnt]) => cardHTML(code, cnt, "side")).join("");
 
   document.getElementById("deckView").innerHTML = `
-    <div style="padding:4px 16px 100px;">
+    <div style="padding:4px 16px 100px; height:100%; box-sizing:border-box;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; margin-top:4px;">
         <input id="deckNameInput" type="text" placeholder="デッキ名を入力..." value="${deckName}"
           onchange="deckName=this.value"
