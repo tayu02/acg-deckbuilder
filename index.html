@@ -46,8 +46,8 @@
   .modal-scroll img { width: 100%; height: auto; display: block; }
   .modal-body { padding: 20px; line-height: 1.7; }
 #clearBtn { width: auto; padding: 6px 12px; background: #3a3a1a; border: 1px solid #8a8a3a; border-radius: 10px; color: #ffee88; font-size: 14px; font-weight: bold; cursor: pointer; }
-#deckView { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-#searchView { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#deckView { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: none; }
+#searchView { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
 
 
@@ -2798,7 +2798,7 @@ function renderDeckView() {
     : sideEntries.map(([code, cnt]) => cardHTML(code, cnt, "side")).join("");
 
   document.getElementById("deckView").innerHTML = `
-    <div style="padding:4px 16px 100px; height:100%; box-sizing:border-box;">
+    <div style="padding:4px 16px 100px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; margin-top:4px;">
         <input id="deckNameInput" type="text" placeholder="デッキ名を入力..." value="${deckName}"
           onchange="deckName=this.value"
