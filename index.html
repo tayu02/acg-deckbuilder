@@ -2905,8 +2905,8 @@ function saveDeckImage() {
   const canvas = document.querySelector("#deckImageContainer canvas");
   if (!canvas) { alert("先に画像を生成してください"); return; }
   const a = document.createElement("a");
-  a.href = canvas.toDataURL("image/png");
-  a.download = (deckName || "デッキレシピ") + ".png";
+  a.href = canvas.toDataURL("image/jpeg", 0.92);
+  a.download = (deckName || "デッキレシピ") + ".jpg";
   a.click();
 }
 
