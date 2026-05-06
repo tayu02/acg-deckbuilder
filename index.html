@@ -107,10 +107,10 @@
     </select>
   <select id="searchTerritory" class="stat-select">
     <option value="">領土</option>
-    <option value="平野">平野</option>
     <option value="山岳">山岳</option>
     <option value="水生">水生</option>
     <option value="森林">森林</option>
+    <option value="平野">平野</option>
   </select>
 </div>
 
@@ -2607,12 +2607,6 @@ function sortByType(entries) {
 }
 
 // =============== デッキ画像生成（GitHub画像使用） ===============
-async function generateDeckImage() {
-  const mainEntries = sortByType(getDeckMain());
-  const sideEntries = sortByType(getDeckSide());
-  const territoryEntries = sortCards(getDeckTerritory());
-  
-}
 async function generateDeckImage() {
   const mainEntries = sortByType(getDeckMain());
   const sideEntries = sortByType(getDeckSide());
