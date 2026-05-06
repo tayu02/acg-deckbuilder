@@ -2619,8 +2619,7 @@ async function generateDeckImage() {
   const territoryEntries = sortCards(getDeckTerritory());
 
   // A3サイズ固定（横向き）
-  const TOTAL_W = 3000;
-  const TOTAL_H = 3400;
+    const TOTAL_W = 2800;
 
   const CARD_W = 310;
   const CARD_H = 435;
@@ -2630,6 +2629,16 @@ async function generateDeckImage() {
   const SUB_COLS = 2;
   const LABEL_H = 50;
   const HEADER_H = 80;
+
+  const mainRows = Math.ceil(Math.max(mainEntries.length, 1) / MAIN_COLS);
+  const sideRows = Math.ceil(Math.max(sideEntries.length, 1) / SUB_COLS);
+  const terrRows = Math.ceil(Math.max(territoryEntries.length, 1) / SUB_COLS);
+  const sideAreaH = LABEL_H + sideRows * (CARD_H + PAD) + PAD;
+  const terrAreaH = LABEL_H + terrRows * (CARD_H + PAD) + PAD;
+  const mainAreaH = LABEL_H + mainRows * (CARD_H + PAD) + PAD;
+  const rightH = sideAreaH + terrAreaH;
+
+  const TOTAL_H = HEADER_H + Math.max(mainAreaH, rightH) + 50;
 
   const canvas = document.createElement("canvas");
   canvas.width = TOTAL_W;
