@@ -49,7 +49,25 @@
 #clearBtn { width: auto; padding: 6px 12px; background: #3a3a1a; border: 1px solid #8a8a3a; border-radius: 10px; color: #ffee88; font-size: 14px; font-weight: bold; cursor: pointer; }
 #deckView { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: none; }
 #searchView { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-
+@media (min-width: 768px) {
+  body { font-size: 16px; }
+  #header { padding: 16px 24px; }
+  #searchView { max-width: 900px; margin: 0 auto; }
+  .search-input { font-size: 16px; padding: 8px 12px; }
+  .stat-select { font-size: 14px; padding: 10px 8px; }
+  #cardList {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 4px;
+    padding: 12px 12px 100px;
+    height: calc(100vh - 220px);
+  }
+  .card { height: 220px; }
+  .card img { height: 170px; }
+  .card-controls button { width: 36px; height: 36px; font-size: 18px; }
+  .count { font-size: 16px; }
+  #deckView { max-width: 900px; margin: 0 auto; }
+  #clearBtn { font-size: 16px; padding: 8px 16px; }
+}
 
 
 </style>
