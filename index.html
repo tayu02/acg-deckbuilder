@@ -2876,11 +2876,9 @@ function renderDeckView() {
     const isTerritory = card?.type === "領土";
 
     let moveBtns = "";
-    if (!isTerritory) {
-      if (location === "main") {
-        moveBtns = `
-          <button onclick="moveDeck('${code}','side')" style="padding:2px 8px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:12px;cursor:pointer;">→サイド</button>
-          <button onclick="moveDeck('${code}','side',true)" style="padding:2px 8px;background:#2a2a4a;border:1px solid #5a5a8a;border-radius:6px;color:#99b;font-size:12px;cursor:pointer;">→全サイド</button>`;
+    ifmoveBtns = `
+  <button onclick="moveDeck('${code}','side')" style="padding:2px 5px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:11px;cursor:pointer;">→サイド</button>
+  <button onclick="moveDeck('${code}','side',true)" style="padding:2px 5px;background:#2a2a4a;border:1px solid #5a5a8a;border-radius:6px;color:#99b;font-size:11px;cursor:pointer;">→全サイド</button>`;
       } else {
         moveBtns = `
           <button onclick="moveDeck('${code}','main')" style="padding:2px 8px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:12px;cursor:pointer;">→本</button>`;
@@ -2895,9 +2893,9 @@ function renderDeckView() {
           <div style="font-size:10px; color:#aaa; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${code}</div>
         </div>
         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
-          <button onclick="changeDeckCount('${code}',-1)" style="width:24px;height:24px;background:#c85a5a;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">−</button>
+                    <button onclick="changeDeckCount('${code}',-1,'${location}')" style="width:24px;height:24px;background:#c85a5a;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">−</button>
           <span style="color:#ffdd88;font-weight:bold;min-width:20px;text-align:center;">${cnt}</span>
-          <button onclick="changeDeckCount('${code}',1)" style="width:24px;height:24px;background:#4caf50;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">＋</button>
+          <button onclick="changeDeckCount('${code}',1,'${location}')" style="width:24px;height:24px;background:#4caf50;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">＋</button>
           ${moveBtns}
         </div>
       </div>`;
@@ -2959,13 +2957,21 @@ function renderDeckView() {
 }
 
 // =============== デッキ枚数変更（デッキ画面用） ===============
-function changeDeckCount(code, delta) {
-  deck[code] = (deck[code] || 0) + delta;
-  if (deck[code] < 0) deck[code] = 0;
-  const isTerritory = cards.find(c => c.code === code)?.type === "領土";
-  const isBasicTerritory = isTerritory && ["RYO-001","RYO-002","RYO-003","RYO-004"].includes(code);
-  const limit = isTerritory ? (isBasicTerritory ? 10 : 4) : maxCopies;
-  if (deck[code] > limit) deck[code] = limit;
+function changeDeckCount(code, delta, location) {
+  if (location === "side") {
+    sideDeck[code] = (sideDeck[code] || 0) + delta;
+    if (sideDeck[code] < 0) sideDeck[code] = 0;
+    const sideTotal = Object.values(sideDeck).reduce((a, b) => a + b, 0);
+    if (sideTotal > 15) sideDeck[code] -= delta;
+    if (sideDeck[code] === 0) delete sideDeck[code];
+  } else {
+    deck[code] = (deck[code] || 0) + delta;
+    if (deck[code] < 0) deck[code] = 0;
+    const isTerritory = cards.find(c => c.code === code)?.type === "領土";
+    const isBasicTerritory = isTerritory && ["RYO-001","RYO-002","RYO-003","RYO-004"].includes(code);
+    const limit = isTerritory ? (isBasicTerritory ? 10 : 4) : maxCopies;
+    if (deck[code] > limit) deck[code] = limit;
+  }
   updateDeckTotal();
   renderDeckView();
 }
