@@ -2612,17 +2612,16 @@ async function generateDeckImage() {
   const sideEntries = sortByType(getDeckSide());
   const territoryEntries = sortCards(getDeckTerritory());
 
-  // A3サイズ固定（横向き）
-    const TOTAL_W = 2800;
-
   const CARD_W = 310;
   const CARD_H = 435;
   const PAD = 12;
   const BORDER = 4;
-  const MAIN_COLS = 6;
+  const MAIN_COLS = 5;
   const SUB_COLS = 2;
   const LABEL_H = 50;
   const HEADER_H = 80;
+  const LINE_H = 30;
+  const TEXT_SIZE = 20;
 
   const mainRows = Math.ceil(Math.max(mainEntries.length, 1) / MAIN_COLS);
   const sideRows = Math.ceil(Math.max(sideEntries.length, 1) / SUB_COLS);
@@ -2632,6 +2631,11 @@ async function generateDeckImage() {
   const mainAreaH = LABEL_H + mainRows * (CARD_H + PAD) + PAD;
   const rightH = sideAreaH + terrAreaH;
 
+  // 各エリアの幅
+  const MAIN_W = PAD + MAIN_COLS * (CARD_W + PAD);
+  const CARD_W2 = PAD + SUB_COLS * (CARD_W + PAD);
+  const LIST_W = 500;
+  const TOTAL_W = MAIN_W + CARD_W2 + LIST_W + PAD * 2;
   const TOTAL_H = HEADER_H + Math.max(mainAreaH, rightH) + 50;
 
   const canvas = document.createElement("canvas");
@@ -2643,15 +2647,8 @@ async function generateDeckImage() {
   await new Promise(resolve => {
     const bg = new Image();
     bg.crossOrigin = "anonymous";
-    bg.onload = () => {
-      ctx.drawImage(bg, 0, 0, TOTAL_W, TOTAL_H);
-      resolve();
-    };
-    bg.onerror = () => {
-      ctx.fillStyle = "#0f1a24";
-      ctx.fillRect(0, 0, TOTAL_W, TOTAL_H);
-      resolve();
-    };
+    bg.onload = () => { ctx.drawImage(bg, 0, 0, TOTAL_W, TOTAL_H); resolve(); };
+    bg.onerror = () => { ctx.fillStyle = "#0f1a24"; ctx.fillRect(0, 0, TOTAL_W, TOTAL_H); resolve(); };
     bg.src = "https://tayu02.github.io/acg-deckbuilder/IMG_6935.png";
   });
 
@@ -2666,8 +2663,8 @@ async function generateDeckImage() {
   ctx.fillText(deckName || "デッキレシピ", TOTAL_W / 2, 42);
 
   const startY = HEADER_H;
-  const LEFT_W = PAD + MAIN_COLS * (CARD_W + PAD) + PAD;
-  const RIGHT_W = TOTAL_W - LEFT_W - BORDER;
+  const MID_X = MAIN_W + PAD;
+  const LIST_X = MAIN_W + CARD_W2 + PAD * 2;
 
   function drawBorder(x, y, w, h, color) {
     ctx.strokeStyle = color;
@@ -2677,9 +2674,9 @@ async function generateDeckImage() {
 
   async function drawCards(entries, startX, startY, cols, label, labelColor) {
     ctx.fillStyle = labelColor;
-    ctx.font = "bold 16px sans-serif";
+    ctx.font = "bold 24px sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(label, startX + PAD, startY + 22);
+    ctx.fillText(label, startX + PAD, startY + 30);
 
     for (let i = 0; i < entries.length; i++) {
       const [code, cnt] = entries[i];
@@ -2694,12 +2691,12 @@ async function generateDeckImage() {
         img.crossOrigin = "anonymous";
         img.onload = () => {
           ctx.drawImage(img, x, y, CARD_W, CARD_H);
-          ctx.fillStyle = "rgba(0,0,0,0.8)";
-          ctx.fillRect(x + CARD_W - 28, y, 28, 20);
+          ctx.fillStyle = "rgba(0,0,0,0.85)";
+          ctx.fillRect(x, y + CARD_H - 32, CARD_W, 32);
           ctx.fillStyle = "#ffdd88";
-          ctx.font = "bold 13px sans-serif";
+          ctx.font = "bold 22px sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText(`×${cnt}`, x + CARD_W - 14, y + 15);
+          ctx.fillText(`×${cnt}`, x + CARD_W / 2, y + CARD_H - 8);
           resolve();
         };
         img.onerror = () => {
@@ -2709,14 +2706,14 @@ async function generateDeckImage() {
           ctx.lineWidth = 1;
           ctx.strokeRect(x, y, CARD_W, CARD_H);
           ctx.fillStyle = "#e0e8d0";
-          ctx.font = "bold 10px sans-serif";
+          ctx.font = "bold 14px sans-serif";
           ctx.textAlign = "center";
           ctx.fillText(card ? card.name.substring(0, 6) : code, x + CARD_W/2, y + CARD_H/2);
-          ctx.fillStyle = "rgba(0,0,0,0.8)";
-          ctx.fillRect(x + CARD_W - 28, y, 28, 20);
+          ctx.fillStyle = "rgba(0,0,0,0.85)";
+          ctx.fillRect(x, y + CARD_H - 32, CARD_W, 32);
           ctx.fillStyle = "#ffdd88";
-          ctx.font = "bold 13px sans-serif";
-          ctx.fillText(`×${cnt}`, x + CARD_W - 14, y + 15);
+          ctx.font = "bold 22px sans-serif";
+          ctx.fillText(`×${cnt}`, x + CARD_W / 2, y + CARD_H - 8);
           resolve();
         };
         img.src = getImageUrl(code);
@@ -2725,68 +2722,95 @@ async function generateDeckImage() {
   }
 
   // メインデッキ描画
-  drawBorder(0, startY, LEFT_W, mainAreaH, "#4a8a4a");
+  drawBorder(0, startY, MAIN_W, mainAreaH, "#4a8a4a");
   await drawCards(mainEntries, 0, startY, MAIN_COLS,
     `🃏 メインデッキ (${mainEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#a8e0a8");
 
-  // 縦区切り線
+  // 縦区切り線（メインと中央）
   ctx.strokeStyle = "#666";
   ctx.lineWidth = BORDER;
   ctx.beginPath();
-  ctx.moveTo(LEFT_W, startY);
-  ctx.lineTo(LEFT_W, TOTAL_H);
+  ctx.moveTo(MAIN_W + PAD/2, startY);
+  ctx.lineTo(MAIN_W + PAD/2, TOTAL_H);
   ctx.stroke();
 
   // サイドデッキ描画
-  drawBorder(LEFT_W, startY, RIGHT_W, sideAreaH, "#6a6a9a");
-  await drawCards(sideEntries, LEFT_W, startY, SUB_COLS,
+  drawBorder(MID_X, startY, CARD_W2, sideAreaH, "#6a6a9a");
+  await drawCards(sideEntries, MID_X, startY, SUB_COLS,
     `📦 サイド (${sideEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#aaccff");
 
   // 横区切り線
   ctx.strokeStyle = "#666";
   ctx.lineWidth = BORDER;
   ctx.beginPath();
-  ctx.moveTo(LEFT_W, startY + sideAreaH);
-  ctx.lineTo(TOTAL_W, startY + sideAreaH);
+  ctx.moveTo(MID_X, startY + sideAreaH);
+  ctx.lineTo(MID_X + CARD_W2, startY + sideAreaH);
   ctx.stroke();
 
   // 領土デッキ描画
-  drawBorder(LEFT_W, startY + sideAreaH, RIGHT_W, terrAreaH, "#8a6a2a");
-  await drawCards(territoryEntries, LEFT_W, startY + sideAreaH, SUB_COLS,
+  drawBorder(MID_X, startY + sideAreaH, CARD_W2, terrAreaH, "#8a6a2a");
+  await drawCards(territoryEntries, MID_X, startY + sideAreaH, SUB_COLS,
     `🌍 領土 (${territoryEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#e0c060");
 
-  // =============== テキスト一覧描画 ===============
-  const LIST_X = LEFT_W + PAD + SUB_COLS * (CARD_W + PAD) + PAD * 2;
-  const LIST_W = TOTAL_W - LIST_X - PAD;
-  const LINE_H = 28;
-  const TEXT_SIZE = 20;
+  // 縦区切り線（中央とリスト）
+  ctx.strokeStyle = "#666";
+  ctx.lineWidth = BORDER;
+  ctx.beginPath();
+  ctx.moveTo(LIST_X - PAD/2, startY);
+  ctx.lineTo(LIST_X - PAD/2, TOTAL_H);
+  ctx.stroke();
+
+  // =============== テキスト一覧 ===============
+  let listY = startY + 30;
+
+  // メイン一覧
+  ctx.fillStyle = "#a8e0a8";
+  ctx.font = "bold 22px sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText(`🃏 メイン (${mainEntries.reduce((a,[,c])=>a+c,0)}枚)`, LIST_X, listY);
+  listY += LINE_H + 4;
+
+  mainEntries.forEach(([code, cnt]) => {
+    const card = cards.find(c => c.code === code);
+    const name = card ? card.name : code;
+    ctx.fillStyle = "#e0e8d0";
+    ctx.font = `${TEXT_SIZE}px sans-serif`;
+    ctx.fillText(`${name}  ×${cnt}`, LIST_X, listY);
+    listY += LINE_H;
+  });
+
+  listY += 16;
 
   // サイド一覧
   ctx.fillStyle = "#aaccff";
-  ctx.font = `bold ${TEXT_SIZE}px sans-serif`;
-  ctx.textAlign = "left";
-  ctx.fillText("📦 サイド", LIST_X, startY + 28);
+  ctx.font = "bold 22px sans-serif";
+  ctx.fillText(`📦 サイド (${sideEntries.reduce((a,[,c])=>a+c,0)}枚)`, LIST_X, listY);
+  listY += LINE_H + 4;
 
-  sideEntries.forEach(([code, cnt], i) => {
+  sideEntries.forEach(([code, cnt]) => {
     const card = cards.find(c => c.code === code);
     const name = card ? card.name : code;
     ctx.fillStyle = "#e0e8d0";
     ctx.font = `${TEXT_SIZE}px sans-serif`;
-    ctx.fillText(`${name}  ×${cnt}`, LIST_X, startY + LABEL_H + i * LINE_H + TEXT_SIZE);
+    ctx.fillText(`${name}  ×${cnt}`, LIST_X, listY);
+    listY += LINE_H;
   });
 
-  // 領土一覧
-  const terrListY = startY + sideAreaH;
-  ctx.fillStyle = "#e0c060";
-  ctx.font = `bold ${TEXT_SIZE}px sans-serif`;
-  ctx.fillText("🌍 領土", LIST_X, terrListY + 28);
+  listY += 16;
 
-  territoryEntries.forEach(([code, cnt], i) => {
+  // 領土一覧
+  ctx.fillStyle = "#e0c060";
+  ctx.font = "bold 22px sans-serif";
+  ctx.fillText(`🌍 領土 (${territoryEntries.reduce((a,[,c])=>a+c,0)}枚)`, LIST_X, listY);
+  listY += LINE_H + 4;
+
+  territoryEntries.forEach(([code, cnt]) => {
     const card = cards.find(c => c.code === code);
     const name = card ? card.name : code;
     ctx.fillStyle = "#e0e8d0";
     ctx.font = `${TEXT_SIZE}px sans-serif`;
-    ctx.fillText(`${name}  ×${cnt}`, LIST_X, terrListY + LABEL_H + i * LINE_H + TEXT_SIZE);
+    ctx.fillText(`${name}  ×${cnt}`, LIST_X, listY);
+    listY += LINE_H;
   });
 
   return canvas;
