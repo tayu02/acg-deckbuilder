@@ -2614,7 +2614,7 @@ async function generateDeckImage() {
 
   // A3サイズ固定（横向き）・カード大きめ
   const TOTAL_W = 3200;
-  const TOTAL_H = 2000;
+  const TOTAL_H = 2600;
 
   const CARD_W = 160;
   const CARD_H = 224;
@@ -2912,8 +2912,23 @@ async function showDeckImage() {
   container.innerHTML = "<p style='color:#aaa;padding:20px;'>画像生成中...</p>";
   modal.style.display = "flex";
   const canvas = await generateDeckImage();
-  canvas.style.maxWidth = "100%";
-  canvas.style.borderRadius = "8px";
+  
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:black;z-index:9999;overflow-y:auto;";
+  const msg = document.createElement("p");
+  msg.textContent = "長押しで「写真に保存」→タップで閉じる";
+  msg.style.cssText = "color:white;text-align:center;padding:16px;font-size:16px;";
+  const img = document.createElement("img");
+  img.src = dataUrl;
+  img.style.cssText = "width:100%;display:block;";
+  overlay.appendChild(msg);
+  overlay.appendChild(img);
+  overlay.addEventListener("click", () => {
+    overlay.remove();
+    modal.style.display = "none";
+  });
+  document.body.appendChild(overlay);
   container.innerHTML = "";
   container.appendChild(canvas);
 }
