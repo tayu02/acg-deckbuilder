@@ -2761,8 +2761,8 @@ async function generateDeckImage() {
   const territoryEntries = sortCards(getDeckTerritory());
 
   // A3サイズ固定（横向き）
-  const TOTAL_W = 2800;
-  const TOTAL_H = 1440;
+  const TOTAL_W = 3200;
+  const TOTAL_H = 2000;
 
   const CARD_W = 310;
   const CARD_H = 435;
@@ -2923,8 +2923,12 @@ function saveDeckImage() {
   const canvas = document.querySelector("#deckImageContainer canvas");
   if (!canvas) { alert("先に画像を生成してください"); return; }
   const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-  const win = window.open();
-  win.document.write(`<img src="${dataUrl}" style="max-width:100%;">`);
+  const img = document.createElement("img");
+  img.src = dataUrl;
+  img.style.cssText = "position:fixed;top:0;left:0;width:100%;z-index:9999;";
+  document.body.appendChild(img);
+  img.addEventListener("click", () => img.remove());
+  alert("画像を長押しして「写真に保存」してください。タップすると閉じます。");
 }
 
 // =============== デッキ画面描画 ===============
