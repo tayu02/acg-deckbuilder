@@ -2620,7 +2620,7 @@ async function generateDeckImage() {
   const SUB_COLS = 2;
   const LABEL_H = 50;
   const HEADER_H = 80;
-  const LINE_H = 30;
+  const LINE_H = 40;
   const TEXT_SIZE = 40;
 
   const mainRows = Math.ceil(Math.max(mainEntries.length, 1) / MAIN_COLS);
@@ -2823,22 +2823,25 @@ async function showDeckImage() {
   container.innerHTML = "<p style='color:#aaa;padding:20px;'>画像生成中...</p>";
   modal.style.display = "flex";
   const canvas = await generateDeckImage();
-  
   const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
   const overlay = document.createElement("div");
   overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:black;z-index:9999;overflow-y:auto;";
   const msg = document.createElement("p");
-  msg.textContent = "長押しで「写真に保存」→タップで閉じる";
+  msg.textContent = "保存";
   msg.style.cssText = "color:white;text-align:center;padding:16px;font-size:16px;";
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "✕ 閉じる";
+  closeBtn.style.cssText = "display:block;margin:0 auto 12px;padding:10px 24px;background:#3a3a1a;border:1px solid #8a8a3a;border-radius:10px;color:#ffee88;font-size:16px;cursor:pointer;";
+  closeBtn.addEventListener("click", () => {
+    overlay.remove();
+    modal.style.display = "none";
+  });
   const img = document.createElement("img");
   img.src = dataUrl;
   img.style.cssText = "width:100%;display:block;";
   overlay.appendChild(msg);
+  overlay.appendChild(closeBtn);
   overlay.appendChild(img);
-  overlay.addEventListener("click", () => {
-    overlay.remove();
-    modal.style.display = "none";
-  });
   document.body.appendChild(overlay);
   container.innerHTML = "";
   container.appendChild(canvas);
