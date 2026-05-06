@@ -2612,18 +2612,18 @@ async function generateDeckImage() {
   const sideEntries = sortByType(getDeckSide());
   const territoryEntries = sortCards(getDeckTerritory());
 
-  // A3サイズ固定（横向き）
-  const TOTAL_W = 1587;
-  const TOTAL_H = 1123;
+  // A3サイズ固定（横向き）・カード大きめ
+  const TOTAL_W = 2480;
+  const TOTAL_H = 1754;
 
-  const CARD_W = 100;
-  const CARD_H = 140;
-  const PAD = 8;
-  const BORDER = 3;
+  const CARD_W = 160;
+  const CARD_H = 224;
+  const PAD = 10;
+  const BORDER = 4;
   const MAIN_COLS = 8;
   const SUB_COLS = 4;
-  const LABEL_H = 30;
-  const HEADER_H = 60;
+  const LABEL_H = 40;
+  const HEADER_H = 70;
 
   const canvas = document.createElement("canvas");
   canvas.width = TOTAL_W;
