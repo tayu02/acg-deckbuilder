@@ -2813,10 +2813,18 @@ function renderDeckView() {
     const name = card ? card.name : code;
     const img = card ? getImageUrl(card.code) : "";
     const isTerritory = card?.type === "領土";
-    const other = location === "main" ? "side" : "main";
-    const otherLabel = location === "main" ? "→サイド" : "→本";
-    const moveBtn = isTerritory ? "" : `
-      <button onclick="moveDeck('${code}','${other}')" style="padding:2px 8px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:12px;cursor:pointer;">${otherLabel}</button>`;
+
+    let moveBtns = "";
+    if (!isTerritory) {
+      if (location === "main") {
+        moveBtns = `
+          <button onclick="moveDeck('${code}','side')" style="padding:2px 8px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:12px;cursor:pointer;">→サイド</button>
+          <button onclick="moveDeck('${code}','side',true)" style="padding:2px 8px;background:#2a2a4a;border:1px solid #5a5a8a;border-radius:6px;color:#99b;font-size:12px;cursor:pointer;">→全サイド</button>`;
+      } else {
+        moveBtns = `
+          <button onclick="moveDeck('${code}','main')" style="padding:2px 8px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:12px;cursor:pointer;">→本</button>`;
+      }
+    }
 
     return `
       <div style="display:flex; align-items:center; gap:10px; padding:4px 0; border-bottom:1px solid #2a4a3a;">
@@ -2825,24 +2833,24 @@ function renderDeckView() {
           <div style="font-size:14px; color:#e0e8d0;">${name}</div>
           <div style="font-size:12px; color:#aaa;">${code}</div>
         </div>
-        <div style="display:flex; align-items:center; gap:6px;">
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
           <button onclick="changeDeckCount('${code}',-1)" style="width:24px;height:24px;background:#c85a5a;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">−</button>
           <span style="color:#ffdd88;font-weight:bold;min-width:20px;text-align:center;">${cnt}</span>
           <button onclick="changeDeckCount('${code}',1)" style="width:24px;height:24px;background:#4caf50;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">＋</button>
-          ${moveBtn}
+          ${moveBtns}
         </div>
       </div>`;
   }
 
   const mainHTML = mainEntries.length === 0
     ? "<p style='color:#666;font-size:13px;'>カードがありません</p>"
-    : mainEntries.map(([code, cnt]) => cardHTML(code, cnt, "main")).join("");
+    : sortByType(mainEntries).map(([code, cnt]) => cardHTML(code, cnt, "main")).join("");
+  const sideHTML = sideEntries.length === 0
+    ? "<p style='color:#666;font-size:13px;'>カードがありません</p>"
+    : sortByType(sideEntries).map(([code, cnt]) => cardHTML(code, cnt, "side")).join("");
   const territoryHTML = territoryEntries.length === 0
     ? "<p style='color:#666;font-size:13px;'>カードがありません</p>"
     : territoryEntries.map(([code, cnt]) => cardHTML(code, cnt, "territory")).join("");
-  const sideHTML = sideEntries.length === 0
-    ? "<p style='color:#666;font-size:13px;'>カードがありません</p>"
-    : sideEntries.map(([code, cnt]) => cardHTML(code, cnt, "side")).join("");
 
   document.getElementById("deckView").innerHTML = `
     <div style="padding:4px 16px 100px;">
@@ -2867,6 +2875,16 @@ function renderDeckView() {
         ${mainHTML}
       </div>
 
+      <div style="background:#1a1a2a; border:2px solid #6a6a9a; border-radius:12px; padding:14px; margin-bottom:16px;">
+        <h2 style="color:#aaccff; font-size:16px; margin-bottom:12px;">
+          📦 サイドデッキ
+          <span style="color:${sideTotal <= 15 ? '#88aaff' : '#ff4444'}; font-size:14px; margin-left:8px;">
+            ${sideTotal}枚 / 15枚 ${sideTotal > 15 ? '⚠️' : ''}
+          </span>
+        </h2>
+        ${sideHTML}
+      </div>
+
       <div style="background:#1a1a1a; border:2px solid #8a6a2a; border-radius:12px; padding:14px; margin-bottom:16px;">
         <h2 style="color:#e0c060; font-size:16px; margin-bottom:12px;">
           🌍 領土デッキ
@@ -2875,16 +2893,6 @@ function renderDeckView() {
           </span>
         </h2>
         ${territoryHTML}
-      </div>
-
-      <div style="background:#1a1a2a; border:2px solid #6a6a9a; border-radius:12px; padding:14px;">
-        <h2 style="color:#aaccff; font-size:16px; margin-bottom:12px;">
-          📦 サイドデッキ
-          <span style="color:${sideTotal <= 15 ? '#88aaff' : '#ff4444'}; font-size:14px; margin-left:8px;">
-            ${sideTotal}枚 / 15枚 ${sideTotal > 15 ? '⚠️' : ''}
-          </span>
-        </h2>
-        ${sideHTML}
       </div>
     </div>`;
 }
@@ -2902,14 +2910,16 @@ function changeDeckCount(code, delta) {
 }
 
 // =============== 本デッキ↔サイドデッキ移動（1枚ずつ） ===============
-function moveDeck(code, target) {
+function moveDeck(code, target, all = false) {
   if (target === "side") {
     const sideTotal = Object.values(sideDeck).reduce((a, b) => a + b, 0);
-    if (sideTotal >= 15) { alert("サイドデッキは15枚までです"); return; }
+    if (sideTotal >= 15) { alert("サイドデッキは15枚満杯です"); return; }
+    const available = 15 - sideTotal;
+    const toMove = all ? Math.min(deck[code] || 0, available) : 1;
     if ((deck[code] || 0) > 0) {
-      deck[code]--;
+      deck[code] = (deck[code] || 0) - toMove;
       if (deck[code] === 0) delete deck[code];
-      sideDeck[code] = (sideDeck[code] || 0) + 1;
+      sideDeck[code] = (sideDeck[code] || 0) + toMove;
     }
   } else {
     if ((sideDeck[code] || 0) > 0) {
