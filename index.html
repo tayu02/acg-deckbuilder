@@ -2755,6 +2755,40 @@ async function generateDeckImage() {
   await drawCards(territoryEntries, LEFT_W, startY + sideAreaH, SUB_COLS,
     `🌍 領土 (${territoryEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#e0c060");
 
+  // =============== テキスト一覧描画 ===============
+  const LIST_X = LEFT_W + PAD + SUB_COLS * (CARD_W + PAD) + PAD * 2;
+  const LIST_W = TOTAL_W - LIST_X - PAD;
+  const LINE_H = 28;
+  const TEXT_SIZE = 20;
+
+  // サイド一覧
+  ctx.fillStyle = "#aaccff";
+  ctx.font = `bold ${TEXT_SIZE}px sans-serif`;
+  ctx.textAlign = "left";
+  ctx.fillText("📦 サイド", LIST_X, startY + 28);
+
+  sideEntries.forEach(([code, cnt], i) => {
+    const card = cards.find(c => c.code === code);
+    const name = card ? card.name : code;
+    ctx.fillStyle = "#e0e8d0";
+    ctx.font = `${TEXT_SIZE}px sans-serif`;
+    ctx.fillText(`${name}  ×${cnt}`, LIST_X, startY + LABEL_H + i * LINE_H + TEXT_SIZE);
+  });
+
+  // 領土一覧
+  const terrListY = startY + sideAreaH;
+  ctx.fillStyle = "#e0c060";
+  ctx.font = `bold ${TEXT_SIZE}px sans-serif`;
+  ctx.fillText("🌍 領土", LIST_X, terrListY + 28);
+
+  territoryEntries.forEach(([code, cnt], i) => {
+    const card = cards.find(c => c.code === code);
+    const name = card ? card.name : code;
+    ctx.fillStyle = "#e0e8d0";
+    ctx.font = `${TEXT_SIZE}px sans-serif`;
+    ctx.fillText(`${name}  ×${cnt}`, LIST_X, terrListY + LABEL_H + i * LINE_H + TEXT_SIZE);
+  });
+
   return canvas;
 }
 
