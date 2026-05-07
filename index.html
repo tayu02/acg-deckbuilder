@@ -3152,7 +3152,7 @@ function copyDeckURLAndClose() {
 
 // =============== 初期化処理 ===============
 populateDropdown();
-setTimeout(() => {
+setTimeout(async () => {
   filterAndRender();
   if (window.location.search) {
     await decodeDeck(window.location.href);
