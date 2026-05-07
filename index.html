@@ -136,7 +136,6 @@
       <option value="妨害">妨害</option>
       <option value="域サポート">域サポート</option>
       <option value="禁止">禁止</option>
-    </select>
 
     </select>
 
@@ -2458,9 +2457,8 @@ function filterAndRender() {
 
   cards.filter(card => {
     const isTerritory = card.type === "領土";
-    if (territoryVal) {
-    if (!isTerritory) return false;
-      return (card.territory_type || []).includes(territoryVal);
+  if (territoryVal) {
+      return (card.type || "").includes(territoryVal);
     }
     if (isTerritory) return false;
     if (generalVal === "禁止") return bannedCards.includes(card.code);
