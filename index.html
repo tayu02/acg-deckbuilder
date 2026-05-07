@@ -2469,7 +2469,15 @@ function filterAndRender() {
     if (setVal && !card.code.startsWith(setVal)) return false;
     if (nameVal && !`${card.name} ${card.type} ${card.tribe || ""}`.toLowerCase().includes(nameVal)) return false;
     if (effectVal && !(card.effect || "").toLowerCase().includes(effectVal)) return false;
-    if (conditionVal && !(card.condition || "").includes(conditionVal)) return false;
+        if (conditionVal) {
+      const typeMap = {"山":"山岳","水":"水生","森":"森林","平":"平野"};
+      const mapped = typeMap[conditionVal];
+      if (isTerritory) {
+        if (!mapped || !(card.territory_type || []).includes(mapped)) return false;
+      } else {
+        if (!(card.condition || "").includes(conditionVal)) return false;
+      }
+    }
     return true;
   }).forEach(card => {
     const div = document.createElement("div");
