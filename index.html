@@ -3095,7 +3095,7 @@ async function decodeDeck(url) {
     try {
       const res = await fetch(`${FIREBASE_URL}/decks/${idParam}.json`);
       const data = await res.json();
-      if (data?.url) decodeDeck(data.url);
+      if (data?.url) await decodeDeck(data.url);
     } catch(e) {
       console.error("デッキ読み込み失敗", e);
     }
