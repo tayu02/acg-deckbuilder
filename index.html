@@ -2409,7 +2409,9 @@ const cards = [
 
 ];
 
+// =============== 禁止カードリスト（ここを編集） ===============
 const bannedCards = ["BP2-034"];
+// ================================================
 const maxCopies = 4;
 let deck = {};
 let sideDeck = {};
@@ -2471,7 +2473,10 @@ function filterAndRender() {
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
-  <img src="${getImageUrl(card.code)}" onerror="this.src='https://via.placeholder.com/105x148/112233/88cc88?text=${encodeURIComponent(card.name)}'">
+  <div style="position:relative;">
+    <img src="${getImageUrl(card.code)}" onerror="...">
+    ${bannedCards.includes(card.code) ? `<div style="position:absolute;top:4px;left:4px;background:rgba(200,0,0,0.85);color:white;font-size:11px;font-weight:bold;padding:2px 6px;border-radius:4px;">🚫 禁止</div>` : ''}
+  </div>
       <div class="card-controls">
         <button class="btn-minus">−</button>
         <div class="count">0</div>
