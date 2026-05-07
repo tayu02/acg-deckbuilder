@@ -2876,9 +2876,11 @@ function renderDeckView() {
     const isTerritory = card?.type === "領土";
 
     let moveBtns = "";
-    ifmoveBtns = `
-  <button onclick="moveDeck('${code}','side')" style="padding:2px 5px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:11px;cursor:pointer;">→サイド</button>
-  <button onclick="moveDeck('${code}','side',true)" style="padding:2px 5px;background:#2a2a4a;border:1px solid #5a5a8a;border-radius:6px;color:#99b;font-size:11px;cursor:pointer;">→全サイド</button>`;
+    if (!isTerritory) {
+      if (location === "main") {
+        moveBtns = `
+          <button onclick="moveDeck('${code}','side')" style="padding:2px 5px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:11px;cursor:pointer;">→サイド</button>
+          <button onclick="moveDeck('${code}','side',true)" style="padding:2px 5px;background:#2a2a4a;border:1px solid #5a5a8a;border-radius:6px;color:#99b;font-size:11px;cursor:pointer;">→全サイド</button>`;
       } else {
         moveBtns = `
           <button onclick="moveDeck('${code}','main')" style="padding:2px 8px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:12px;cursor:pointer;">→本</button>`;
