@@ -3088,8 +3088,19 @@ function encodeDeck() {
   return window.location.href.split("?")[0] + "?d=" + compressed;
 }
 
-function decodeDeck(url) {
+async function decodeDeck(url) {
   const params = new URLSearchParams(url.split("?")[1] || "");
+  const idParam = params.get("id");
+  if (idParam) {
+    try {
+      const res = await fetch(`${FIREBASE_URL}/decks/${idParam}.json`);
+      const data = await res.json();
+      if (data?.url) decodeDeck(data.url);
+    } catch(e) {
+      console.error("デッキ読み込み失敗", e);
+    }
+    return;
+  }
   const compressed = params.get("d");
   if (!compressed) return;
   try {
@@ -3111,13 +3122,27 @@ function decodeDeck(url) {
   }
 }
 
-function copyDeckURL() {
-  const url = encodeDeck();
-  navigator.clipboard.writeText(url).then(() => {
-    alert("URLをコピーしました！");
-  }).catch(() => {
-    prompt("このURLをコピーしてください：", url);
-  });
+const FIREBASE_URL = "https://acg-original-default-rtdb.firebaseio.com";
+
+async function copyDeckURL() {
+  const data = encodeDeck();
+  try {
+    const res = await fetch(`${FIREBASE_URL}/decks.json`, {
+      method: 'POST',
+      body: JSON.stringify({ url: data, created: Date.now() })
+    });
+    const json = await res.json();
+    const id = json.name;
+    const shortUrl = `${location.origin}${location.pathname}?id=${id}`;
+    navigator.clipboard.writeText(shortUrl).then(() => {
+      alert("URLをコピーしました！");
+    }).catch(() => {
+      prompt("このURLをコピーしてください：", shortUrl);
+    });
+  } catch(e) {
+    alert("URL生成に失敗しました");
+    console.error(e);
+  }
 }
 
 function copyDeckURLAndClose() {
