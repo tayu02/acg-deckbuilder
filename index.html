@@ -133,6 +133,9 @@
       <option value="遅延">遅延</option>
       <option value="妨害">妨害</option>
       <option value="域サポート">域サポート</option>
+      <option value="禁止">禁止</option>
+    </select>
+
     </select>
 
     <select id="searchRoute" class="stat-select">
@@ -2406,6 +2409,7 @@ const cards = [
 
 ];
 
+const bannedCards = ["BP2-034"];
 const maxCopies = 4;
 let deck = {};
 let sideDeck = {};
@@ -2455,6 +2459,7 @@ function filterAndRender() {
       return (card.territory_type || []).includes(territoryVal);
     }
     if (isTerritory) return false;
+    if (generalVal === "禁止") return bannedCards.includes(card.code);
     if (generalVal && !(card.general_effect || []).includes(generalVal)) return false;
     if (routeVal && !(card.route_search || []).includes(routeVal)) return false;
     if (setVal && !card.code.startsWith(setVal)) return false;
@@ -2486,8 +2491,9 @@ function filterAndRender() {
     deck[code] = deck[code] || 0;
     countEl.textContent = deck[code];
 
-    plusBtn.addEventListener("click", (e) => {
+        plusBtn.addEventListener("click", (e) => {
       e.stopPropagation();
+      if (bannedCards.includes(code)) return;
       const isBasicTerritory = isTerritory && ["RYO-001","RYO-002","RYO-003","RYO-004"].includes(code);
       const limit = isTerritory ? (isBasicTerritory ? 10 : 4) : maxCopies;
       const territoryTotal = Object.entries(deck)
