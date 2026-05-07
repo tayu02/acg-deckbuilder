@@ -2457,10 +2457,9 @@ function filterAndRender() {
 
   cards.filter(card => {
     const isTerritory = card.type === "領土";
-  if (territoryVal) {
-      return (card.type || "").includes(territoryVal);
-    }
-    if (isTerritory) return false;
+    if (territoryVal) {
+    if (!(card.type || "").includes(territoryVal)) return false;}
+    if (!territoryVal && isTerritory) return false;
     if (generalVal === "禁止") return bannedCards.includes(card.code);
     if (generalVal && !(card.general_effect || []).includes(generalVal)) return false;
     if (routeVal && !(card.route_search || []).includes(routeVal)) return false;
