@@ -3155,7 +3155,7 @@ populateDropdown();
 setTimeout(() => {
   filterAndRender();
   if (window.location.search) {
-    decodeDeck(window.location.href);
+    await decodeDeck(window.location.href);
   }
 }, 100);
 
