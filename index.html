@@ -2775,8 +2775,9 @@ async function generateDeckImage() {
     const name = card ? card.name : code;
     ctx.fillStyle = "#e0e8d0";
     ctx.font = `${TEXT_SIZE}px sans-serif`;
-    ctx.fillText(`${name}  ×${cnt}`, LIST_X, listY);
+    listY = fillTextWrapped(`${name}  ×${cnt}`, LIST_X, listY, LIST_W - PAD * 2, TEXT_SIZE + 4);
     listY += LINE_H;
+
   });
 
   listY += 16;
@@ -2792,8 +2793,9 @@ async function generateDeckImage() {
     const name = card ? card.name : code;
     ctx.fillStyle = "#e0e8d0";
     ctx.font = `${TEXT_SIZE}px sans-serif`;
-    ctx.fillText(`${name}  ×${cnt}`, LIST_X, listY);
+    listY = fillTextWrapped(`${name}  ×${cnt}`, LIST_X, listY, LIST_W - PAD * 2, TEXT_SIZE + 4);
     listY += LINE_H;
+
   });
 
   listY += 16;
@@ -2809,9 +2811,29 @@ async function generateDeckImage() {
     const name = card ? card.name : code;
     ctx.fillStyle = "#e0e8d0";
     ctx.font = `${TEXT_SIZE}px sans-serif`;
-    ctx.fillText(`${name}  ×${cnt}`, LIST_X, listY);
+    listY = fillTextWrapped(`${name}  ×${cnt}`, LIST_X, listY, LIST_W - PAD * 2, TEXT_SIZE + 4);
     listY += LINE_H;
   });
+
+  // テキスト折り返し描画関数
+  function fillTextWrapped(text, x, y, maxWidth, lineHeight) {
+    const chars = [...text];
+    let line = "";
+    let currentY = y;
+    for (const char of chars) {
+      const testLine = line + char;
+      if (ctx.measureText(testLine).width > maxWidth && line !== "") {
+        ctx.fillText(line, x, currentY);
+        line = char;
+        currentY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, x, currentY);
+    return currentY; // 最終Y座標を返す
+  }
+
 
   return canvas;
 }
