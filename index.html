@@ -2658,7 +2658,7 @@ async function generateDeckImage() {
 
   // タイトル
   ctx.fillStyle = "#a8e0a8";
-  ctx.font = "bold 28px sans-serif";
+  ctx.font = "bold 42px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(deckName || "デッキレシピ", TOTAL_W / 2, 42);
 
@@ -2694,7 +2694,7 @@ async function generateDeckImage() {
           ctx.fillStyle = "rgba(0,0,0,0.85)";
           ctx.fillRect(x, y + CARD_H - 32, CARD_W, 32);
           ctx.fillStyle = "#ffdd88";
-          ctx.font = "bold 22px sans-serif";
+          ctx.font = "bold 42px sans-serif";
           ctx.textAlign = "center";
           ctx.fillText(`×${cnt}`, x + CARD_W / 2, y + CARD_H - 8);
           resolve();
