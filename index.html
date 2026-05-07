@@ -105,12 +105,14 @@
       <option value="夜">夜</option>
       <option value="無">無</option>
     </select>
-  <select id="searchTerritory" class="stat-select">
-    <option value="">領土</option>
-    <option value="山岳">山岳</option>
-    <option value="水生">水生</option>
-    <option value="森林">森林</option>
-    <option value="平野">平野</option>
+<select id="searchTerritory" class="stat-select">
+    <option value="">タイプ</option>
+    <option value="動物">動物</option>
+    <option value="縄張り">縄張り</option>
+    <option value="道具">道具</option>
+    <option value="特技">特技</option>
+    <option value="場面">場面</option>
+    <option value="領土">領土</option>
   </select>
 </div>
 
@@ -2457,7 +2459,7 @@ function filterAndRender() {
   cards.filter(card => {
     const isTerritory = card.type === "領土";
     if (territoryVal) {
-      if (!isTerritory) return false;
+    if (!isTerritory) return false;
       return (card.territory_type || []).includes(territoryVal);
     }
     if (isTerritory) return false;
