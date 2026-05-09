@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -9,172 +8,69 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #0f1a24; color: #e0e8d0; min-height: 100vh; }
-
-  #header {
-    background: linear-gradient(to right, #1f2f1f, #1a2a3a);
-    padding: 12px 16px;
-    border-bottom: 3px solid #4a8a4a;
-    z-index: 300;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-  }
+ #header { background: linear-gradient(to right, #1f2f1f, #1a2a3a); padding: 12px 16px; border-bottom: 3px solid #4a8a4a; z-index: 300; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; }
   h1 { font-size: 19px; color: #a8e0a8; }
-  #deckTotal { font-size: 16px; color: #ffcc77; font-weight: bold; cursor: pointer; }
-
+  #deckTotal { font-size: 16px; color: #ffcc77; font-weight: bold; }
   .search-area { padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 8px; }
-  .search-input {
-    flex: 1;
-    padding: 6px 10px;
-    background: #1f2a35;
-    border: 1px solid #4a8a4a;
-    border-radius: 10px;
-    color: white;
-    font-size: 15px;
-  }
+.search-input { width: 50%; padding: 6px 10px; background: #1f2a35; border: 1px solid #4a8a4a; border-radius: 10px; color: white; font-size: 15px; }
   .stat-row { display: flex; gap: 8px; }
-  .stat-select {
-    flex: 1;
-    padding: 11px 6px;
-    background: #1f2a35;
-    border: 1px solid #4a8a4a;
-    border-radius: 10px;
-    color: white;
-    font-size: 13px;
-  }
+  .stat-select { flex: 1; padding: 11px 6px; background: #1f2a35; border: 1px solid #4a8a4a; border-radius: 10px; color: white; font-size: 13px; }
+#cardList {
+  padding: 8px 8px 100px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+  gap: 1px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  height: calc(100vh - 220px);
+}
+  .card { background: #1f2a2f; border: 2px solid #3a6a4a; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.5); height: 160px; display: flex; flex-direction: column; cursor: pointer; }
+  .card img { width: 100%; height: 120px; object-fit: cover; background: #112233; flex-shrink: 0; }
+  . card-controls {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0px;
+  padding: 0px 0px 0px;
+  background: rgba(0,0,0,0.4);
+}
 
-  #cardList {
-    padding: 8px 8px 100px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
-    gap: 1px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    height: calc(100vh - 220px);
-  }
-
-  .card {
-    background: #1f2a2f;
-    border: 2px solid #3a6a4a;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    height: 160px;
-    display: flex;
-    flex-direction: column;
-    cursor: pointer;
-  }
-  .card img {
-    width: 100%;
-    height: 120px;
-    object-fit: cover;
-    background: #112233;
-    flex-shrink: 0;
-  }
-
-  .card-controls {
-    margin-top: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 4px 6px;
-    background: rgba(0,0,0,0.4);
-    flex-direction: row;
-    flex-wrap: nowrap;
-  }
-  .card-controls button {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
-    border: none;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  .btn-minus { background: #c85a5a; }
-  .btn-plus { background: #4caf50; }
-  .count {
-    font-size: 13px;
-    font-weight: bold;
-    color: #ffdd88;
-    min-width: 16px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-
-  #detailModal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.95);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 20px;
-  }
-  .modal-content {
-    background: #1a2828;
-    max-width: 400px;
-    width: 100%;
-    max-height: 92vh;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 3px solid #5a9a5a;
-    display: flex;
-    flex-direction: column;
-  }
+.card-controls { margin-top: auto; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 4px 6px; background: rgba(0,0,0,0.4); flex-direction: row; flex-wrap: nowrap; }
+.card-controls button { width: 28px; height: 28px; font-size: 14px; border: none; border-radius: 4px; color: white; cursor: pointer; flex-shrink: 0; }
+.btn-minus { background: #c85a5a; }
+.btn-plus { background: #4caf50; }
+.count { font-size: 13px; font-weight: bold; color: #ffdd88; min-width: 16px; text-align: center; flex-shrink: 0; }
+  #detailModal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+  .modal-content { background: #1a2828; max-width: 400px; width: 100%; max-height: 92vh; border-radius: 16px; overflow: hidden; border: 3px solid #5a9a5a; display: flex; flex-direction: column; }
   .modal-scroll { flex: 1; overflow-y: auto; }
   .modal-scroll img { width: 100%; height: auto; display: block; }
   .modal-body { padding: 20px; line-height: 1.7; }
-
-  #clearBtn {
-    width: auto;
-    padding: 6px 12px;
-    background: #3a3a1a;
-    border: 1px solid #8a8a3a;
-    border-radius: 10px;
-    color: #ffee88;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
+#clearBtn { width: auto; padding: 6px 12px; background: #3a3a1a; border: 1px solid #8a8a3a; border-radius: 10px; color: #ffee88; font-size: 14px; font-weight: bold; cursor: pointer; }
+#deckView { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: none; }
+#searchView { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+@media (min-width: 768px) {
+  body { font-size: 16px; }
+  #header { padding: 16px 24px; }
+  #searchView { max-width: 900px; margin: 0 auto; }
+  .search-input { font-size: 16px; padding: 8px 12px; }
+  .stat-select { font-size: 14px; padding: 10px 8px; }
+  #cardList {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 4px;
+    padding: 12px 12px 100px;
+    height: calc(100vh - 220px);
   }
+  .card { height: 220px; }
+  .card img { height: 170px; }
+  .card-controls button { width: 36px; height: 36px; font-size: 18px; }
+  .count { font-size: 16px; }
+  #deckView { max-width: 900px; margin: 0 auto; }
+  #clearBtn { font-size: 16px; padding: 8px 16px; }
+}
 
-  #deckView {
-    position: fixed;
-    top: 60px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    display: none;
-  }
-  #searchView { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-  @media (min-width: 768px) {
-    body { font-size: 16px; }
-    #header { padding: 16px 24px; }
-    #searchView { max-width: 900px; margin: 0 auto; }
-    .search-input { font-size: 16px; padding: 8px 12px; }
-    .stat-select { font-size: 14px; padding: 10px 8px; }
-    #cardList {
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 4px;
-      padding: 12px 12px 100px;
-    }
-    .card { height: 220px; }
-    .card img { height: 170px; }
-    .card-controls button { width: 36px; height: 36px; font-size: 18px; }
-    .count { font-size: 16px; }
-    #deckView { max-width: 900px; margin: 0 auto; }
-    #clearBtn { font-size: 16px; padding: 8px 16px; }
-  }
 </style>
-
 </head>
 <body>
 
@@ -185,31 +81,31 @@
     <button id="tabDeck" onclick="showTab('deck')"
       style="padding:6px 14px; background:#1f2a35; border:1px solid #4a8a4a; border-radius:8px; color:#a8e0a8; font-size:14px; cursor:pointer;">📋 デッキ</button>
   </div>
-  <div id="deckTotal">デッキ：0 枚</div>
+  <div id="deckTotal" style="font-size:16px; color:#ffcc77; font-weight:bold; cursor:pointer;">デッキ：0 枚</div>
 </div>
 
 <div id="searchView">
-  <div class="search-area">
-    <!-- 1段目 -->
-    <div class="stat-row">
-      <input type="text" id="searchName" class="search-input" placeholder="カード名・タイプ・種族">
-      <button id="clearBtn">🗑 クリア</button>
-    </div>
+<div class="search-area">
+  <!-- 1段目 -->
+  <div class="stat-row">
+    <input type="text" id="searchName" class="search-input" placeholder="カード名・タイプ・種族">
+    <button id="clearBtn">🗑 クリア</button>
+  </div>
 
-```
-<!-- 2段目 -->
-<div class="stat-row">
-  <input type="text" id="searchEffect" class="search-input" placeholder="効果テキスト">
-  <select id="searchCondition" class="stat-select">
-    <option value="">色条件 </option>
-    <option value="山">山</option>
-    <option value="水">水</option>
-    <option value="森">森</option>
-    <option value="平">平</option>
-    <option value="夜">夜</option>
-    <option value="無">無</option>
-  </select>
-  <select id="searchTerritory" class="stat-select">
+
+  <!-- 2段目 -->
+  <div class="stat-row">
+    <input type="text" id="searchEffect" class="search-input" placeholder="効果テキスト">
+    <select id="searchCondition" class="stat-select">
+      <option value="">色条件 </option>
+      <option value="山">山</option>
+      <option value="水">水</option>
+      <option value="森">森</option>
+      <option value="平">平</option>
+      <option value="夜">夜</option>
+      <option value="無">無</option>
+    </select>
+<select id="searchTerritory" class="stat-select">
     <option value="">タイプ</option>
     <option value="動物">動物</option>
     <option value="縄張り">縄張り</option>
@@ -220,69 +116,72 @@
   </select>
 </div>
 
-<!-- 3段目：3つのプルダウン -->
-<div class="stat-row">
-  <select id="searchGeneral" class="stat-select">
-    <option value="">役割</option>
-    <option value="ドロー">ドロー</option>
-    <option value="サーチ">サーチ</option>
-    <option value="バフ">バフ</option>
-    <option value="バウンス">バウンス</option>
-    <option value="コピー">コピー</option>
-    <option value="ハンデス">ハンデス</option>
-    <option value="ビートバーン">ビートバーン</option>
-    <option value="火力">火力</option>
-    <option value="除去">除去</option>
-    <option value="登場">登場</option>
-    <option value="遅延">遅延</option>
-    <option value="妨害">妨害</option>
-    <option value="域サポート">域サポート</option>
-    <option value="禁止">禁止</option>
-  </select>
-
-  <select id="searchRoute" class="stat-select">
-    <option value="">キメサイ系ルート</option>
-    <option value="咆哮ルート">咆哮ルート</option>
-    <option value="獅子舞ルート">獅子舞ルート</option>
-    <option value="カジキルート">カジキルート</option>
-    <option value="断崖ルート">断崖ルート</option>
-    <option value="帰郷ルート">帰郷ルート</option>
-    <option value="鉄鴉ルート">鉄鴉ルート</option>
-    <option value="赤猫ルート">赤猫ルート</option>
-    <option value="狐ルート">狐ルート</option>
-    <option value="禁止区狼ルート">禁止区狼ルート</option>
-    <option value="アルマジロルート">アルマジロルート</option>
-    <option value="フェニックスルート">フェニックスルート</option>
-    <option value="ガラクタルート">ガラクタルート</option>
-    <option value="カメレオンルート">カメレオンルート</option>
-    <option value="ガルダルート">ガルダルート</option>
-  </select>
-
-  <select id="searchSet" class="stat-select">
-    <option value="">発売弾</option>
-    <option value="BP4">BP4適者生存</option>
-    <option value="BP3">BP3青嵐再来</option>
-    <option value="BP2">BP2運命の物語</option>
-    <option value="BP1">BP1種族戦争</option>
-    <option value="うさカス">うさカス</option>
-    <option value="うさクズ">うさクズ</option>
-    <option value="ユキ">ユキ</option>
-    <option value="野良">野良</option>
-    <option value="ライ太">ライ太</option>
-    <option value="剣士">剣士</option>
-    <option value="パン田">パン田</option>
-    <option value="ヒョウ">ヒョウ</option>
-    <option value="蔵馬">蔵馬</option>
-    <option value="キメサイ">キメサイ</option>
-  </select>
-</div>
-```
-
   </div>
 
-  <div id="cardList"></div>
-</div>
+ <!-- 3段目：3つのプルダウン -->
+  <div class="stat-row">
+    <select id="searchGeneral" class="stat-select">
+      <option value="">役割</option>
+      <option value="ドロー">ドロー</option>
+      <option value="サーチ">サーチ</option>
+      <option value="バフ">バフ</option>
+      <option value="バウンス">バウンス</option>
+      <option value="コピー">コピー</option>
+      <option value="ハンデス">ハンデス</option>
+      <option value="ビートバーン">ビートバーン</option>
+      <option value="火力">火力</option>
+      <option value="除去">除去</option>
+      <option value="登場">登場</option>
+      <option value="遅延">遅延</option>
+      <option value="妨害">妨害</option>
+      <option value="域サポート">域サポート</option>
+      <option value="禁止">禁止</option>
 
+    </select>
+
+    <select id="searchRoute" class="stat-select">
+      <option value="">キメサイ系ルート</option>
+      <option value="咆哮ルート">咆哮ルート</option>
+      <option value="獅子舞ルート">獅子舞ルート</option>
+      <option value="カジキルート">カジキルート</option>
+      <option value="断崖ルート">断崖ルート</option>
+      <option value="帰郷ルート">帰郷ルート</option>
+      <option value="鉄鴉ルート">鉄鴉ルート</option>
+      <option value="赤猫ルート">赤猫ルート</option>
+      <option value="狐ルート">狐ルート</option>
+      <option value="禁止区狼ルート">禁止区狼ルート</option>
+      <option value="アルマジロルート">アルマジロルート</option>
+      <option value="フェニックスルート">フェニックスルート</option>
+      <option value="ガラクタルート">ガラクタルート</option>
+ <option value="カメレオンルート">カメレオンルート</option>
+ <option value="ガルダルート">ガルダルート</option>
+
+    </select>
+
+    <select id="searchSet" class="stat-select">
+      <option value="">発売弾</option>      
+<option value="BP4">BP4適者生存 </option>
+<option value="BP3">BP3青嵐再来 </option>
+<option value="BP2">BP2運命の物語</option>
+<option value="BP1">BP1種族戦争  </option>
+<option value="うさカス">うさカス  </option>
+<option value="うさクズ">うさクズ</option>
+<option value="ユキ">ユキ</option>
+<option value="野良">野良</option>
+<option value="ライ太">ライ太</option>
+<option value="剣士">剣士</option>
+<option value="パン田">パン田</option>
+<option value="ヒョウ">ヒョウ</option>
+<option value="蔵馬">蔵馬</option>
+<option value="キメサイ">キメサイ</option>
+
+    </select>
+  </div>
+</div>  
+
+<div id="cardList"></div>
+
+</div>
 <div id="deckView" style="display:none;"></div>
 
 <div id="detailModal">
@@ -310,7 +209,7 @@ function getImageUrl(code) {
   if (code.startsWith("RYO-")) return `${base}/領土/${code}.png`;
   const m = code.match(/ACG-(\d+)/);
   if (m) {
-    const num = parseInt(m[1], 10);
+    const num = parseInt(m[1]);
     const acgCode = "ACG-" + String(num).padStart(3, "0");
     const folder = num <= 30 ? "ST1ー1" : num <= 60 ? "ST1ー2" : num <= 90 ? "ST1ー3" : "ST2";
     return `${base}/${folder}/${acgCode}.png`;
@@ -2514,742 +2413,791 @@ const cards = [
 // =============== 禁止カードリスト（ここを編集） ===============
 const bannedCards = ["BP2-034"];
 // ================================================
-// =============== 定数 ===============
-const MAX_COPIES = 4;
-const MAX_SIDE = 15;
-const MAX_TERRITORY = 10;
-const BASIC_TERRITORIES = [“RYO-001”,“RYO-002”,“RYO-003”,“RYO-004”];
-const TYPE_ORDER = [“動物”, “縄張り”, “道具”, “特技”, “場面”];
-const FIREBASE_URL = “https://acg-original-default-rtdb.firebaseio.com”;
-const FALLBACK_IMG_SMALL = “https://via.placeholder.com/85x120/112233/88cc88?text=?”;
-const FALLBACK_IMG_LIST = “https://via.placeholder.com/48x68/112233/88cc88?text=?”;
-
-// =============== 状態 ===============
+const maxCopies = 4;
 let deck = {};
 let sideDeck = {};
 let deckSide = {};
-let deckName = “”;
 
 // =============== DOM取得 ===============
-const cardListEl = document.getElementById(“cardList”);
-const detailModal = document.getElementById(“detailModal”);
+const cardListEl = document.getElementById("cardList");
+const detailModal = document.getElementById("detailModal");
 
 // =============== 発売弾プルダウン自動生成 ===============
 function populateDropdown() {
-const dropdown = document.getElementById(“searchSet”);
-// 既存の固定optionを残し、まだ無い弾だけ追加
-const existing = new Set(Array.from(dropdown.options).map(o => o.value));
-const setList = new Set();
-cards.forEach(card => {
-if (card.type !== “領土”) setList.add(card.code.split(”-”)[0]);
-});
-setList.forEach(setName => {
-if (existing.has(setName)) return;
-const option = document.createElement(“option”);
-option.value = setName;
-option.textContent = setName;
-dropdown.appendChild(option);
-});
+  const dropdown = document.getElementById("searchSet");
+  dropdown.innerHTML = '<option value="">発売弾</option>';
+  const setList = new Set();
+  cards.forEach(card => {
+    if (card.type !== "領土") setList.add(card.code.split("-")[0]);
+  });
+  setList.forEach(setName => {
+    const option = document.createElement("option");
+    option.value = setName;
+    option.textContent = setName;
+    dropdown.appendChild(option);
+  });
 }
 
 // =============== カード検索・表示 ===============
 function filterAndRender() {
-const nameVal = (document.getElementById(“searchName”).value || “”).toLowerCase().trim();
-const generalVal = document.getElementById(“searchGeneral”).value;
-const routeVal = document.getElementById(“searchRoute”).value;
-const setVal = document.getElementById(“searchSet”).value;
-const effectVal = (document.getElementById(“searchEffect”).value || “”).toLowerCase().trim();
-const conditionVal = document.getElementById(“searchCondition”).value;
-const territoryVal = document.getElementById(“searchTerritory”).value;
+  const nameVal = (document.getElementById("searchName").value || "").toLowerCase().trim();
+  const generalVal = document.getElementById("searchGeneral").value;
+  const routeVal = document.getElementById("searchRoute").value;
+  const setVal = document.getElementById("searchSet").value;
+  const effectVal = (document.getElementById("searchEffect").value || "").toLowerCase().trim();
+  const conditionVal = document.getElementById("searchCondition").value;
+  const territoryVal = document.getElementById("searchTerritory").value;
 
-if (!nameVal && !generalVal && !routeVal && !setVal && !effectVal && !conditionVal && !territoryVal) {
-cardListEl.innerHTML = “”;
-return;
-}
-
-cardListEl.innerHTML = “”;
-
-cards.filter(card => {
-const isTerritory = card.type === “領土”;
-if (territoryVal) {
-if (!(card.type || “”).includes(territoryVal)) return false;
-}
-if (!territoryVal && isTerritory) return false;
-if (generalVal === “禁止”) return bannedCards.includes(card.code);
-if (generalVal && !(card.general_effect || []).includes(generalVal)) return false;
-if (routeVal && !(card.route_search || []).includes(routeVal)) return false;
-if (setVal && !card.code.startsWith(setVal)) return false;
-if (nameVal && !`${card.name} ${card.type} ${card.tribe || ""}`.toLowerCase().includes(nameVal)) return false;
-if (effectVal && !(card.effect || “”).toLowerCase().includes(effectVal)) return false;
-if (conditionVal) {
-const typeMap = {“山”:“山岳”,“水”:“水生”,“森”:“森林”,“平”:“平野”};
-const mapped = typeMap[conditionVal];
-if (isTerritory) {
-if (!mapped || !(card.territory_type || []).includes(mapped)) return false;
-} else {
-if (!(card.condition || “”).includes(conditionVal)) return false;
-}
-}
-return true;
-}).forEach(card => {
-const div = document.createElement(“div”);
-div.className = “card”;
-const isBanned = bannedCards.includes(card.code);
-div.innerHTML = `<div style="position:relative;"> <img src="${getImageUrl(card.code)}" onerror="this.src='${FALLBACK_IMG_SMALL}'"> ${isBanned ?`<div style="position:absolute;top:4px;left:4px;background:rgba(200,0,0,0.85);color:white;font-size:11px;font-weight:bold;padding:2px 6px;border-radius:4px;">🚫 禁止</div>`: ''} </div> <div class="card-controls"> <button class="btn-minus">−</button> <div class="count">0</div> <button class="btn-plus">＋</button> </div>`;
-div.addEventListener(“click”, (e) => {
-if (!e.target.closest(“button”)) showDetail(card);
-});
-
-```
-const plusBtn = div.querySelector(".btn-plus");
-const minusBtn = div.querySelector(".btn-minus");
-const countEl = div.querySelector(".count");
-const code = card.code;
-const isTerritory = card.type === "領土";
-
-deck[code] = deck[code] || 0;
-countEl.textContent = deck[code];
-
-plusBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  if (isBanned) return;
-  const isBasicTerritory = isTerritory && BASIC_TERRITORIES.includes(code);
-  const perCardLimit = isTerritory ? (isBasicTerritory ? MAX_TERRITORY : MAX_COPIES) : MAX_COPIES;
-  if (isTerritory && getTerritoryTotal() >= MAX_TERRITORY) return;
-  if (deck[code] < perCardLimit) {
-    deck[code]++;
-    countEl.textContent = deck[code];
-    updateDeckTotal();
-    if (isTerritory) deckSide[code] = "territory";
+  if (!nameVal && !generalVal && !routeVal && !setVal && !effectVal && !conditionVal && !territoryVal) {
+    cardListEl.innerHTML = "";
+    return;
   }
-});
 
-minusBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  if (deck[code] > 0) {
-    deck[code]--;
+  cardListEl.innerHTML = "";
+
+  cards.filter(card => {
+    const isTerritory = card.type === "領土";
+    if (territoryVal) {
+    if (!(card.type || "").includes(territoryVal)) return false;}
+    if (!territoryVal && isTerritory) return false;
+    if (generalVal === "禁止") return bannedCards.includes(card.code);
+    if (generalVal && !(card.general_effect || []).includes(generalVal)) return false;
+    if (routeVal && !(card.route_search || []).includes(routeVal)) return false;
+    if (setVal && !card.code.startsWith(setVal)) return false;
+    if (nameVal && !`${card.name} ${card.type} ${card.tribe || ""}`.toLowerCase().includes(nameVal)) return false;
+    if (effectVal && !(card.effect || "").toLowerCase().includes(effectVal)) return false;
+        if (conditionVal) {
+      const typeMap = {"山":"山岳","水":"水生","森":"森林","平":"平野"};
+      const mapped = typeMap[conditionVal];
+      if (isTerritory) {
+        if (!mapped || !(card.territory_type || []).includes(mapped)) return false;
+      } else {
+        if (!(card.condition || "").includes(conditionVal)) return false;
+      }
+    }
+    return true;
+  }).forEach(card => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+  <div style="position:relative;">
+    <img src="${getImageUrl(card.code)}" onerror="...">
+    ${bannedCards.includes(card.code) ? `<div style="position:absolute;top:4px;left:4px;background:rgba(200,0,0,0.85);color:white;font-size:11px;font-weight:bold;padding:2px 6px;border-radius:4px;">🚫 禁止</div>` : ''}
+  </div>
+      <div class="card-controls">
+        <button class="btn-minus">−</button>
+        <div class="count">0</div>
+        <button class="btn-plus">＋</button>
+      </div>
+    `;
+    div.addEventListener("click", (e) => {
+      if (!e.target.closest("button")) showDetail(card);
+    });
+
+    const plusBtn = div.querySelector(".btn-plus");
+    const minusBtn = div.querySelector(".btn-minus");
+    const countEl = div.querySelector(".count");
+    const code = card.code;
+    const isTerritory = card.type === "領土";
+
+    deck[code] = deck[code] || 0;
     countEl.textContent = deck[code];
-    updateDeckTotal();
-  }
-});
 
-cardListEl.appendChild(div);
-```
+        plusBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (bannedCards.includes(code)) return;
+      const isBasicTerritory = isTerritory && ["RYO-001","RYO-002","RYO-003","RYO-004"].includes(code);
+      const limit = isTerritory ? (isBasicTerritory ? 10 : 4) : maxCopies;
+      const territoryTotal = Object.entries(deck)
+        .filter(([c]) => cards.find(x => x.code === c)?.type === "領土")
+        .reduce((a, [, v]) => a + v, 0);
+      if (isTerritory && territoryTotal >= 10) return;
+      const perCardLimit = isTerritory && !isBasicTerritory ? 4 : limit;
+      if (deck[code] < perCardLimit) {
+        deck[code]++;
+        countEl.textContent = deck[code];
+        updateDeckTotal();
+        if (isTerritory) deckSide[code] = "territory";
+      }
+    });
 
-});
+    minusBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (deck[code] > 0) {
+        deck[code]--;
+        countEl.textContent = deck[code];
+        updateDeckTotal();
+      }
+    });
+
+    cardListEl.appendChild(div);
+  });
 }
 
 // =============== カード詳細モーダル ===============
 function showDetail(card) {
-document.getElementById(“modalImage”).src = getImageUrl(card.code);
-document.getElementById(“modalName”).textContent = card.name;
-document.getElementById(“modalInfo”).innerHTML = `番号: ${card.code}<br>タイプ: ${card.type}<br>種族: ${card.tribe || '－'}<br>ステータス: ${card.stats || '－'}`;
-document.getElementById(“modalEffect”).innerHTML = (card.effect || “”).replace(/\n/g, ‘<br>’);
-detailModal.style.display = “flex”;
+  document.getElementById("modalImage").src = getImageUrl(card.code);
+  document.getElementById("modalName").textContent = card.name;
+  document.getElementById("modalInfo").innerHTML = `番号: ${card.code}<br>タイプ: ${card.type}<br>種族: ${card.tribe || '－'}<br>ステータス: ${card.stats || '－'}`;
+  document.getElementById("modalEffect").innerHTML = (card.effect || "").replace(/\n/g, '<br>');
+  detailModal.style.display = "flex";
 }
 
-detailModal.addEventListener(“click”, (e) => {
-if (e.target === detailModal || e.target.id === “modalImage”) {
-detailModal.style.display = “none”;
-}
+detailModal.addEventListener("click", (e) => {
+  if (e.target === detailModal || e.target.id === "modalImage") {
+    detailModal.style.display = "none";
+  }
 });
 
 // =============== 検索イベント登録 ===============
-[“searchName”, “searchGeneral”, “searchRoute”, “searchSet”, “searchEffect”, “searchCondition”, “searchTerritory”].forEach(id => {
-const el = document.getElementById(id);
-if (el) {
-el.addEventListener(“input”, filterAndRender);
-el.addEventListener(“change”, filterAndRender);
-}
+["searchName", "searchGeneral", "searchRoute", "searchSet", "searchEffect", "searchCondition", "searchTerritory"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener("input", filterAndRender);
+    el.addEventListener("change", filterAndRender);
+  }
 });
 
 // =============== クリアボタン ===============
-document.getElementById(“clearBtn”).addEventListener(“click”, () => {
-[“searchName”,“searchGeneral”,“searchRoute”,“searchSet”,“searchEffect”,“searchCondition”,“searchTerritory”].forEach(id => {
-const el = document.getElementById(id);
-if (el) el.value = “”;
-});
-filterAndRender();
+document.getElementById("clearBtn").addEventListener("click", () => {
+  ["searchName","searchGeneral","searchRoute","searchSet","searchEffect","searchCondition","searchTerritory"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  filterAndRender();
 });
 
-// =============== デッキ集計 ===============
+// =============== デッキ合計枚数更新（メインデッキのみカウント） ===============
+function updateDeckTotal() {
+  const mainTotal = getDeckMain().reduce((a, [, cnt]) => a + cnt, 0);
+  document.getElementById("deckTotal").textContent = `デッキ：${mainTotal} 枚`;
+}
+
+// =============== デッキ振り分け取得 ===============
 function getDeckMain() {
-return Object.entries(deck).filter(([code, cnt]) => {
-const isTerritory = cards.find(c => c.code === code)?.type === “領土”;
-return cnt > 0 && !isTerritory;
-});
+  return Object.entries(deck).filter(([code, cnt]) => {
+    const isTerritory = cards.find(c => c.code === code)?.type === "領土";
+    return cnt > 0 && !isTerritory;
+  });
 }
 
 function getDeckSide() {
-return Object.entries(sideDeck).filter(([, cnt]) => cnt > 0);
+  return Object.entries(sideDeck).filter(([, cnt]) => cnt > 0);
 }
 
 function getDeckTerritory() {
-return Object.entries(deck).filter(([code, cnt]) => cnt > 0 && deckSide[code] === “territory”);
+  return Object.entries(deck).filter(([code, cnt]) => cnt > 0 && deckSide[code] === "territory");
 }
 
-function getTerritoryTotal() {
-return getDeckTerritory().reduce((a, [, v]) => a + v, 0);
-}
-
-function getSideTotal() {
-return Object.values(sideDeck).reduce((a, b) => a + b, 0);
-}
-
-function updateDeckTotal() {
-const mainTotal = getDeckMain().reduce((a, [, cnt]) => a + cnt, 0);
-document.getElementById(“deckTotal”).textContent = `デッキ：${mainTotal} 枚`;
-}
-
-// =============== カード並び順 ===============
+// =============== カード並び順（コスト→条件数→コード順） ===============
 function sortCards(entries) {
-return entries.sort(([codeA], [codeB]) => {
-const cardA = cards.find(c => c.code === codeA);
-const cardB = cards.find(c => c.code === codeB);
-if (!cardA || !cardB) return 0;
-const costA = parseInt(cardA.cost) || 0;
-const costB = parseInt(cardB.cost) || 0;
-if (costA !== costB) return costA - costB;
-const condA = (cardA.condition || “”).replace(/[^山水森平夜無]/g, “”).length;
-const condB = (cardB.condition || “”).replace(/[^山水森平夜無]/g, “”).length;
-if (condA !== condB) return condA - condB;
-return codeA.localeCompare(codeB);
-});
-}
-
-function sortByType(entries) {
-const grouped = {};
-TYPE_ORDER.forEach(t => grouped[t] = []);
-grouped[“その他”] = [];
-entries.forEach(([code, cnt]) => {
-const card = cards.find(c => c.code === code);
-if (!card) return;
-const type = TYPE_ORDER.find(t => (card.type || “”).includes(t)) || “その他”;
-grouped[type].push([code, cnt]);
-});
-const result = [];
-TYPE_ORDER.forEach(t => result.push(…sortCards(grouped[t])));
-result.push(…sortCards(grouped[“その他”]));
-return result;
-}
-
-// =============== デッキ画像生成 ===============
-async function generateDeckImage() {
-const mainEntries = sortByType(getDeckMain());
-const sideEntries = sortByType(getDeckSide());
-const territoryEntries = sortCards(getDeckTerritory());
-
-const CARD_W = 310, CARD_H = 435, PAD = 12, BORDER = 4;
-const MAIN_COLS = 5, SUB_COLS = 2;
-const LABEL_H = 50, HEADER_H = 80, LINE_H = 55, TEXT_SIZE = 50;
-
-const mainRows = Math.ceil(Math.max(mainEntries.length, 1) / MAIN_COLS);
-const sideRows = Math.ceil(Math.max(sideEntries.length, 1) / SUB_COLS);
-const terrRows = Math.ceil(Math.max(territoryEntries.length, 1) / SUB_COLS);
-const sideAreaH = LABEL_H + sideRows * (CARD_H + PAD) + PAD;
-const terrAreaH = LABEL_H + terrRows * (CARD_H + PAD) + PAD;
-const mainAreaH = LABEL_H + mainRows * (CARD_H + PAD) + PAD;
-const rightH = sideAreaH + terrAreaH;
-
-const MAIN_W = PAD + MAIN_COLS * (CARD_W + PAD);
-const CARD_W2 = PAD + SUB_COLS * (CARD_W + PAD);
-const LIST_W = 500;
-const TOTAL_W = MAIN_W + CARD_W2 + LIST_W + PAD * 2;
-const TOTAL_H = HEADER_H + Math.max(mainAreaH, rightH) + 50;
-
-const canvas = document.createElement(“canvas”);
-canvas.width = TOTAL_W;
-canvas.height = TOTAL_H;
-const ctx = canvas.getContext(“2d”);
-
-// 背景画像
-await new Promise(resolve => {
-const bg = new Image();
-bg.crossOrigin = “anonymous”;
-bg.onload = () => { ctx.drawImage(bg, 0, 0, TOTAL_W, TOTAL_H); resolve(); };
-bg.onerror = () => { ctx.fillStyle = “#0f1a24”; ctx.fillRect(0, 0, TOTAL_W, TOTAL_H); resolve(); };
-bg.src = “https://tayu02.github.io/acg-deckbuilder/IMG_6935.png”;
-});
-
-// 暗幕
-ctx.fillStyle = “rgba(0,0,0,0.6)”;
-ctx.fillRect(0, 0, TOTAL_W, TOTAL_H);
-
-// タイトル
-ctx.fillStyle = “#a8e0a8”;
-ctx.font = “bold 52px sans-serif”;
-ctx.textAlign = “center”;
-ctx.fillText(deckName || “デッキレシピ”, TOTAL_W / 2, 42);
-
-const startY = HEADER_H;
-const MID_X = MAIN_W + PAD;
-const LIST_X = MAIN_W + CARD_W2 + PAD * 2;
-
-// ヘルパー関数（generateDeckImageのスコープ内に集約）
-function drawBorder(x, y, w, h, color) {
-ctx.strokeStyle = color;
-ctx.lineWidth = BORDER;
-ctx.strokeRect(x + BORDER/2, y + BORDER/2, w - BORDER, h - BORDER);
-}
-
-function drawDivider(x1, y1, x2, y2) {
-ctx.strokeStyle = “#666”;
-ctx.lineWidth = BORDER;
-ctx.beginPath();
-ctx.moveTo(x1, y1);
-ctx.lineTo(x2, y2);
-ctx.stroke();
-}
-
-function fillTextWrapped(text, x, y, maxWidth, lineHeight) {
-let line = “”;
-let currentY = y;
-for (const char of […text]) {
-const testLine = line + char;
-if (ctx.measureText(testLine).width > maxWidth && line !== “”) {
-ctx.fillText(line, x, currentY);
-line = char;
-currentY += lineHeight;
-} else {
-line = testLine;
-}
-}
-ctx.fillText(line, x, currentY);
-return currentY;
-}
-
-async function drawCards(entries, startX, sectionY, cols, label, labelColor) {
-ctx.fillStyle = labelColor;
-ctx.font = “bold 24px sans-serif”;
-ctx.textAlign = “left”;
-ctx.fillText(label, startX + PAD, sectionY + 30);
-
-```
-for (let i = 0; i < entries.length; i++) {
-  const [code, cnt] = entries[i];
-  const card = cards.find(c => c.code === code);
-  const col = i % cols;
-  const row = Math.floor(i / cols);
-  const x = startX + PAD + col * (CARD_W + PAD);
-  const y = sectionY + LABEL_H + row * (CARD_H + PAD);
-
-  await new Promise(resolve => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    const drawCountBadge = (fontSize) => {
-      ctx.fillStyle = "rgba(0,0,0,0.85)";
-      ctx.fillRect(x, y + CARD_H - 32, CARD_W, 32);
-      ctx.fillStyle = "#ffdd88";
-      ctx.font = `bold ${fontSize}px sans-serif`;
-      ctx.textAlign = "center";
-      ctx.fillText(`×${cnt}`, x + CARD_W / 2, y + CARD_H - 8);
-    };
-    img.onload = () => {
-      ctx.drawImage(img, x, y, CARD_W, CARD_H);
-      drawCountBadge(42);
-      resolve();
-    };
-    img.onerror = () => {
-      ctx.fillStyle = "#1f2a3f";
-      ctx.fillRect(x, y, CARD_W, CARD_H);
-      ctx.strokeStyle = "#3a6a4a";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, CARD_W, CARD_H);
-      ctx.fillStyle = "#e0e8d0";
-      ctx.font = "bold 14px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(card ? card.name.substring(0, 6) : code, x + CARD_W/2, y + CARD_H/2);
-      drawCountBadge(38);
-      resolve();
-    };
-    img.src = getImageUrl(code);
+  return entries.sort(([codeA], [codeB]) => {
+    const cardA = cards.find(c => c.code === codeA);
+    const cardB = cards.find(c => c.code === codeB);
+    if (!cardA || !cardB) return 0;
+    const costA = parseInt(cardA.cost) || 0;
+    const costB = parseInt(cardB.cost) || 0;
+    if (costA !== costB) return costA - costB;
+    const condA = (cardA.condition || "").replace(/[^山水森平夜無]/g, "").length;
+    const condB = (cardB.condition || "").replace(/[^山水森平夜無]/g, "").length;
+    if (condA !== condB) return condA - condB;
+    return codeA.localeCompare(codeB);
   });
 }
-```
 
+// =============== タイプ別並び順 ===============
+const typeOrder = ["動物", "縄張り", "道具", "特技", "場面"];
+
+function sortByType(entries) {
+  const grouped = {};
+  typeOrder.forEach(t => grouped[t] = []);
+  grouped["その他"] = [];
+  entries.forEach(([code, cnt]) => {
+    const card = cards.find(c => c.code === code);
+    if (!card) return;
+    const type = typeOrder.find(t => (card.type || "").includes(t)) || "その他";
+    grouped[type].push([code, cnt]);
+  });
+  const result = [];
+  typeOrder.forEach(t => result.push(...sortCards(grouped[t])));
+  result.push(...sortCards(grouped["その他"]));
+  return result;
 }
 
-function drawTextList(entries, header, headerColor, listY) {
-ctx.fillStyle = headerColor;
-ctx.font = “bold 22px sans-serif”;
-ctx.textAlign = “left”;
-ctx.fillText(header, LIST_X, listY);
-listY += LINE_H + 4;
-entries.forEach(([code, cnt]) => {
-const card = cards.find(c => c.code === code);
-const name = card ? card.name : code;
-ctx.fillStyle = “#e0e8d0”;
-ctx.font = `${TEXT_SIZE}px sans-serif`;
-listY = fillTextWrapped(`${name}  ×${cnt}`, LIST_X, listY, LIST_W - PAD * 2, TEXT_SIZE + 4);
-listY += LINE_H;
-});
-return listY + 16;
-}
+// =============== デッキ画像生成（GitHub画像使用） ===============
+async function generateDeckImage() {
+  const mainEntries = sortByType(getDeckMain());
+  const sideEntries = sortByType(getDeckSide());
+  const territoryEntries = sortCards(getDeckTerritory());
 
-const sumCount = (entries) => entries.reduce((a, [, c]) => a + c, 0);
+  const CARD_W = 310;
+  const CARD_H = 435;
+  const PAD = 12;
+  const BORDER = 4;
+  const MAIN_COLS = 5;
+  const SUB_COLS = 2;
+  const LABEL_H = 50;
+  const HEADER_H = 80;
+  const LINE_H = 55;
+  const TEXT_SIZE = 50;
 
-// メインデッキ描画
-drawBorder(0, startY, MAIN_W, mainAreaH, “#4a8a4a”);
-await drawCards(mainEntries, 0, startY, MAIN_COLS,
-`🃏 メインデッキ (${sumCount(mainEntries)}枚)`, “#a8e0a8”);
-drawDivider(MAIN_W + PAD/2, startY, MAIN_W + PAD/2, TOTAL_H);
+  const mainRows = Math.ceil(Math.max(mainEntries.length, 1) / MAIN_COLS);
+  const sideRows = Math.ceil(Math.max(sideEntries.length, 1) / SUB_COLS);
+  const terrRows = Math.ceil(Math.max(territoryEntries.length, 1) / SUB_COLS);
+  const sideAreaH = LABEL_H + sideRows * (CARD_H + PAD) + PAD;
+  const terrAreaH = LABEL_H + terrRows * (CARD_H + PAD) + PAD;
+  const mainAreaH = LABEL_H + mainRows * (CARD_H + PAD) + PAD;
+  const rightH = sideAreaH + terrAreaH;
 
-// サイドデッキ描画
-drawBorder(MID_X, startY, CARD_W2, sideAreaH, “#6a6a9a”);
-await drawCards(sideEntries, MID_X, startY, SUB_COLS,
-`📦 サイド (${sumCount(sideEntries)}枚)`, “#aaccff”);
-drawDivider(MID_X, startY + sideAreaH, MID_X + CARD_W2, startY + sideAreaH);
+  // 各エリアの幅
+  const MAIN_W = PAD + MAIN_COLS * (CARD_W + PAD);
+  const CARD_W2 = PAD + SUB_COLS * (CARD_W + PAD);
+  const LIST_W = 500;
+  const TOTAL_W = MAIN_W + CARD_W2 + LIST_W + PAD * 2;
+  const TOTAL_H = HEADER_H + Math.max(mainAreaH, rightH) + 50;
 
-// 領土デッキ描画
-drawBorder(MID_X, startY + sideAreaH, CARD_W2, terrAreaH, “#8a6a2a”);
-await drawCards(territoryEntries, MID_X, startY + sideAreaH, SUB_COLS,
-`🌍 領土 (${sumCount(territoryEntries)}枚)`, “#e0c060”);
-drawDivider(LIST_X - PAD/2, startY, LIST_X - PAD/2, TOTAL_H);
+  const canvas = document.createElement("canvas");
+  canvas.width = TOTAL_W;
+  canvas.height = TOTAL_H;
+  const ctx = canvas.getContext("2d");
 
-// テキスト一覧
-let listY = startY + 30;
-listY = drawTextList(mainEntries, `🃏 メイン (${sumCount(mainEntries)}枚)`, “#a8e0a8”, listY);
-listY = drawTextList(sideEntries, `📦 サイド (${sumCount(sideEntries)}枚)`, “#aaccff”, listY);
-listY = drawTextList(territoryEntries, `🌍 領土 (${sumCount(territoryEntries)}枚)`, “#e0c060”, listY);
+  // 背景画像
+  await new Promise(resolve => {
+    const bg = new Image();
+    bg.crossOrigin = "anonymous";
+    bg.onload = () => { ctx.drawImage(bg, 0, 0, TOTAL_W, TOTAL_H); resolve(); };
+    bg.onerror = () => { ctx.fillStyle = "#0f1a24"; ctx.fillRect(0, 0, TOTAL_W, TOTAL_H); resolve(); };
+    bg.src = "https://tayu02.github.io/acg-deckbuilder/IMG_6935.png";
+  });
 
-return canvas;
+  // 暗幕
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(0, 0, TOTAL_W, TOTAL_H);
+
+  // タイトル
+  ctx.fillStyle = "#a8e0a8";
+  ctx.font = "bold 52px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(deckName || "デッキレシピ", TOTAL_W / 2, 42);
+
+  const startY = HEADER_H;
+  const MID_X = MAIN_W + PAD;
+  const LIST_X = MAIN_W + CARD_W2 + PAD * 2;
+
+  function drawBorder(x, y, w, h, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = BORDER;
+    ctx.strokeRect(x + BORDER/2, y + BORDER/2, w - BORDER, h - BORDER);
+  }
+
+  async function drawCards(entries, startX, startY, cols, label, labelColor) {
+    ctx.fillStyle = labelColor;
+    ctx.font = "bold 24px sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(label, startX + PAD, startY + 30);
+
+    for (let i = 0; i < entries.length; i++) {
+      const [code, cnt] = entries[i];
+      const card = cards.find(c => c.code === code);
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = startX + PAD + col * (CARD_W + PAD);
+      const y = startY + LABEL_H + row * (CARD_H + PAD);
+
+      await new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          ctx.drawImage(img, x, y, CARD_W, CARD_H);
+          ctx.fillStyle = "rgba(0,0,0,0.85)";
+          ctx.fillRect(x, y + CARD_H - 32, CARD_W, 32);
+          ctx.fillStyle = "#ffdd88";
+          ctx.font = "bold 42px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(`×${cnt}`, x + CARD_W / 2, y + CARD_H - 8);
+          resolve();
+        };
+        img.onerror = () => {
+          ctx.fillStyle = "#1f2a3f";
+          ctx.fillRect(x, y, CARD_W, CARD_H);
+          ctx.strokeStyle = "#3a6a4a";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, CARD_W, CARD_H);
+          ctx.fillStyle = "#e0e8d0";
+          ctx.font = "bold 14px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(card ? card.name.substring(0, 6) : code, x + CARD_W/2, y + CARD_H/2);
+          ctx.fillStyle = "rgba(0,0,0,0.85)";
+          ctx.fillRect(x, y + CARD_H - 32, CARD_W, 32);
+          ctx.fillStyle = "#ffdd88";
+          ctx.font = "bold 38px sans-serif";
+          ctx.fillText(`×${cnt}`, x + CARD_W / 2, y + CARD_H - 8);
+          resolve();
+        };
+        img.src = getImageUrl(code);
+      });
+    }
+  }
+
+  // メインデッキ描画
+  drawBorder(0, startY, MAIN_W, mainAreaH, "#4a8a4a");
+  await drawCards(mainEntries, 0, startY, MAIN_COLS,
+    `🃏 メインデッキ (${mainEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#a8e0a8");
+
+  // 縦区切り線（メインと中央）
+  ctx.strokeStyle = "#666";
+  ctx.lineWidth = BORDER;
+  ctx.beginPath();
+  ctx.moveTo(MAIN_W + PAD/2, startY);
+  ctx.lineTo(MAIN_W + PAD/2, TOTAL_H);
+  ctx.stroke();
+
+  // サイドデッキ描画
+  drawBorder(MID_X, startY, CARD_W2, sideAreaH, "#6a6a9a");
+  await drawCards(sideEntries, MID_X, startY, SUB_COLS,
+    `📦 サイド (${sideEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#aaccff");
+
+  // 横区切り線
+  ctx.strokeStyle = "#666";
+  ctx.lineWidth = BORDER;
+  ctx.beginPath();
+  ctx.moveTo(MID_X, startY + sideAreaH);
+  ctx.lineTo(MID_X + CARD_W2, startY + sideAreaH);
+  ctx.stroke();
+
+  // 領土デッキ描画
+  drawBorder(MID_X, startY + sideAreaH, CARD_W2, terrAreaH, "#8a6a2a");
+  await drawCards(territoryEntries, MID_X, startY + sideAreaH, SUB_COLS,
+    `🌍 領土 (${territoryEntries.reduce((a,[,c])=>a+c,0)}枚)`, "#e0c060");
+
+  // 縦区切り線（中央とリスト）
+  ctx.strokeStyle = "#666";
+  ctx.lineWidth = BORDER;
+  ctx.beginPath();
+  ctx.moveTo(LIST_X - PAD/2, startY);
+  ctx.lineTo(LIST_X - PAD/2, TOTAL_H);
+  ctx.stroke();
+
+  // =============== テキスト一覧 ===============
+  let listY = startY + 30;
+
+  // メイン一覧
+  ctx.fillStyle = "#a8e0a8";
+  ctx.font = "bold 22px sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText(`🃏 メイン (${mainEntries.reduce((a,[,c])=>a+c,0)}枚)`, LIST_X, listY);
+  listY += LINE_H + 4;
+
+  mainEntries.forEach(([code, cnt]) => {
+    const card = cards.find(c => c.code === code);
+    const name = card ? card.name : code;
+    ctx.fillStyle = "#e0e8d0";
+    ctx.font = `${TEXT_SIZE}px sans-serif`;
+    listY = fillTextWrapped(`${name}  ×${cnt}`, LIST_X, listY, LIST_W - PAD * 2, TEXT_SIZE + 4);
+    listY += LINE_H;
+
+  });
+
+  listY += 16;
+
+  // サイド一覧
+  ctx.fillStyle = "#aaccff";
+  ctx.font = "bold 22px sans-serif";
+  ctx.fillText(`📦 サイド (${sideEntries.reduce((a,[,c])=>a+c,0)}枚)`, LIST_X, listY);
+  listY += LINE_H + 4;
+
+  sideEntries.forEach(([code, cnt]) => {
+    const card = cards.find(c => c.code === code);
+    const name = card ? card.name : code;
+    ctx.fillStyle = "#e0e8d0";
+    ctx.font = `${TEXT_SIZE}px sans-serif`;
+    listY = fillTextWrapped(`${name}  ×${cnt}`, LIST_X, listY, LIST_W - PAD * 2, TEXT_SIZE + 4);
+    listY += LINE_H;
+
+  });
+
+  listY += 16;
+
+  // 領土一覧
+  ctx.fillStyle = "#e0c060";
+  ctx.font = "bold 22px sans-serif";
+  ctx.fillText(`🌍 領土 (${territoryEntries.reduce((a,[,c])=>a+c,0)}枚)`, LIST_X, listY);
+  listY += LINE_H + 4;
+
+  territoryEntries.forEach(([code, cnt]) => {
+    const card = cards.find(c => c.code === code);
+    const name = card ? card.name : code;
+    ctx.fillStyle = "#e0e8d0";
+    ctx.font = `${TEXT_SIZE}px sans-serif`;
+    listY = fillTextWrapped(`${name}  ×${cnt}`, LIST_X, listY, LIST_W - PAD * 2, TEXT_SIZE + 4);
+    listY += LINE_H;
+  });
+
+  // テキスト折り返し描画関数
+  function fillTextWrapped(text, x, y, maxWidth, lineHeight) {
+    const chars = [...text];
+    let line = "";
+    let currentY = y;
+    for (const char of chars) {
+      const testLine = line + char;
+      if (ctx.measureText(testLine).width > maxWidth && line !== "") {
+        ctx.fillText(line, x, currentY);
+        line = char;
+        currentY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, x, currentY);
+    return currentY; // 最終Y座標を返す
+  }
+
+
+  return canvas;
 }
 
 // =============== デッキ画像モーダル表示 ===============
 async function showDeckImage() {
-const modal = document.getElementById(“deckImageModal”);
-const container = document.getElementById(“deckImageContainer”);
-container.innerHTML = “<p style='color:#aaa;padding:20px;'>画像生成中…</p>”;
-modal.style.display = “flex”;
-const canvas = await generateDeckImage();
-const dataUrl = canvas.toDataURL(“image/jpeg”, 0.92);
-
-const overlay = document.createElement(“div”);
-overlay.style.cssText = “position:fixed;top:0;left:0;width:100%;height:100%;background:black;z-index:9999;overflow-y:auto;”;
-const msg = document.createElement(“p”);
-msg.textContent = “保存”;
-msg.style.cssText = “color:white;text-align:center;padding:16px;font-size:16px;”;
-const closeBtn = document.createElement(“button”);
-closeBtn.textContent = “✕ 閉じる”;
-closeBtn.style.cssText = “display:block;margin:0 auto 12px;padding:10px 24px;background:#3a3a1a;border:1px solid #8a8a3a;border-radius:10px;color:#ffee88;font-size:16px;cursor:pointer;”;
-closeBtn.addEventListener(“click”, () => {
-overlay.remove();
-modal.style.display = “none”;
-});
-const img = document.createElement(“img”);
-img.src = dataUrl;
-img.style.cssText = “width:100%;display:block;”;
-overlay.appendChild(msg);
-overlay.appendChild(closeBtn);
-overlay.appendChild(img);
-document.body.appendChild(overlay);
-container.innerHTML = “”;
-container.appendChild(canvas);
+  const modal = document.getElementById("deckImageModal");
+  const container = document.getElementById("deckImageContainer");
+  container.innerHTML = "<p style='color:#aaa;padding:20px;'>画像生成中...</p>";
+  modal.style.display = "flex";
+  const canvas = await generateDeckImage();
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:black;z-index:9999;overflow-y:auto;";
+  const msg = document.createElement("p");
+  msg.textContent = "保存";
+  msg.style.cssText = "color:white;text-align:center;padding:16px;font-size:16px;";
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "✕ 閉じる";
+  closeBtn.style.cssText = "display:block;margin:0 auto 12px;padding:10px 24px;background:#3a3a1a;border:1px solid #8a8a3a;border-radius:10px;color:#ffee88;font-size:16px;cursor:pointer;";
+  closeBtn.addEventListener("click", () => {
+    overlay.remove();
+    modal.style.display = "none";
+  });
+  const img = document.createElement("img");
+  img.src = dataUrl;
+  img.style.cssText = "width:100%;display:block;";
+  overlay.appendChild(msg);
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(img);
+  document.body.appendChild(overlay);
+  container.innerHTML = "";
+  container.appendChild(canvas);
 }
 
 // =============== 画像保存 ===============
 function saveDeckImage() {
-const canvas = document.querySelector(”#deckImageContainer canvas”);
-if (!canvas) { alert(“先に画像を生成してください”); return; }
-const dataUrl = canvas.toDataURL(“image/jpeg”, 0.92);
-const img = document.createElement(“img”);
-img.src = dataUrl;
-img.style.cssText = “position:fixed;top:0;left:0;width:100%;z-index:9999;”;
-document.body.appendChild(img);
-img.addEventListener(“click”, () => img.remove());
-alert(“画像を長押しして「写真に保存」してください。タップすると閉じます。”);
+  const canvas = document.querySelector("#deckImageContainer canvas");
+  if (!canvas) { alert("先に画像を生成してください"); return; }
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+  const img = document.createElement("img");
+  img.src = dataUrl;
+  img.style.cssText = "position:fixed;top:0;left:0;width:100%;z-index:9999;";
+  document.body.appendChild(img);
+  img.addEventListener("click", () => img.remove());
+  alert("画像を長押しして「写真に保存」してください。タップすると閉じます。");
 }
 
 // =============== デッキ画面描画 ===============
-// インラインスタイルを文字列定数化（重複削減）
-const DECK_STYLES = {
-emptyMsg: “color:#666;font-size:13px;”,
-cardRow: “display:flex; align-items:center; gap:10px; padding:4px 0; border-bottom:1px solid #2a4a3a;”,
-cardImg: “width:48px; height:68px; object-fit:cover; border-radius:6px; background:#112233;”,
-cardInfo: “flex:1; min-width:0;”,
-cardName: “font-size:12px; color:#e0e8d0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;”,
-cardCode: “font-size:10px; color:#aaa; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;”,
-cardCtrl: “display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;”,
-btnMinus: “width:24px;height:24px;background:#c85a5a;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;”,
-btnPlus:  “width:24px;height:24px;background:#4caf50;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;”,
-countNum: “color:#ffdd88;font-weight:bold;min-width:20px;text-align:center;”,
-btnMove: “padding:2px 5px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:11px;cursor:pointer;”,
-btnMoveBulk: “padding:2px 5px;background:#2a2a4a;border:1px solid #5a5a8a;border-radius:6px;color:#99b;font-size:11px;cursor:pointer;”,
-btnMoveBack: “padding:2px 8px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:12px;cursor:pointer;”,
-sectionMain: “background:#1a2a1a; border:2px solid #4a8a4a; border-radius:12px; padding:14px; margin-bottom:16px;”,
-sectionSide: “background:#1a1a2a; border:2px solid #6a6a9a; border-radius:12px; padding:14px; margin-bottom:16px;”,
-sectionTerr: “background:#1a1a1a; border:2px solid #8a6a2a; border-radius:12px; padding:14px; margin-bottom:16px;”
-};
-
-function buildCardRow(code, cnt, location) {
-const card = cards.find(c => c.code === code);
-const name = card ? card.name : code;
-const img = card ? getImageUrl(card.code) : “”;
-const isTerritory = card?.type === “領土”;
-
-let moveBtns = “”;
-if (!isTerritory) {
-if (location === “main”) {
-moveBtns = ` <button onclick="moveDeck('${code}','side')" style="${DECK_STYLES.btnMove}">→サイド</button> <button onclick="moveDeck('${code}','side',true)" style="${DECK_STYLES.btnMoveBulk}">→全サイド</button>`;
-} else if (location === “side”) {
-moveBtns = `<button onclick="moveDeck('${code}','main')" style="${DECK_STYLES.btnMoveBack}">→本</button>`;
-}
-}
-
-return ` <div style="${DECK_STYLES.cardRow}"> <img src="${img}" onerror="this.src='${FALLBACK_IMG_LIST}'" style="${DECK_STYLES.cardImg}"> <div style="${DECK_STYLES.cardInfo}"> <div style="${DECK_STYLES.cardName}">${name}</div> <div style="${DECK_STYLES.cardCode}">${code}</div> </div> <div style="${DECK_STYLES.cardCtrl}"> <button onclick="changeDeckCount('${code}',-1,'${location}')" style="${DECK_STYLES.btnMinus}">−</button> <span style="${DECK_STYLES.countNum}">${cnt}</span> <button onclick="changeDeckCount('${code}',1,'${location}')" style="${DECK_STYLES.btnPlus}">＋</button> ${moveBtns} </div> </div>`;
-}
-
-function renderSection(entries, sortFn, location) {
-if (entries.length === 0) {
-return `<p style="${DECK_STYLES.emptyMsg}">カードがありません</p>`;
-}
-return sortFn(entries).map(([code, cnt]) => buildCardRow(code, cnt, location)).join(””);
-}
-
 function renderDeckView() {
-const territoryEntries = getDeckTerritory();
-const mainEntries = getDeckMain();
-const sideEntries = getDeckSide();
-const territoryTotal = territoryEntries.reduce((a, [, cnt]) => a + cnt, 0);
-const mainTotal = mainEntries.reduce((a, [, cnt]) => a + cnt, 0);
-const sideTotal = sideEntries.reduce((a, [, cnt]) => a + cnt, 0);
+  const territoryEntries = getDeckTerritory();
+  const territoryTotal = territoryEntries.reduce((a, [, cnt]) => a + cnt, 0);
+  const mainEntries = getDeckMain();
+  const sideEntries = getDeckSide();
+  const mainTotal = mainEntries.reduce((a, [, cnt]) => a + cnt, 0);
+  const sideTotal = sideEntries.reduce((a, [, cnt]) => a + cnt, 0);
 
-const mainHTML = renderSection(mainEntries, sortByType, “main”);
-const sideHTML = renderSection(sideEntries, sortByType, “side”);
-const territoryHTML = renderSection(territoryEntries, sortCards, “territory”);
+  function cardHTML(code, cnt, location) {
+    const card = cards.find(c => c.code === code);
+    const name = card ? card.name : code;
+    const img = card ? getImageUrl(card.code) : "";
+    const isTerritory = card?.type === "領土";
 
-document.getElementById(“deckView”).innerHTML = `
-<div style="padding:4px 16px 100px;">
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; margin-top:4px;">
-<input id="deckNameInput" type="text" placeholder="デッキ名を入力..." value="${deckName}"
-onchange="deckName=this.value"
-style="flex:1; margin-right:8px; padding:6px 10px; background:#1f2a35; border:1px solid #4a8a4a; border-radius:8px; color:white; font-size:14px;">
-<button onclick="copyDeckURL()" style="padding:6px 12px; background:#1a3a5a; border:1px solid #4a8aaa; border-radius:8px; color:#88ccff; font-size:13px; cursor:pointer; margin-right:8px;">🔗 URL</button>
-<button onclick="resetDeck()" style="padding:6px 12px; background:#5a1a1a; border:1px solid #aa4444; border-radius:8px; color:#ffaaaa; font-size:14px; cursor:pointer;">🗑</button>
-</div>
+    let moveBtns = "";
+    if (!isTerritory) {
+      if (location === "main") {
+        moveBtns = `
+          <button onclick="moveDeck('${code}','side')" style="padding:2px 5px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:11px;cursor:pointer;">→サイド</button>
+          <button onclick="moveDeck('${code}','side',true)" style="padding:2px 5px;background:#2a2a4a;border:1px solid #5a5a8a;border-radius:6px;color:#99b;font-size:11px;cursor:pointer;">→全サイド</button>`;
+      } else {
+        moveBtns = `
+          <button onclick="moveDeck('${code}','main')" style="padding:2px 8px;background:#3a3a5a;border:1px solid #6a6a9a;border-radius:6px;color:#aac;font-size:12px;cursor:pointer;">→本</button>`;
+      }
+    }
 
-```
-  <div style="${DECK_STYLES.sectionMain}">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-      <h2 style="color:#a8e0a8; font-size:16px;">
-        🃏 メインデッキ
-        <span style="color:${mainTotal >= 40 ? '#88ff88' : '#ffaa44'}; font-size:14px; margin-left:8px;">
-          ${mainTotal}枚 ${mainTotal >= 40 ? '✅' : '(40枚以上必要)'}
-        </span>
-      </h2>
-      <button onclick="showDeckImage()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer;">🖼 画像</button>
-    </div>
-    ${mainHTML}
-  </div>
+    return `
+      <div style="display:flex; align-items:center; gap:10px; padding:4px 0; border-bottom:1px solid #2a4a3a;">
+        <img src="${img}" onerror="this.src='https://via.placeholder.com/48x68/112233/88cc88?text=?'" style="width:48px; height:68px; object-fit:cover; border-radius:6px; background:#112233;">
+      <div style="flex:1; min-width:0;">
+          <div style="font-size:12px; color:#e0e8d0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div>
+          <div style="font-size:10px; color:#aaa; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${code}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                    <button onclick="changeDeckCount('${code}',-1,'${location}')" style="width:24px;height:24px;background:#c85a5a;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">−</button>
+          <span style="color:#ffdd88;font-weight:bold;min-width:20px;text-align:center;">${cnt}</span>
+          <button onclick="changeDeckCount('${code}',1,'${location}')" style="width:24px;height:24px;background:#4caf50;border:none;border-radius:4px;color:white;font-size:14px;cursor:pointer;">＋</button>
+          ${moveBtns}
+        </div>
+      </div>`;
+  }
 
-  <div style="${DECK_STYLES.sectionSide}">
-    <h2 style="color:#aaccff; font-size:16px; margin-bottom:12px;">
-      📦 サイドデッキ
-      <span style="color:${sideTotal <= MAX_SIDE ? '#88aaff' : '#ff4444'}; font-size:14px; margin-left:8px;">
-        ${sideTotal}枚 / ${MAX_SIDE}枚 ${sideTotal > MAX_SIDE ? '⚠️' : ''}
-      </span>
-    </h2>
-    ${sideHTML}
-  </div>
+  const mainHTML = mainEntries.length === 0
+    ? "<p style='color:#666;font-size:13px;'>カードがありません</p>"
+    : sortByType(mainEntries).map(([code, cnt]) => cardHTML(code, cnt, "main")).join("");
+  const sideHTML = sideEntries.length === 0
+    ? "<p style='color:#666;font-size:13px;'>カードがありません</p>"
+    : sortByType(sideEntries).map(([code, cnt]) => cardHTML(code, cnt, "side")).join("");
+  const territoryHTML = territoryEntries.length === 0
+    ? "<p style='color:#666;font-size:13px;'>カードがありません</p>"
+    : territoryEntries.map(([code, cnt]) => cardHTML(code, cnt, "territory")).join("");
 
-  <div style="${DECK_STYLES.sectionTerr}">
-    <h2 style="color:#e0c060; font-size:16px; margin-bottom:12px;">
-      🌍 領土デッキ
-      <span style="color:${territoryTotal <= MAX_TERRITORY ? '#ffdd88' : '#ff4444'}; font-size:14px; margin-left:8px;">
-        ${territoryTotal}枚 / ${MAX_TERRITORY}枚 ${territoryTotal > MAX_TERRITORY ? '⚠️' : ''}
-      </span>
-    </h2>
-    ${territoryHTML}
-  </div>
-</div>`;
-```
+  document.getElementById("deckView").innerHTML = `
+    <div style="padding:4px 16px 100px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; margin-top:4px;">
+        <input id="deckNameInput" type="text" placeholder="デッキ名を入力..." value="${deckName}"
+          onchange="deckName=this.value"
+          style="flex:1; margin-right:8px; padding:6px 10px; background:#1f2a35; border:1px solid #4a8a4a; border-radius:8px; color:white; font-size:14px;">
+        <button onclick="copyDeckURL()" style="padding:6px 12px; background:#1a3a5a; border:1px solid #4a8aaa; border-radius:8px; color:#88ccff; font-size:13px; cursor:pointer; margin-right:8px;">🔗 URL</button>
+        <button onclick="resetDeck()" style="padding:6px 12px; background:#5a1a1a; border:1px solid #aa4444; border-radius:8px; color:#ffaaaa; font-size:14px; cursor:pointer;">🗑</button>
+      </div>
 
+      <div style="background:#1a2a1a; border:2px solid #4a8a4a; border-radius:12px; padding:14px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <h2 style="color:#a8e0a8; font-size:16px;">
+            🃏 メインデッキ
+            <span style="color:${mainTotal >= 40 ? '#88ff88' : '#ffaa44'}; font-size:14px; margin-left:8px;">
+              ${mainTotal}枚 ${mainTotal >= 40 ? '✅' : '(40枚以上必要)'}
+            </span>
+          </h2>
+          <button onclick="showDeckImage()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer;">🖼 画像</button>
+        </div>
+        ${mainHTML}
+      </div>
+
+      <div style="background:#1a1a2a; border:2px solid #6a6a9a; border-radius:12px; padding:14px; margin-bottom:16px;">
+        <h2 style="color:#aaccff; font-size:16px; margin-bottom:12px;">
+          📦 サイドデッキ
+          <span style="color:${sideTotal <= 15 ? '#88aaff' : '#ff4444'}; font-size:14px; margin-left:8px;">
+            ${sideTotal}枚 / 15枚 ${sideTotal > 15 ? '⚠️' : ''}
+          </span>
+        </h2>
+        ${sideHTML}
+      </div>
+
+      <div style="background:#1a1a1a; border:2px solid #8a6a2a; border-radius:12px; padding:14px; margin-bottom:16px;">
+        <h2 style="color:#e0c060; font-size:16px; margin-bottom:12px;">
+          🌍 領土デッキ
+          <span style="color:${territoryTotal <= 10 ? '#ffdd88' : '#ff4444'}; font-size:14px; margin-left:8px;">
+            ${territoryTotal}枚 / 10枚 ${territoryTotal > 10 ? '⚠️' : ''}
+          </span>
+        </h2>
+        ${territoryHTML}
+      </div>
+    </div>`;
 }
 
 // =============== デッキ枚数変更（デッキ画面用） ===============
 function changeDeckCount(code, delta, location) {
-if (location === “side”) {
-sideDeck[code] = (sideDeck[code] || 0) + delta;
-if (sideDeck[code] < 0) sideDeck[code] = 0;
-if (getSideTotal() > MAX_SIDE) sideDeck[code] -= delta;
-if (sideDeck[code] === 0) delete sideDeck[code];
-} else {
-deck[code] = (deck[code] || 0) + delta;
-if (deck[code] < 0) deck[code] = 0;
-const isTerritory = cards.find(c => c.code === code)?.type === “領土”;
-const isBasicTerritory = isTerritory && BASIC_TERRITORIES.includes(code);
-const limit = isTerritory ? (isBasicTerritory ? MAX_TERRITORY : MAX_COPIES) : MAX_COPIES;
-if (deck[code] > limit) deck[code] = limit;
-}
-updateDeckTotal();
-renderDeckView();
+  if (location === "side") {
+    sideDeck[code] = (sideDeck[code] || 0) + delta;
+    if (sideDeck[code] < 0) sideDeck[code] = 0;
+    const sideTotal = Object.values(sideDeck).reduce((a, b) => a + b, 0);
+    if (sideTotal > 15) sideDeck[code] -= delta;
+    if (sideDeck[code] === 0) delete sideDeck[code];
+  } else {
+    deck[code] = (deck[code] || 0) + delta;
+    if (deck[code] < 0) deck[code] = 0;
+    const isTerritory = cards.find(c => c.code === code)?.type === "領土";
+    const isBasicTerritory = isTerritory && ["RYO-001","RYO-002","RYO-003","RYO-004"].includes(code);
+    const limit = isTerritory ? (isBasicTerritory ? 10 : 4) : maxCopies;
+    if (deck[code] > limit) deck[code] = limit;
+  }
+  updateDeckTotal();
+  renderDeckView();
 }
 
-// =============== 本デッキ↔サイドデッキ移動 ===============
+// =============== 本デッキ↔サイドデッキ移動（1枚ずつ） ===============
 function moveDeck(code, target, all = false) {
-if (target === “side”) {
-const sideTotal = getSideTotal();
-if (sideTotal >= MAX_SIDE) { alert(`サイドデッキは${MAX_SIDE}枚満杯です`); return; }
-const available = MAX_SIDE - sideTotal;
-const toMove = all ? Math.min(deck[code] || 0, available) : 1;
-if ((deck[code] || 0) > 0) {
-deck[code] = (deck[code] || 0) - toMove;
-if (deck[code] === 0) delete deck[code];
-sideDeck[code] = (sideDeck[code] || 0) + toMove;
-}
-} else {
-if ((sideDeck[code] || 0) > 0) {
-sideDeck[code]–;
-if (sideDeck[code] === 0) delete sideDeck[code];
-deck[code] = (deck[code] || 0) + 1;
-}
-}
-updateDeckTotal();
-renderDeckView();
+  if (target === "side") {
+    const sideTotal = Object.values(sideDeck).reduce((a, b) => a + b, 0);
+    if (sideTotal >= 15) { alert("サイドデッキは15枚満杯です"); return; }
+    const available = 15 - sideTotal;
+    const toMove = all ? Math.min(deck[code] || 0, available) : 1;
+    if ((deck[code] || 0) > 0) {
+      deck[code] = (deck[code] || 0) - toMove;
+      if (deck[code] === 0) delete deck[code];
+      sideDeck[code] = (sideDeck[code] || 0) + toMove;
+    }
+  } else {
+    if ((sideDeck[code] || 0) > 0) {
+      sideDeck[code]--;
+      if (sideDeck[code] === 0) delete sideDeck[code];
+      deck[code] = (deck[code] || 0) + 1;
+    }
+  }
+  updateDeckTotal();
+  renderDeckView();
 }
 
 // =============== デッキ初期化 ===============
 function resetDeck() {
-if (!confirm(“デッキをすべてリセットしますか？”)) return;
-deck = {};
-sideDeck = {};
-deckSide = {};
-deckName = “”;
-updateDeckTotal();
-renderDeckView();
+  if (!confirm("デッキをすべてリセットしますか？")) return;
+  deck = {};
+  sideDeck = {};
+  deckSide = {};
+  deckName = "";
+  updateDeckTotal();
+  renderDeckView();
 }
 
 // =============== タブ切り替え ===============
 function showTab(tab) {
-const searchView = document.getElementById(“searchView”);
-const deckView = document.getElementById(“deckView”);
-const tabSearch = document.getElementById(“tabSearch”);
-const tabDeck = document.getElementById(“tabDeck”);
+  const searchView = document.getElementById("searchView");
+  const deckView = document.getElementById("deckView");
+  const tabSearch = document.getElementById("tabSearch");
+  const tabDeck = document.getElementById("tabDeck");
+  const header = document.getElementById("header");
+ if (tab === "search") {
+    searchView.style.display = "block";
+    deckView.style.display = "none";
+    tabSearch.style.background = "#3a6a3a";
+    tabDeck.style.background = "#1f2a35";
+    cardListEl.style.height = "";
+    cardListEl.style.padding = "";
+    document.body.style.overflow = "";  // 
+    filterAndRender();
+  } else {
+    searchView.style.display = "none";
+    deckView.style.display = "block";
+    tabSearch.style.background = "#1f2a35";
+    tabDeck.style.background = "#3a6a3a";
+    cardListEl.style.height = "0";
+    cardListEl.style.padding = "0";
+    cardListEl.innerHTML = "";
+    renderDeckView();
+  }
 
-if (tab === “search”) {
-searchView.style.display = “block”;
-deckView.style.display = “none”;
-tabSearch.style.background = “#3a6a3a”;
-tabDeck.style.background = “#1f2a35”;
-filterAndRender();
-} else {
-searchView.style.display = “none”;
-deckView.style.display = “block”;
-tabSearch.style.background = “#1f2a35”;
-tabDeck.style.background = “#3a6a3a”;
-renderDeckView();
 }
-}
+
+// =============== デッキ名管理 ===============
+let deckName = "";
 
 // =============== URL生成・読み込み（LZString使用） ===============
 function encodeDeck() {
-const codeToIdx = {};
-cards.forEach((card, i) => { codeToIdx[card.code] = i; });
+  const mainEntries = getDeckMain();
+  const sideEntries = getDeckSide();
+  const territoryEntries = getDeckTerritory();
 
-const data = {
-n: deckName || “”,
-m: getDeckMain().map(([code, cnt]) => [codeToIdx[code], cnt]),
-s: getDeckSide().map(([code, cnt]) => [codeToIdx[code], cnt]),
-t: getDeckTerritory().map(([code, cnt]) => [codeToIdx[code], cnt])
-};
+  // コードを短いインデックスに変換
+  const codeToIdx = {};
+  cards.forEach((card, i) => { codeToIdx[card.code] = i; });
 
-const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(data));
-return window.location.href.split(”?”)[0] + “?d=” + compressed;
+  const data = {
+    n: deckName || "",
+    m: mainEntries.map(([code, cnt]) => [codeToIdx[code], cnt]),
+    s: sideEntries.map(([code, cnt]) => [codeToIdx[code], cnt]),
+    t: territoryEntries.map(([code, cnt]) => [codeToIdx[code], cnt])
+  };
+
+  const jsonStr = JSON.stringify(data);
+  const compressed = LZString.compressToEncodedURIComponent(jsonStr);
+  return window.location.href.split("?")[0] + "?d=" + compressed;
 }
 
 async function decodeDeck(url) {
-const params = new URLSearchParams(url.split(”?”)[1] || “”);
-const idParam = params.get(“id”);
-if (idParam) {
-try {
-const res = await fetch(`${FIREBASE_URL}/decks/${idParam}.json`);
-const data = await res.json();
-if (data?.url) await decodeDeck(data.url);
-} catch(e) {
-console.error(“デッキ読み込み失敗”, e);
-}
-return;
-}
-const compressed = params.get(“d”);
-if (!compressed) return;
-try {
-const jsonStr = LZString.decompressFromEncodedURIComponent(compressed);
-const data = JSON.parse(jsonStr);
-const idxToCode = cards.map(c => c.code);
-if (data.n) deckName = data.n;
-if (data.m) data.m.forEach(([idx, cnt]) => { if (idxToCode[idx]) deck[idxToCode[idx]] = cnt; });
-if (data.s) data.s.forEach(([idx, cnt]) => { if (idxToCode[idx]) sideDeck[idxToCode[idx]] = cnt; });
-if (data.t) data.t.forEach(([idx, cnt]) => {
-if (idxToCode[idx]) {
-deck[idxToCode[idx]] = cnt;
-deckSide[idxToCode[idx]] = “territory”;
-}
-});
-updateDeckTotal();
-} catch(e) {
-console.error(“デッキ読み込み失敗”, e);
-}
+  const params = new URLSearchParams(url.split("?")[1] || "");
+  const idParam = params.get("id");
+  if (idParam) {
+    try {
+      const res = await fetch(`${FIREBASE_URL}/decks/${idParam}.json`);
+      const data = await res.json();
+      if (data?.url) await decodeDeck(data.url);
+    } catch(e) {
+      console.error("デッキ読み込み失敗", e);
+    }
+    return;
+  }
+  const compressed = params.get("d");
+  if (!compressed) return;
+  try {
+    const jsonStr = LZString.decompressFromEncodedURIComponent(compressed);
+    const data = JSON.parse(jsonStr);
+    const idxToCode = cards.map(c => c.code);
+    if (data.n) deckName = data.n;
+    if (data.m) data.m.forEach(([idx, cnt]) => { if (idxToCode[idx]) deck[idxToCode[idx]] = cnt; });
+    if (data.s) data.s.forEach(([idx, cnt]) => { if (idxToCode[idx]) sideDeck[idxToCode[idx]] = cnt; });
+    if (data.t) data.t.forEach(([idx, cnt]) => {
+      if (idxToCode[idx]) {
+        deck[idxToCode[idx]] = cnt;
+        deckSide[idxToCode[idx]] = "territory";
+      }
+    });
+    updateDeckTotal();
+  } catch(e) {
+    console.error("デッキ読み込み失敗", e);
+  }
 }
 
+const FIREBASE_URL = "https://acg-original-default-rtdb.firebaseio.com";
+
 async function copyDeckURL() {
-const data = encodeDeck();
-try {
-const res = await fetch(`${FIREBASE_URL}/decks.json`, {
-method: ‘POST’,
-body: JSON.stringify({ url: data, created: Date.now() })
-});
-const json = await res.json();
-const shortUrl = `${location.origin}${location.pathname}?id=${json.name}`;
-try {
-await navigator.clipboard.writeText(shortUrl);
-alert(“URLをコピーしました！”);
-} catch {
-prompt(“このURLをコピーしてください：”, shortUrl);
-}
-} catch(e) {
-alert(“URL生成に失敗しました”);
-console.error(e);
-}
+  const data = encodeDeck();
+  try {
+    const res = await fetch(`${FIREBASE_URL}/decks.json`, {
+      method: 'POST',
+      body: JSON.stringify({ url: data, created: Date.now() })
+    });
+    const json = await res.json();
+    const id = json.name;
+    const shortUrl = `${location.origin}${location.pathname}?id=${id}`;
+    navigator.clipboard.writeText(shortUrl).then(() => {
+      alert("URLをコピーしました！");
+    }).catch(() => {
+      prompt("このURLをコピーしてください：", shortUrl);
+    });
+  } catch(e) {
+    alert("URL生成に失敗しました");
+    console.error(e);
+  }
 }
 
 function copyDeckURLAndClose() {
-copyDeckURL();
-document.getElementById(“deckImageModal”).style.display = “none”;
+  copyDeckURL();
+  document.getElementById("deckImageModal").style.display = "none";
 }
-
-// =============== スクロールトップボタン ===============
-function scrollToTop() {
-document.getElementById(‘searchView’).scrollTop = 0;
-document.getElementById(‘deckView’).scrollTop = 0;
-window.scrollTo({ top: 0, behavior: ‘smooth’ });
-}
-
-document.addEventListener(‘scroll’, (e) => {
-const btn = document.getElementById(‘scrollTopBtn’);
-if (!btn) return;
-const target = e.target;
-const scrollTop = target.scrollTop || window.scrollY;
-btn.style.display = scrollTop > 200 ? ‘block’ : ‘none’;
-}, true);
 
 // =============== 初期化処理 ===============
 populateDropdown();
-filterAndRender();
-if (window.location.search) {
-decodeDeck(window.location.href);
-}
+setTimeout(async () => {
+  filterAndRender();
+  if (window.location.search) {
+    await decodeDeck(window.location.href);
+  }
+}, 100);
 
 </script>
 
-<!-- LZString は part1 の <head> に移動済みのため、ここからは削除 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 
 <!-- トップに戻るボタン -->
+<button id="scrollTopBtn" onclick="document.getElementById('searchView').scrollTop=0; document.getElementById('deckView').scrollTop=0; window.scrollTo({top:0,behavior:'smooth'});"
+  style="display:none; position:fixed; bottom:24px; right:16px; z-index:500;
+         width:44px; height:44px; border-radius:50%; background:#3a6a3a;
+         border:2px solid #4a8a4a; color:#a8e0a8; font-size:20px; cursor:pointer;
+         box-shadow:0 4px 12px rgba(0,0,0,0.5);">↑</button>
 
-<button id="scrollTopBtn" onclick="scrollToTop()"
-style="display:none; position:fixed; bottom:24px; right:16px; z-index:500;
-width:44px; height:44px; border-radius:50%; background:#3a6a3a;
-border:2px solid #4a8a4a; color:#a8e0a8; font-size:20px; cursor:pointer;
-box-shadow:0 4px 12px rgba(0,0,0,0.5);">↑</button>
+<script>
+document.addEventListener('scroll', (e) => {
+  const btn = document.getElementById('scrollTopBtn');
+  const target = e.target;
+  const scrollTop = target.scrollTop || window.scrollY;
+  btn.style.display = scrollTop > 200 ? 'block' : 'none';
+}, true);
+
+</script>
+
 
 <div id="deckImageModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:2000; padding:20px; overflow-y:auto; flex-direction:column; align-items:center; justify-content:flex-start;">
   <div style="max-width:500px; width:100%; margin:0 auto;">
@@ -3262,5 +3210,7 @@ box-shadow:0 4px 12px rgba(0,0,0,0.5);">↑</button>
   </div>
 </div>
 
+
 </body>
+
 </html>
