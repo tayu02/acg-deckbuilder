@@ -2490,7 +2490,9 @@ function filterAndRender() {
       }
     }
     return true;
-      }).forEach(card => {
+  }).filter((card, _, arr) => {
+    return arr.findIndex(c => c.name === card.name) === arr.indexOf(card);
+  }).forEach(card => {
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
