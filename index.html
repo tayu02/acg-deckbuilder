@@ -43,20 +43,20 @@
   @media (min-width: 768px) {
     body { font-size: 16px; }
     #header { padding: 16px 24px; }
-    #searchView { max-width: 900px; margin: 0 auto; }
+    #searchView { max-width: 1400px; margin: 0 auto; }
     .search-input { font-size: 16px; padding: 8px 12px; }
     .stat-select { font-size: 14px; padding: 10px 8px; }
     #cardList {
-      grid-template-columns: repeat(7, 1fr);
-      gap: 8px;
-      padding: 12px 12px 100px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      padding: 12px 16px 100px;
       height: calc(100vh - 220px);
     }
-    .card { height: 340px; }
-    .card img { height: 275px; }
+    .card { height: 380px; }
+    .card img { height: 310px; }
     .card-controls button { width: 36px; height: 36px; font-size: 18px; }
     .count { font-size: 16px; }
-    #deckView { max-width: 900px; margin: 0 auto; }
+    #deckView { max-width: 1400px; margin: 0 auto; }
     #clearBtn { font-size: 16px; padding: 8px 16px; }
   }
 </style>
@@ -187,6 +187,24 @@ function getImageUrl(code) {
   if (code.startsWith("BP2-")) return `${base}/BT2/${code}.png`;
   if (code.startsWith("BP1-")) return `${base}/BT1/${code}.png`;
   if (code.startsWith("RYO-")) return `${base}/領土/${code}.png`;
+  return "";
+}
+
+// =============== GitHub画像URL生成（Canvas用・CORS対応） ===============
+function getGithubImageUrl(code) {
+  const base = "https://raw.githubusercontent.com/tayu02/acg-deckbuilder/main";
+  if (code.startsWith("BP4-")) return `${base}/BT4/${code}.png`;
+  if (code.startsWith("BP3-")) return `${base}/BT3/${code}.png`;
+  if (code.startsWith("BP2-")) return `${base}/BT2/${code}.png`;
+  if (code.startsWith("BP1-")) return `${base}/BT1/${code}.png`;
+  if (code.startsWith("RYO-")) return `${base}/領土/${code}.png`;
+  const m = code.match(/ACG-(\d+)/);
+  if (m) {
+    const num = parseInt(m[1]);
+    const acgCode = "ACG-" + String(num).padStart(3, "0");
+    const folder = num <= 30 ? "ST1ー1" : num <= 60 ? "ST1ー2" : num <= 90 ? "ST1ー3" : "ST2";
+    return `${base}/${folder}/${acgCode}.png`;
+  }
   return "";
 }
 
@@ -1032,7 +1050,7 @@ async function generateDeckImage() {
           ctx.fillText(`×${cnt}`, x + CARD_W / 2, y + CARD_H - 8);
           resolve();
         };
-        img.src = getImageUrl(code);
+        img.src = getGithubImageUrl(code);
       });
     }
   }
