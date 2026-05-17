@@ -19,20 +19,26 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
 .life-fill.enemy { background: #c85a5a; }
 
 /* フィールド */
-#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 14px; padding: 10px; }
-.zone-label { font-size: 11px; color: #6a8a6a; margin-bottom: 4px; }
-.zone { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px; border-radius: 8px; margin-bottom: 6px; align-items: flex-start; }
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; }
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
 .enemy-zone { background: rgba(200,80,80,0.1); border: 1px solid rgba(200,80,80,0.3); }
 .player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
 .hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.pile-zone {
+background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+border-radius: 6px; padding: 5px; margin-bottom: 4px;
+position: relative; min-height: 12px;
+display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
 .trash-zone {
 background: rgba(100,60,20,0.2); border: 1px solid rgba(150,80,30,0.4);
-border-radius: 8px; padding: 8px; margin-bottom: 6px;
-position: relative; height: 76px;
+border-radius: 6px; padding: 5px; margin-bottom: 4px;
+position: relative; height: 64px;
 }
 
 /* 領土エリア */
-.territory-zone { display: flex; gap: 6px; padding: 6px 8px; margin-bottom: 6px; flex-wrap: wrap; align-items: center; }
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
 .territory-card {
 width: 38px; height: 26px; border-radius: 4px;
 background: #2a4a2a; border: 1px solid #4a8a4a;
@@ -44,7 +50,7 @@ transition: transform 0.4s, background 0.3s, border-color 0.3s, opacity 0.3s;
 
 /* カード */
 .card {
-width: 48px; height: 68px; border-radius: 5px; overflow: hidden;
+width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
 border: 2px solid #4a8a4a; background: #1a2a3a;
 position: relative; flex-shrink: 0;
 transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
@@ -74,7 +80,7 @@ padding: 1px 2px; text-align: center; white-space: nowrap; z-index: 10;
 
 /* 手札カード */
 .hand-card {
-width: 48px; height: 68px; border-radius: 5px; overflow: hidden;
+width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
 border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
 transition: opacity 0.3s;
 }
@@ -143,6 +149,11 @@ border-radius: 20px; margin-top: 8px; text-align: center;
   <div id="field">
     <div class="zone-label">自分の戦場</div>
     <div class="zone player-zone" id="player-field"></div>
+
+```
+<div class="zone-label">パイル</div>
+<div class="pile-zone" id="pile-area"></div>
+
 <div style="display:flex; align-items:flex-start; position:relative; margin-bottom:6px;">
   <div style="flex:1; min-width:0;">
     <div class="zone-label">領土（山岳×2以上）</div>
@@ -156,6 +167,7 @@ border-radius: 20px; margin-top: 8px; text-align: center;
 
 <div class="zone-label">手札</div>
 <div class="zone hand-zone" id="hand-area"></div>
+```
 
   </div>
 
@@ -194,6 +206,7 @@ function initState() {
     hand: ["赤猫", "勲章1", "勲章2", "勲章3"],
     playingCard: null,   // 盤面に出てきたばかりのカード（効果前）
     trash: [],
+    pile: [],
     nekoCounters: 0,
     nekoBattleBuff: false,
     nekoDash: false,
@@ -219,7 +232,7 @@ const steps = [
     text: "手札の赤猫を盤面に出します。<br>山岳領土1つを消費（ムーブ）してコスト1を支払います。",
     action: s => {
       s.hand = s.hand.filter(h => h !== "赤猫");
-      s.playingCard = "赤猫";
+      s.pile = ["赤猫"];
       s.usedTerritories = 1;
       return s;
     },
@@ -230,7 +243,7 @@ const steps = [
     text: "赤猫が戦場に出ました。<br>攻撃も防御もできませんが、効果の対象にとられるたびにATK+1/DEF+1カウンターを得ます。",
     action: s => {
       s.playerField.push("赤猫");
-      s.playingCard = null;
+      s.pile = [];
       return s;
     },
     highlight: ["赤猫"],
@@ -242,7 +255,7 @@ const steps = [
     text: "呪われた勲章を手札から盤面に出します。",
     action: s => {
       s.hand = s.hand.filter(h => h !== "勲章1");
-      s.playingCard = "勲章1";
+      s.pile = ["勲章1"];
       return s;
     },
     highlight: ["勲章1"],
@@ -262,7 +275,7 @@ const steps = [
     title: "② 呪われた勲章1枚目：トラッシュへ",
     text: "呪われた勲章の効果が終わり、トラッシュへ置かれます。",
     action: s => {
-      s.playingCard = null;
+      s.pile = [];
       s.trash.push("勲章1");
       return s;
     },
@@ -274,7 +287,7 @@ const steps = [
     text: "2枚目の呪われた勲章を手札から盤面に出します。",
     action: s => {
       s.hand = s.hand.filter(h => h !== "勲章2");
-      s.playingCard = "勲章2";
+      s.pile = ["勲章2"];
       return s;
     },
     highlight: ["勲章2"],
@@ -294,7 +307,7 @@ const steps = [
     title: "② 呪われた勲章2枚目：トラッシュへ",
     text: "呪われた勲章がトラッシュへ。",
     action: s => {
-      s.playingCard = null;
+      s.pile = [];
       s.trash.push("勲章2");
       return s;
     },
@@ -306,7 +319,7 @@ const steps = [
     text: "3枚目の呪われた勲章を手札から盤面に出します。",
     action: s => {
       s.hand = s.hand.filter(h => h !== "勲章3");
-      s.playingCard = "勲章3";
+      s.pile = ["勲章3"];
       return s;
     },
     highlight: ["勲章3"],
@@ -326,7 +339,7 @@ const steps = [
     title: "② 呪われた勲章3枚目：トラッシュへ",
     text: "呪われた勲章がトラッシュへ。<br>トラッシュに3枚溜まりました。",
     action: s => {
-      s.playingCard = null;
+      s.pile = [];
       s.trash.push("勲章3");
       return s;
     },
@@ -420,7 +433,7 @@ const steps = [
     title: "【発展】灼熱の風を手札からプレイ（起動）",
     text: "灼熱の風をムーブして赤猫を対象に起動。",
     action: s => {
-      s.shakunetsuMuted = true;
+      s.pile = ["灼熱の風"];
       return s;
     },
     highlight: ["灼熱の風"],
@@ -430,6 +443,7 @@ const steps = [
     title: "【発展】灼熱の風：効果発揮",
     text: "→ 赤猫に1点ダメージ → 赤猫の効果で相手に1点！（累計4点）<br>→ ATK+1/DEF+1カウンター（計4個）<br>→ 赤猫が《駿足》を得て攻撃可能に！",
     action: s => {
+      s.pile = [];
       s.nekoCounters = 4;
       s.enemyLife -= 1;
       s.nekoDash = true;
@@ -621,14 +635,7 @@ function render() {
     pf.appendChild(el);
   });
 
-  // playingCardを右端に追加
-  if (s.playingCard) {
-    const el = makeCard(s.playingCard, {
-      entering: true,
-      highlighted: true,
-    });
-    pf.appendChild(el);
-  }
+
 
   // 領土
   const ta = document.getElementById("territory-area");
@@ -647,13 +654,22 @@ function render() {
     ha.appendChild(makeHandCard(name, s.playingCard === name));
   });
 
+  // パイル
+  const pa = document.getElementById("pile-area");
+  if (pa) {
+    pa.innerHTML = "";
+    (s.pile || []).forEach(name => {
+      pa.appendChild(makeCard(name, { entering: true, highlighted: true }));
+    });
+  }
+
   // トラッシュ（カードを重ねて表示）
   const tr = document.getElementById("trash-area");
   tr.innerHTML = "";
   s.trash.forEach((name, idx) => {
     const el = makeCard(name, { inTrash: true });
     el.style.position = "absolute";
-    el.style.left = (8 + idx * 14) + "px";
+    el.style.left = (5 + idx * 12) + "px";
     el.style.top = "8px";
     el.style.zIndex = idx + 1;
     tr.appendChild(el);
@@ -680,7 +696,7 @@ function render() {
 
 function applyStep(idx) {
   const step = steps[idx];
-  state = step.action({ ...state, trash: [...state.trash], hand: [...state.hand], playerField: [...state.playerField] });
+  state = step.action({ ...state, trash: [...state.trash], pile: [...(state.pile||[])], hand: [...state.hand], playerField: [...state.playerField] });
 
   if (step.damage) {
     if (step.damage.chain) {
@@ -712,7 +728,7 @@ function prevStep() {
 function replayTo(target) {
   let s = initState();
   for (let i = 0; i <= target; i++) {
-    s = steps[i].action({ ...s, trash: [...s.trash], hand: [...s.hand], playerField: [...s.playerField] });
+    s = steps[i].action({ ...s, trash: [...s.trash], pile: [...(s.pile||[])], hand: [...s.hand], playerField: [...s.playerField] });
   }
   state = s;
   render();
