@@ -754,6 +754,29 @@ function populateDropdown() {
 }
 
 // =============== カード検索・表示 ===============
+// =============== ルート解説URL ===============
+const routeGuides = {
+  "赤猫ルート": "https://tayu02.github.io/acg-deckbuilder/route_akaneko.html",
+};
+
+function updateRouteGuideBtn(routeVal) {
+  let btn = document.getElementById("routeGuideBtn");
+  if (routeGuides[routeVal]) {
+    if (!btn) {
+      btn = document.createElement("a");
+      btn.id = "routeGuideBtn";
+      btn.target = "_blank";
+      btn.style.cssText = "display:inline-block;padding:6px 14px;background:#1a3a5a;border:1px solid #4a8aaa;border-radius:8px;color:#88ccff;font-size:13px;text-decoration:none;margin-top:6px;";
+      document.querySelector(".search-area").appendChild(btn);
+    }
+    btn.href = routeGuides[routeVal];
+    btn.textContent = `📖 ${routeVal}の解説を見る`;
+    btn.style.display = "inline-block";
+  } else if (btn) {
+    btn.style.display = "none";
+  }
+}
+
 function filterAndRender() {
   const nameVal = (document.getElementById("searchName").value || "").toLowerCase().trim();
   const generalVal = document.getElementById("searchGeneral").value;
@@ -762,6 +785,8 @@ function filterAndRender() {
   const effectVal = (document.getElementById("searchEffect").value || "").toLowerCase().trim();
   const conditionVal = document.getElementById("searchCondition").value;
   const territoryVal = document.getElementById("searchTerritory").value;
+
+  updateRouteGuideBtn(routeVal);
 
   if (!nameVal && !generalVal && !routeVal && !setVal && !effectVal && !conditionVal && !territoryVal) {
     cardListEl.innerHTML = "";
