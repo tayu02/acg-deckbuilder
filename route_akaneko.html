@@ -7,8 +7,7 @@
 <title>赤猫ルート解説</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 16px; }
-
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
 #stage { width: 100%; max-width: 680px; }
 
 /* ライフ */
@@ -20,17 +19,16 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
 .life-fill.enemy { background: #c85a5a; }
 
 /* フィールド */
-#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 14px; padding: 12px; }
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 14px; padding: 10px; }
 .zone-label { font-size: 11px; color: #6a8a6a; margin-bottom: 4px; }
-.zone { display: flex; gap: 8px; flex-wrap: wrap; min-height: 95px; padding: 8px; border-radius: 8px; margin-bottom: 8px; align-items: flex-start; }
+.zone { display: flex; gap: 8px; flex-wrap: wrap; min-height: 90px; padding: 8px; border-radius: 8px; margin-bottom: 6px; align-items: flex-start; }
 .enemy-zone { background: rgba(200,80,80,0.1); border: 1px solid rgba(200,80,80,0.3); }
 .player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
-.hand-zone { min-height: 75px; background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.hand-zone { min-height: 70px; background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.trash-zone { min-height: 60px; background: rgba(100,60,20,0.2); border: 1px solid rgba(150,80,30,0.4); }
 
 /* 領土エリア */
-.territory-zone { display: flex; gap: 6px; padding: 6px 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
-
-/* 領土カード */
+.territory-zone { display: flex; gap: 6px; padding: 6px 8px; margin-bottom: 6px; flex-wrap: wrap; align-items: center; }
 .territory-card {
 width: 38px; height: 26px; border-radius: 4px;
 background: #2a4a2a; border: 1px solid #4a8a4a;
@@ -38,16 +36,11 @@ display: flex; align-items: center; justify-content: center;
 font-size: 10px; color: #a8e0a8; font-weight: bold;
 transition: transform 0.4s, background 0.3s, border-color 0.3s, opacity 0.3s;
 }
-.territory-card.used {
-transform: rotate(90deg);
-background: #1a2a1a;
-border-color: #2a4a2a;
-opacity: 0.5;
-}
+.territory-card.used { transform: rotate(90deg); background: #1a2a1a; border-color: #2a4a2a; opacity: 0.5; }
 
 /* カード */
 .card {
-width: 62px; height: 88px; border-radius: 6px; overflow: visible;
+width: 60px; height: 85px; border-radius: 6px; overflow: visible;
 border: 2px solid #4a8a4a; background: #1a2a3a;
 position: relative; flex-shrink: 0;
 transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
@@ -55,103 +48,87 @@ transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
 .card img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; display: block; }
 .card.muted { opacity: 0.45; transform: rotate(90deg); }
 .card.highlighted { box-shadow: 0 0 14px 4px #ffdd00; border-color: #ffdd00; }
-.card.targeted { box-shadow: 0 0 14px 4px #ff4444; border-color: #ff4444; }
-.card.entering { animation: slideIn 0.35s ease; }
+.card.entering { animation: slideIn 0.4s ease; }
+.card.in-trash { opacity: 0.55; filter: grayscale(0.6); border-color: #6a4a2a; }
 
-/* ATK+1/DEF+1カウンターバッジ */
 .counter-badge {
-position: absolute;
-top: -8px; right: -8px;
-background: #ff8800;
-color: white;
-font-size: 8px;
-font-weight: bold;
-padding: 2px 4px;
-border-radius: 8px;
-white-space: nowrap;
-border: 1px solid #ffaa44;
-z-index: 10;
+position: absolute; top: -8px; right: -8px;
+background: #ff8800; color: white; font-size: 8px; font-weight: bold;
+padding: 2px 4px; border-radius: 8px; white-space: nowrap;
+border: 1px solid #ffaa44; z-index: 10;
 }
-
-/* 攻撃バフバッジ */
 .atk-buff-badge {
-position: absolute;
-bottom: -8px; left: -4px;
-background: #cc0044;
-color: white;
-font-size: 7px;
-font-weight: bold;
-padding: 2px 3px;
-border-radius: 4px;
-white-space: nowrap;
-z-index: 10;
+position: absolute; bottom: -8px; left: -4px;
+background: #cc0044; color: white; font-size: 7px; font-weight: bold;
+padding: 2px 3px; border-radius: 4px; white-space: nowrap; z-index: 10;
+}
+.dash-badge {
+position: absolute; bottom: -8px; right: -4px;
+background: #0066cc; color: white; font-size: 7px; font-weight: bold;
+padding: 2px 3px; border-radius: 4px; white-space: nowrap; z-index: 10;
 }
 
-/* 手札カード（小さめ） */
+/* 手札カード */
 .hand-card {
-width: 50px; height: 70px; border-radius: 5px; overflow: hidden;
+width: 48px; height: 68px; border-radius: 5px; overflow: hidden;
 border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+transition: opacity 0.3s;
 }
 .hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.hand-card.used-card { opacity: 0.3; filter: grayscale(1); }
+.hand-card.playing { box-shadow: 0 0 10px 3px #ffdd00; border-color: #ffdd00; animation: slideIn 0.3s ease; }
 
 /* ダメージ演出 */
 .damage-float {
-position: fixed;
-font-size: 30px; font-weight: bold;
-color: #ff4444; text-shadow: 0 0 12px #ff0000;
-pointer-events: none;
-animation: floatUp 1s ease forwards;
-z-index: 200;
+position: fixed; font-size: 28px; font-weight: bold;
+pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
 }
+.damage-float.enemy-dmg { color: #ff4444; text-shadow: 0 0 12px #ff0000; }
+.damage-float.self-dmg { color: #ffaa44; text-shadow: 0 0 12px #ff8800; }
 
 @keyframes floatUp {
 0% { opacity: 1; transform: translateY(0) scale(1.3); }
-100% { opacity: 0; transform: translateY(-70px) scale(0.8); }
+100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
 }
 @keyframes slideIn {
-from { opacity: 0; transform: translateY(-20px); }
+from { opacity: 0; transform: translateY(-16px); }
 to { opacity: 1; transform: translateY(0); }
 }
 
 /* 説明 */
 #description {
 background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
-border-radius: 10px; padding: 12px 14px; margin-top: 10px;
+border-radius: 10px; padding: 12px 14px; margin-top: 8px;
 font-size: 13px; line-height: 1.75; min-height: 64px;
 }
 #step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
-#step-text { color: #d0e8d0; white-space: pre-line; }
+#step-text { color: #d0e8d0; }
 
-/* ループバッジ */
+/* ループ/発展バッジ */
 #loop-badge {
-display: none; background: #7a1a1a; color: #ffaaaa;
-font-size: 13px; font-weight: bold; padding: 6px 14px;
+display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
 border-radius: 20px; margin-top: 8px; text-align: center;
-border: 1px solid #c85a5a;
 }
 
 /* コントロール */
-#controls { display: flex; gap: 10px; margin-top: 10px; justify-content: center; align-items: center; }
-.ctrl-btn { padding: 8px 18px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
 .ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
 .ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
-.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 12px; padding: 6px 12px; }
-#step-counter { color: #888; font-size: 13px; min-width: 50px; text-align: center; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
 </style>
 
 </head>
 <body>
 <div id="stage">
-  <h2 style="text-align:center;color:#a8e0a8;margin-bottom:10px;font-size:17px;">🐱 赤猫ルート解説</h2>
-
-  <!-- ライフ -->
-
   <div id="life-area">
     <div class="life-bar-wrap">
       <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
       <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
     </div>
+    <h2 style="text-align:center;color:#a8e0a8;font-size:15px;flex:1;">🐱 赤猫ルート解説</h2>
     <div class="life-bar-wrap">
       <span>自分 ❤️ <span id="player-life-num">20</span></span>
       <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
@@ -159,34 +136,38 @@ border: 1px solid #c85a5a;
   </div>
 
   <div id="field">
-    <div class="zone-label">相手の戦場</div>
-    <div class="zone enemy-zone" id="enemy-field"></div>
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
 
 ```
-<div class="zone-label">自分の戦場</div>
-<div class="zone player-zone" id="player-field"></div>
-
 <div class="zone-label">領土（山岳×2以上）</div>
 <div class="territory-zone" id="territory-area"></div>
 
 <div class="zone-label">手札</div>
 <div class="zone hand-zone" id="hand-area"></div>
+
+<div class="zone-label">トラッシュ</div>
+<div class="zone trash-zone" id="trash-area"></div>
 ```
 
   </div>
 
-  <div id="loop-badge">🔁 ここからループ！1周で8点ダメージ</div>
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
 
   <div id="description">
     <div id="step-title"></div>
     <div id="step-text"></div>
-  </div>
-
-  <div id="controls">
-    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
-    <span id="step-counter"></span>
-    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
-    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
   </div>
 </div>
 
@@ -196,8 +177,7 @@ const IMAGES = {
   火付け狸:   "https://acgtcg.com/img/ACG-087",
   呪われた勲章: "https://acgtcg.com/img/ACG-100",
   灼熱の風:   "https://acgtcg.com/img/ACG-098",
-  炎の鳥1:    "https://acgtcg.com/img/ACG-048",
-  炎の鳥2:    "https://acgtcg.com/img/ACG-048",
+  炎の鳥:     "https://acgtcg.com/img/ACG-048",
 };
 
 function initState() {
@@ -205,71 +185,150 @@ function initState() {
     enemyLife: 20,
     playerField: ["火付け狸"],
     hand: ["赤猫", "勲章1", "勲章2", "勲章3"],
-    usedHand: [],          // 使用済み手札（グレーアウト）
-    nekoCounters: 0,       // ATK+1/DEF+1カウンター数
-    nekoBattleBuff: false, // 攻撃時+1点バフ付与済み
-    tanukilMuted: false,   // 火付け狸ムーブ中
-    usedTerritories: 0,    // ムーブ済み領土数
+    playingCard: null,   // 盤面に出てきたばかりのカード（効果前）
+    trash: [],
+    nekoCounters: 0,
+    nekoBattleBuff: false,
+    nekoDash: false,
+    tanukilMuted: false,
+    shakunetsuMuted: false,
+    usedTerritories: 0,
     totalTerritories: 2,
+    toriInGrave: 0,
   };
 }
 
 const steps = [
+  // ===== 初期状態 =====
   {
     title: "初期状態",
-    text: "盤面に火付け狸がいます。\n手札：赤猫×1・呪われた勲章×3\n領土：山岳×2以上あればOK（ここでは2枚で説明）",
+    text: "盤面に火付け狸がいます。<br>手札：赤猫×1・呪われた勲章×3<br>領土：山岳×2（山岳2以上あればOK）",
     action: s => s,
   },
+
+  // ===== ① 赤猫プレイ =====
   {
-    title: "① 赤猫をプレイ（山岳1消費）",
-    text: "赤猫のコスト1を支払うため山岳領土を1つムーブします。\n赤猫は攻撃も防御もできませんが、効果の対象にとられるたびにATK+1/DEF+1カウンターを得ます。",
+    title: "① 赤猫を手札からプレイ",
+    text: "手札の赤猫を盤面に出します。<br>山岳領土1つを消費（ムーブ）してコスト1を支払います。",
     action: s => {
       s.hand = s.hand.filter(h => h !== "赤猫");
-      s.playerField.push("赤猫");
+      s.playingCard = "赤猫";
       s.usedTerritories = 1;
       return s;
     },
     highlight: ["赤猫"],
   },
   {
-    title: "② 呪われた勲章1枚目（対象：赤猫）",
-    text: "呪われた勲章をプレイし、赤猫を対象にとります。\n→ 赤猫にATK+1/DEF+1カウンター×1付与\n→ 赤猫に1点ダメージ（効果ダメージ）\n→ 赤猫の効果発動：受けた効果ダメージと同値を相手にも！→ 相手に1点ダメージ",
+    title: "① 赤猫が戦場に定着",
+    text: "赤猫が戦場に出ました。<br>攻撃も防御もできませんが、効果の対象にとられるたびにATK+1/DEF+1カウンターを得ます。",
     action: s => {
-      s.usedHand.push("勲章1");
+      s.playerField.push("赤猫");
+      s.playingCard = null;
+      return s;
+    },
+    highlight: ["赤猫"],
+  },
+
+  // ===== ② 呪われた勲章1枚目 =====
+  {
+    title: "② 呪われた勲章1枚目を手札からプレイ",
+    text: "呪われた勲章を手札から盤面に出します。",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "勲章1");
+      s.playingCard = "勲章1";
+      return s;
+    },
+    highlight: ["勲章1"],
+  },
+  {
+    title: "② 呪われた勲章1枚目：対象→赤猫・効果発揮",
+    text: "赤猫を対象にとります。<br>→ 赤猫にATK+1/DEF+1カウンター×1<br>→ 赤猫に1点ダメージ（効果ダメージ）<br>→ 赤猫の効果：受けたダメージと同値を相手に！→ 相手に1点",
+    action: s => {
       s.nekoCounters += 1;
       s.enemyLife -= 1;
       return s;
     },
-    damage: { target: "enemy", amount: 1, chain: true },
+    damage: { chain: true, amount: 1 },
     highlight: ["赤猫"],
   },
   {
-    title: "② 呪われた勲章2枚目（対象：赤猫）",
-    text: "2枚目も赤猫を対象に。\n→ ATK+1/DEF+1カウンター（計2個）\n→ 赤猫に1点ダメージ → 赤猫の効果で相手に1点（累計2点）",
+    title: "② 呪われた勲章1枚目：トラッシュへ",
+    text: "呪われた勲章の効果が終わり、トラッシュへ置かれます。",
     action: s => {
-      s.usedHand.push("勲章2");
+      s.playingCard = null;
+      s.trash.push("勲章1");
+      return s;
+    },
+  },
+
+  // ===== ② 呪われた勲章2枚目 =====
+  {
+    title: "② 呪われた勲章2枚目を手札からプレイ",
+    text: "2枚目の呪われた勲章を手札から盤面に出します。",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "勲章2");
+      s.playingCard = "勲章2";
+      return s;
+    },
+    highlight: ["勲章2"],
+  },
+  {
+    title: "② 呪われた勲章2枚目：対象→赤猫・効果発揮",
+    text: "赤猫を対象にとります。<br>→ ATK+1/DEF+1カウンター（計2個）<br>→ 赤猫に1点 → 相手に1点（累計2点）",
+    action: s => {
       s.nekoCounters += 1;
       s.enemyLife -= 1;
       return s;
     },
-    damage: { target: "enemy", amount: 1, chain: true },
+    damage: { chain: true, amount: 1 },
     highlight: ["赤猫"],
   },
   {
-    title: "② 呪われた勲章3枚目（対象：赤猫）",
-    text: "3枚目も赤猫を対象に。\n→ ATK+1/DEF+1カウンター（計3個）\n→ 赤猫に1点ダメージ → 赤猫の効果で相手に1点（累計3点）",
+    title: "② 呪われた勲章2枚目：トラッシュへ",
+    text: "呪われた勲章がトラッシュへ。",
     action: s => {
-      s.usedHand.push("勲章3");
+      s.playingCard = null;
+      s.trash.push("勲章2");
+      return s;
+    },
+  },
+
+  // ===== ② 呪われた勲章3枚目 =====
+  {
+    title: "② 呪われた勲章3枚目を手札からプレイ",
+    text: "3枚目の呪われた勲章を手札から盤面に出します。",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "勲章3");
+      s.playingCard = "勲章3";
+      return s;
+    },
+    highlight: ["勲章3"],
+  },
+  {
+    title: "② 呪われた勲章3枚目：対象→赤猫・効果発揮",
+    text: "赤猫を対象にとります。<br>→ ATK+1/DEF+1カウンター（計3個）<br>→ 赤猫に1点 → 相手に1点（累計3点）",
+    action: s => {
       s.nekoCounters += 1;
       s.enemyLife -= 1;
       return s;
     },
-    damage: { target: "enemy", amount: 1, chain: true },
+    damage: { chain: true, amount: 1 },
     highlight: ["赤猫"],
   },
+  {
+    title: "② 呪われた勲章3枚目：トラッシュへ",
+    text: "呪われた勲章がトラッシュへ。<br>トラッシュに3枚溜まりました。",
+    action: s => {
+      s.playingCard = null;
+      s.trash.push("勲章3");
+      return s;
+    },
+  },
+
+  // ===== ③ 火付け狸起動① =====
   {
     title: "③ 火付け狸の起動効果①（対象：赤猫）",
-    text: "火付け狸をムーブして起動効果を発動。\n赤猫を対象にとり「攻撃時+1点」効果を付与。\n→ 赤猫を対象にとったのでATK+1/DEF+1カウンター（計4個）！\n※ここでは赤猫へのダメージは発生しません",
+    text: "火付け狸をムーブして起動効果を発動。<br>赤猫を対象にとり「攻撃時+1点」効果を付与。<br>→ 赤猫を対象にとったのでATK+1/DEF+1カウンター（計4個）！",
     action: s => {
       s.tanukilMuted = true;
       s.nekoCounters += 1;
@@ -278,51 +337,56 @@ const steps = [
     },
     highlight: ["火付け狸", "赤猫"],
   },
+
+  // ===== ④ 火付け狸起動②（赤猫生贄） =====
   {
     title: "④ 火付け狸の起動効果②（赤猫を生贄）",
-    text: "火付け狸のもう一つの効果を起動。\n赤猫を生贄に捧げて火付け狸をウェイク。\nATK+1/DEF+1カウンターが4個以上ある赤猫が墓地へ…",
+    text: "火付け狸のもう一つの効果を起動。<br>赤猫を生贄に捧げて火付け狸をウェイク。<br>ATK+1/DEF+1カウンターが4個の赤猫が墓地へ…",
     action: s => {
       s.playerField = s.playerField.filter(c => c !== "赤猫");
       s.tanukilMuted = false;
+      s.trash.push("赤猫（生贄）");
       return s;
     },
     highlight: ["火付け狸"],
   },
+
+  // ===== ⑤ 赤猫効果発動 =====
   {
-    title: "⑤ 赤猫の効果発動！→ 戦場に帰還",
-    text: "ATK+1/DEF+1カウンターが4個以上の状態で墓地に置かれた赤猫の効果が発動！\n→ 相手に4点ダメージ！（累計7点）\n→ 赤猫が戦場に帰還\n→ 4点ダメージを与えたので墓地の呪われた勲章×3を手札に回収！",
+    title: "⑤ 赤猫の効果発動！→ 相手に4点！戦場へ帰還",
+    text: "ATK+1/DEF+1カウンターが4個以上の状態で墓地に置かれた赤猫の効果が発動！<br>→ 相手に4点ダメージ！（累計7点）<br>→ 赤猫が戦場に帰還<br>→ 呪われた勲章×3を手札に回収！",
     action: s => {
       s.enemyLife -= 4;
       s.playerField.push("赤猫");
       s.nekoCounters = 0;
       s.nekoBattleBuff = false;
-      s.usedHand = [];
+      s.trash = s.trash.filter(t => !t.startsWith("勲章") && t !== "赤猫（生贄）");
       s.hand = ["勲章1", "勲章2", "勲章3"];
-      s.usedTerritories = 1; // 赤猫のコスト分は維持
       return s;
     },
-    damage: { target: "enemy", amount: 4 },
+    damage: { chain: false, target: "enemy", amount: 4 },
     highlight: ["赤猫"],
     isLoop: true,
   },
   {
     title: "🔁 ループ！②〜⑤を繰り返す",
-    text: "手札に呪われた勲章×3が戻り、火付け狸もウェイク、赤猫も盤面にいます。\n②〜⑤を繰り返すと1ループで8点ダメージ！\n（勲章3枚で3点 + 赤猫帰還で4点 + 火付け狸バフ分）\n相手のライフがなくなるまで繰り返します。",
+    text: "手札に呪われた勲章×3が戻り、火付け狸もウェイク、赤猫も盤面にいます。<br>②〜⑤を繰り返すと1ループで7点以上！<br>相手のライフがなくなるまで繰り返します。",
     action: s => s,
     isLoop: true,
   },
 
-  // ===== 発展編：灼熱の風あり =====
+  // ===== 発展編 =====
   {
     title: "━━ 発展編：灼熱の風を加えると？ ━━",
-    text: "灼熱の風（コスト0・山山）を事前に戦場に設置しておくと\nダメージ効率が大幅にアップします。\n盤面：火付け狸・赤猫・灼熱の風\n手札：呪われた勲章×3",
+    text: "灼熱の風（コスト0・山山）を事前に戦場に設置しておくとダメージ効率が大幅にアップします。<br>盤面：火付け狸・赤猫・灼熱の風<br>手札：呪われた勲章×3",
     action: s => {
       s.enemyLife = 20;
       s.playerField = ["火付け狸", "赤猫", "灼熱の風"];
       s.hand = ["勲章1", "勲章2", "勲章3"];
-      s.usedHand = [];
+      s.trash = [];
       s.nekoCounters = 0;
       s.nekoBattleBuff = false;
+      s.nekoDash = false;
       s.tanukilMuted = false;
       s.shakunetsuMuted = false;
       s.usedTerritories = 1;
@@ -333,35 +397,44 @@ const steps = [
   },
   {
     title: "【発展】呪われた勲章×3（対象：赤猫）",
-    text: "基本と同じく勲章3枚を赤猫に対象。\n→ ATK+1/DEF+1カウンター×3\n→ 赤猫に3点ダメージ → 相手に3点（累計3点）",
+    text: "基本と同じく勲章3枚を赤猫に対象。<br>→ ATK+1/DEF+1カウンター×3<br>→ 赤猫に計3点 → 相手に3点（累計3点）",
     action: s => {
-      s.usedHand = ["勲章1","勲章2","勲章3"];
       s.hand = [];
+      s.trash = ["勲章1", "勲章2", "勲章3"];
       s.nekoCounters = 3;
       s.enemyLife -= 3;
       return s;
     },
-    damage: { target: "enemy", amount: 3, chain: true },
+    damage: { chain: true, amount: 3 },
     highlight: ["赤猫"],
     isExtra: true,
   },
   {
-    title: "【発展】灼熱の風起動（対象：赤猫）",
-    text: "灼熱の風をムーブして赤猫を対象に起動。\n→ 赤猫に1点ダメージ → 赤猫の効果で相手に1点！（累計4点）\n→ ATK+1/DEF+1カウンター×4\n→ 赤猫が《駿足》を得て攻撃可能に！",
+    title: "【発展】灼熱の風を手札からプレイ（起動）",
+    text: "灼熱の風をムーブして赤猫を対象に起動。",
     action: s => {
       s.shakunetsuMuted = true;
+      return s;
+    },
+    highlight: ["灼熱の風"],
+    isExtra: true,
+  },
+  {
+    title: "【発展】灼熱の風：効果発揮",
+    text: "→ 赤猫に1点ダメージ → 赤猫の効果で相手に1点！（累計4点）<br>→ ATK+1/DEF+1カウンター（計4個）<br>→ 赤猫が《駿足》を得て攻撃可能に！",
+    action: s => {
       s.nekoCounters = 4;
       s.enemyLife -= 1;
       s.nekoDash = true;
       return s;
     },
-    damage: { target: "enemy", amount: 1, chain: true },
-    highlight: ["灼熱の風", "赤猫"],
+    damage: { chain: true, amount: 1 },
+    highlight: ["赤猫"],
     isExtra: true,
   },
   {
     title: "【発展】火付け狸起動①（対象：赤猫）",
-    text: "火付け狸をムーブして赤猫に「攻撃時+1点」付与。\n→ ATK+1/DEF+1カウンター×5（計5個）\n→ 赤猫のATKは5！",
+    text: "火付け狸をムーブして赤猫に「攻撃時+1点」付与。<br>→ ATK+1/DEF+1カウンター（計5個）<br>→ 赤猫のATKは5！",
     action: s => {
       s.tanukilMuted = true;
       s.nekoCounters = 5;
@@ -373,49 +446,49 @@ const steps = [
   },
   {
     title: "【発展】赤猫でアタック！（ATK5 + バフ1 = 6点）",
-    text: "《駿足》を得た赤猫でアタック！\nATK5 + 火付け狸「攻撃時+1点」= 6点ダメージ！（累計10点）\n呪われた勲章と灼熱の風で4点 + アタックで6点 = 10点",
+    text: "《駿足》を得た赤猫でアタック！<br>ATK5 + 火付け狸「攻撃時+1点」= 6点ダメージ！（累計10点）",
     action: s => {
       s.enemyLife -= 6;
-      s.nekoBattleBuff = false;
       s.nekoDash = false;
       return s;
     },
-    damage: { target: "enemy", amount: 6 },
+    damage: { chain: false, target: "enemy", amount: 6 },
     highlight: ["赤猫"],
     isExtra: true,
   },
   {
     title: "【発展】火付け狸起動②（赤猫を生贄）→ 5点！",
-    text: "火付け狸の効果で赤猫を生贄に。\nATK+1/DEF+1カウンターが5個 → 相手に5点ダメージ！（累計15点）\n→ 赤猫が墓地から戦場へ帰還\n→ 呪われた勲章×3を手札に回収",
+    text: "赤猫を生贄に。<br>ATK+1/DEF+1カウンター5個 → 相手に5点！（累計15点）<br>→ 赤猫が戦場へ帰還・勲章×3回収",
     action: s => {
       s.playerField = s.playerField.filter(c => c !== "赤猫");
       s.enemyLife -= 5;
       s.tanukilMuted = false;
       s.shakunetsuMuted = false;
+      s.nekoBattleBuff = false;
       s.playerField.push("赤猫");
       s.nekoCounters = 0;
-      s.hand = ["勲章1","勲章2","勲章3"];
-      s.usedHand = [];
+      s.hand = ["勲章1", "勲章2", "勲章3"];
+      s.trash = [];
       return s;
     },
-    damage: { target: "enemy", amount: 5 },
+    damage: { chain: false, target: "enemy", amount: 5 },
     highlight: ["赤猫"],
     isExtra: true,
   },
   {
     title: "【発展】炎の鳥の条件も開放！",
-    text: "このループ中のダメージ回数：\n勲章×3（3回）+ 灼熱の風（4回目）+ 赤猫消滅（5回目）\n→ 3回以上の条件を満たし、墓地の炎の鳥×2が登場可能！\n炎の鳥は《駿足》《有翼》持ちなのでそのままアタックでさらに上乗せ！",
+    text: "このループ中のダメージ回数：<br>勲章×3（3回）+ 灼熱の風（4回目）+ 赤猫消滅（5回目）<br>→ 3回以上の条件を満たし、墓地の炎の鳥×2が登場可能！<br>炎の鳥は《駿足》《有翼》持ちなのでそのままアタックできます！",
     action: s => {
-      s.playerField.push("炎の鳥1");
-      s.playerField.push("炎の鳥2");
+      s.playerField.push("炎の鳥A");
+      s.playerField.push("炎の鳥B");
       return s;
     },
-    highlight: ["炎の鳥1", "炎の鳥2"],
+    highlight: ["炎の鳥A", "炎の鳥B"],
     isExtra: true,
   },
   {
     title: "✅ まとめ：灼熱の風あり版のダメージ",
-    text: "【灼熱の風あり 1ループ】\n・勲章×3 → 3点\n・灼熱の風 → 1点\n・赤猫アタック（ATK5+バフ1）→ 6点\n・赤猫消滅（カウンター5）→ 5点\n合計：15点/ループ\n\n【炎の鳥×2も加えると】\nATK2×2体 = さらに+4点\n\n相手ライフ20点を1〜2ループで削り切れます！",
+    text: "【灼熱の風あり 1ループ】<br>・勲章×3 → 3点<br>・灼熱の風 → 1点<br>・赤猫アタック（ATK5+バフ1）→ 6点<br>・赤猫消滅（カウンター5）→ 5点<br>合計：15点/ループ<br><br>【炎の鳥×2も加えると】<br>ATK2×2体 = さらに+4点<br>相手ライフ20点を1〜2ループで削り切れます！",
     action: s => s,
     isExtra: true,
   },
@@ -424,95 +497,93 @@ const steps = [
 let state = {};
 let currentStep = 0;
 
-function makeCardEl(name, opts = {}) {
-  const wrap = document.createElement("div");
-  wrap.className = "card entering";
-  if (opts.muted) wrap.classList.add("muted");
-  if (opts.highlighted) wrap.classList.add("highlighted");
-
-  const img = document.createElement("img");
-  const key = name === "赤猫" ? "赤猫"
-    : name === "火付け狸" ? "火付け狸"
-    : name === "灼熱の風" ? "灼熱の風"
-    : name.startsWith("炎の鳥") ? "炎の鳥1"
-    : "呪われた勲章";
-  img.src = IMAGES[key] || "";
-  img.onerror = () => {
-    wrap.style.background = "#2a3a4a";
-    wrap.style.display = "flex";
-    wrap.style.alignItems = "center";
-    wrap.style.justifyContent = "center";
-    const label = document.createElement("div");
-    label.style.cssText = "font-size:8px;color:#aaa;padding:2px;text-align:center;";
-    label.textContent = name.replace("勲章","勲章");
-    wrap.appendChild(label);
-  };
-  wrap.appendChild(img);
-
-  if (opts.counters > 0) {
-    const badge = document.createElement("div");
-    badge.className = "counter-badge";
-    badge.textContent = `ATK+${opts.counters}/DEF+${opts.counters}`;
-    wrap.appendChild(badge);
-  }
-  if (opts.battleBuff) {
-    const badge2 = document.createElement("div");
-    badge2.className = "atk-buff-badge";
-    badge2.textContent = "攻撃時+1点";
-    wrap.appendChild(badge2);
-  }
-  return wrap;
+function getImgKey(name) {
+  if (name === "赤猫" || name === "赤猫（生贄）") return "赤猫";
+  if (name === "火付け狸") return "火付け狸";
+  if (name === "灼熱の風") return "灼熱の風";
+  if (name.startsWith("炎の鳥")) return "炎の鳥";
+  return "呪われた勲章";
 }
 
-function makeHandCardEl(name, used) {
-  const wrap = document.createElement("div");
-  wrap.className = "hand-card" + (used ? " used-card" : "");
+function makeCard(name, opts = {}) {
+  const div = document.createElement("div");
+  div.className = "card" + (opts.entering ? " entering" : "") + (opts.inTrash ? " in-trash" : "");
+  if (opts.muted) div.classList.add("muted");
+  if (opts.highlighted) div.classList.add("highlighted");
+
   const img = document.createElement("img");
-  const key = name === "赤猫" ? "赤猫"
-    : name === "火付け狸" ? "火付け狸"
-    : name === "灼熱の風" ? "灼熱の風"
-    : name.startsWith("炎の鳥") ? "炎の鳥1"
-    : "呪われた勲章";
-  img.src = IMAGES[key] || "";
+  img.src = IMAGES[getImgKey(name)] || "";
   img.onerror = () => {
-    wrap.style.background = "#2a3a4a";
-    wrap.style.display = "flex";
-    wrap.style.alignItems = "center";
-    wrap.style.justifyContent = "center";
-    const label = document.createElement("div");
-    label.style.cssText = "font-size:8px;color:#aaa;text-align:center;padding:2px;";
-    label.textContent = name.includes("勲章") ? "勲章" : name;
-    wrap.appendChild(label);
+    div.style.background = "#2a3a4a";
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.fontSize = "8px";
+    div.style.color = "#aaa";
+    div.style.padding = "2px";
+    div.style.textAlign = "center";
+    div.textContent = name.replace("呪われた勲章","勲章").replace("（生贄）","💀");
   };
-  wrap.appendChild(img);
-  return wrap;
+  div.appendChild(img);
+
+  if (opts.counters > 0) {
+    const b = document.createElement("div");
+    b.className = "counter-badge";
+    b.textContent = `ATK+${opts.counters}/DEF+${opts.counters}`;
+    div.appendChild(b);
+  }
+  if (opts.battleBuff) {
+    const b = document.createElement("div");
+    b.className = "atk-buff-badge";
+    b.textContent = "攻撃+1";
+    div.appendChild(b);
+  }
+  if (opts.dash) {
+    const b = document.createElement("div");
+    b.className = "dash-badge";
+    b.textContent = "駿足";
+    div.appendChild(b);
+  }
+  return div;
+}
+
+function makeHandCard(name, playing) {
+  const div = document.createElement("div");
+  div.className = "hand-card" + (playing ? " playing" : "");
+  const img = document.createElement("img");
+  img.src = IMAGES[getImgKey(name)] || "";
+  img.onerror = () => {
+    div.style.background = "#2a3a4a";
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.fontSize = "8px";
+    div.style.color = "#aaa";
+    div.style.textAlign = "center";
+    div.textContent = name.replace("呪われた勲章","勲章");
+  };
+  div.appendChild(img);
+  return div;
 }
 
 function showDamage(target, amount, delay = 0) {
   setTimeout(() => {
     const el = document.createElement("div");
-    el.className = "damage-float";
+    el.className = "damage-float " + (target === "enemy" ? "enemy-dmg" : "self-dmg");
     el.textContent = `-${amount}`;
     const refId = target === "enemy" ? "enemy-field" : "player-field";
     const rect = document.getElementById(refId).getBoundingClientRect();
-    el.style.left = (rect.left + rect.width / 2 - 20) + "px";
+    el.style.left = (rect.left + rect.width / 2 - 15) + "px";
     el.style.top = (window.scrollY + rect.top + 10) + "px";
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 1000);
+    setTimeout(() => el.remove(), 1100);
   }, delay);
-}
-
-// 赤猫→相手の2段階ダメージ演出
-function showNekoChainDamage(amount) {
-  // 1. 赤猫にダメージ
-  showDamage("player", amount, 200);
-  // 2. 赤猫の効果で相手にも
-  showDamage("enemy", amount, 700);
 }
 
 function render() {
   const s = state;
   const step = steps[currentStep];
+  const highlights = step.highlight || [];
 
   // ライフ
   const eLife = Math.max(0, s.enemyLife);
@@ -522,13 +593,23 @@ function render() {
   // 自分フィールド
   const pf = document.getElementById("player-field");
   pf.innerHTML = "";
-  const highlights = step.highlight || [];
+
+  // playingCardを一番左に表示
+  if (s.playingCard) {
+    const el = makeCard(s.playingCard, {
+      entering: true,
+      highlighted: true,
+    });
+    pf.appendChild(el);
+  }
+
   s.playerField.forEach(name => {
-    const el = makeCardEl(name, {
+    const el = makeCard(name, {
       muted: (name === "火付け狸" && s.tanukilMuted) || (name === "灼熱の風" && s.shakunetsuMuted),
       highlighted: highlights.includes(name),
       counters: name === "赤猫" ? s.nekoCounters : 0,
-      battleBuff: name === "赤猫" && (s.nekoBattleBuff || s.nekoBattleBuff2),
+      battleBuff: name === "赤猫" && s.nekoBattleBuff,
+      dash: name === "赤猫" && s.nekoDash,
     });
     pf.appendChild(el);
   });
@@ -543,59 +624,64 @@ function render() {
     ta.appendChild(card);
   }
 
-  // 手札（使用済みはグレーアウト）
+  // 手札
   const ha = document.getElementById("hand-area");
   ha.innerHTML = "";
-  // 全手札を表示（使用済みはグレー）
-  const allHandCards = ["赤猫", "勲章1", "勲章2", "勲章3"];
-  allHandCards.forEach(name => {
-    const inHand = s.hand.includes(name) || s.usedHand.includes(name);
-    if (!inHand) return;
-    const used = s.usedHand.includes(name) || !s.hand.includes(name);
-    ha.appendChild(makeHandCardEl(name, used));
+  s.hand.forEach(name => {
+    ha.appendChild(makeHandCard(name, s.playingCard === name));
+  });
+
+  // トラッシュ
+  const tr = document.getElementById("trash-area");
+  tr.innerHTML = "";
+  s.trash.forEach(name => {
+    tr.appendChild(makeCard(name, { inTrash: true }));
   });
 
   // 説明
   document.getElementById("step-title").textContent = step.title;
-  document.getElementById("step-text").textContent = step.text;
+  document.getElementById("step-text").innerHTML = step.text;
   document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
 
-  // ループバッジ
+  // バッジ
   const badge = document.getElementById("loop-badge");
   if (step.isLoop) {
     badge.style.display = "block";
-    badge.style.background = "#7a1a1a";
-    badge.style.color = "#ffaaaa";
-    badge.style.borderColor = "#c85a5a";
-    badge.textContent = "🔁 ここからループ！1周で8点ダメージ";
+    badge.style.cssText = "display:block;background:#7a1a1a;color:#ffaaaa;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #c85a5a;";
+    badge.textContent = "🔁 ここからループ！";
   } else if (step.isExtra) {
-    badge.style.display = "block";
-    badge.style.background = "#1a3a5a";
-    badge.style.color = "#88ccff";
-    badge.style.borderColor = "#4a8aaa";
+    badge.style.cssText = "display:block;background:#1a3a5a;color:#88ccff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #4a8aaa;";
     badge.textContent = "✨ 発展編";
   } else {
     badge.style.display = "none";
   }
 }
 
+function applyStep(idx) {
+  const step = steps[idx];
+  state = step.action({ ...state, trash: [...state.trash], hand: [...state.hand], playerField: [...state.playerField] });
+
+  if (step.damage) {
+    if (step.damage.chain) {
+      showDamage("player", step.damage.amount, 200);
+      showDamage("enemy", step.damage.amount, 700);
+    } else {
+      showDamage(step.damage.target, step.damage.amount, 300);
+    }
+  }
+  render();
+}
+
 function nextStep() {
+  stopPlay();
   if (currentStep < steps.length - 1) {
     currentStep++;
-    const step = steps[currentStep];
-    state = step.action({ ...state });
-    if (step.damage) {
-      if (step.damage.chain) {
-        showNekoChainDamage(step.damage.amount);
-      } else {
-        setTimeout(() => showDamage(step.damage.target, step.damage.amount), 300);
-      }
-    }
-    render();
+    applyStep(currentStep);
   }
 }
 
 function prevStep() {
+  stopPlay();
   if (currentStep > 0) {
     currentStep--;
     replayTo(currentStep);
@@ -605,13 +691,14 @@ function prevStep() {
 function replayTo(target) {
   let s = initState();
   for (let i = 0; i <= target; i++) {
-    s = steps[i].action({ ...s });
+    s = steps[i].action({ ...s, trash: [...s.trash], hand: [...s.hand], playerField: [...s.playerField] });
   }
   state = s;
   render();
 }
 
 function resetAll() {
+  stopPlay();
   currentStep = 0;
   state = initState();
   render();
@@ -619,6 +706,44 @@ function resetAll() {
 
 state = initState();
 render();
+
+// =============== 自動再生 ===============
+let playTimer = null;
+const PLAY_INTERVAL = 2500; // ミリ秒（1ステップごとの間隔）
+
+function togglePlay() {
+  if (playTimer) {
+    stopPlay();
+  } else {
+    startPlay();
+  }
+}
+
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止";
+  btn.classList.add("playing");
+  playTimer = setInterval(() => {
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      applyStep(currentStep);
+    } else {
+      stopPlay();
+    }
+  }, PLAY_INTERVAL);
+}
+
+function stopPlay() {
+  if (playTimer) {
+    clearInterval(playTimer);
+    playTimer = null;
+  }
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "▶ 再生";
+  btn.classList.remove("playing");
+}
+
+
 </script>
 
 </body>
