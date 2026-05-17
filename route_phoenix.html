@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フェニックスルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+/* ダメージ回数カウンター */
+#dmg-counter {
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(150,0,180,0.85); color: #ffaaff;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #cc44ff; z-index: 20;
+}
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.trash-zone {
+  background: rgba(100,60,20,0.2); border: 1px solid rgba(150,80,30,0.4);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  position: relative; height: 64px;
+}
+
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.in-trash { opacity: 0.55; filter: grayscale(0.6); border-color: #6a4a2a; }
+.card.phoenix { box-shadow: 0 0 12px 3px #ff6600; border-color: #ff8800; }
+
+.atk-badge {
+  position: absolute; top: 2px; left: 0; right: 0;
+  background: rgba(150,0,180,0.88); color: #ffaaff; font-size: 7px; font-weight: bold;
+  padding: 1px 2px; text-align: center; z-index: 10;
+}
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+  transition: opacity 0.3s;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hand-card.discarding { opacity: 0.3; filter: grayscale(1); }
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  background: #2a4a2a; border: 1px solid #4a8a4a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #a8e0a8; font-weight: bold;
+  transition: transform 0.4s, opacity 0.3s;
+}
+.territory-card.used { transform: rotate(90deg); opacity: 0.4; }
+
+.damage-float {
+  position: fixed; font-size: 22px; font-weight: bold;
+  pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
+  white-space: nowrap;
+}
+.damage-float.enemy-dmg { color: #ff4444; text-shadow: 0 0 12px #ff0000; }
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0) scale(1.3); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🔥 フェニックスルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div id="dmg-counter">🔥 ダメージ回数：<span id="dmg-count">0</span>回 / 咆哮：<span id="howl-count">0</span>枚</div>
+
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
+
+    <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:4px;">
+      <div style="flex:1; min-width:0;">
+        <div class="zone-label">領土（山岳2以上・計3以上）</div>
+        <div class="territory-zone" id="territory-area"></div>
+      </div>
+      <div style="flex:1; min-width:0;">
+        <div class="zone-label">トラッシュ</div>
+        <div class="trash-zone" id="trash-area"></div>
+      </div>
+    </div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+const IMAGES = {
+  不法侵入禁止区: "https://acgtcg.com/img/BP1-040",
+  炎の鳥:         "https://acgtcg.com/img/BP4-025",
+  臨終の咆哮:     "https://acgtcg.com/img/ACG-150",
+  呪われた勲章:   "https://acgtcg.com/img/ACG-100",
+  火球:           "https://acgtcg.com/img/ACG-055",
+};
+
+function initState() {
+  return {
+    enemyLife: 20,
+    playerField: [],
+    hand: ["勲章1", "勲章2", "勲章3", "火球"],
+    pile: [],
+    trash: ["炎の鳥A", "炎の鳥B"],
+    dmgCount: 0,
+    howlCount: 0,
+    mutedCards: [],  // ムーブ状態のカード
+    usedTerritories: 0,
+    totalTerritories: 2,
+    mountainTerritories: 1,
+    phase: "basic", // basic or advanced
+  };
+}
+
+const steps = [
+  // ===== 基本編：炎の鳥ループ =====
+  {
+    title: "━━ 基本編：炎の鳥ループ ━━",
+    text: "墓地に炎の鳥×2がいる状態で始めます。<br>手札：呪われた勲章×3・火球<br>領土：山岳1枚以上（火球を撃てれば何でもOK）<br>墓地：炎の鳥×2",
+    action: s => s,
+  },
+  {
+    title: "① 呪われた勲章×3をプレイ（対象：相手）",
+    text: "呪われた勲章を3枚とも相手に対してプレイ。<br>3枚それぞれ1点ずつ→計3点ダメージ。<br>🔥 ダメージ1・2・3回目",
+    action: s => {
+      s.hand = s.hand.filter(h => !h.startsWith("勲章"));
+      s.pile = ["勲章3"];
+      s.trash.push("勲章1");
+      s.trash.push("勲章2");
+      s.enemyLife -= 3;
+      s.dmgCount = 3;
+      s.usedTerritories = 0;
+      return s;
+    },
+    damage: { amount: 3 },
+  },
+  {
+    title: "① 呪われた勲章×3がトラッシュへ",
+    text: "3枚の呪われた勲章がトラッシュへ。",
+    action: s => {
+      s.pile = [];
+      s.trash.push("勲章3");
+      return s;
+    },
+  },
+  {
+    title: "② 火球をプレイ（対象：相手）→1点（ダメージ4回目）",
+    text: "火球をプレイ。相手に1点ダメージ。<br>🔥 ダメージ4回目！<br>→ このターン3回以上ダメージを与えた条件を満たし<br>墓地の炎の鳥×2が戦場に出ます！",
+    action: s => {
+      s.hand = [];
+      s.pile = ["火球"];
+      s.usedTerritories = 1;
+      s.enemyLife -= 1;
+      s.dmgCount = 4;
+      return s;
+    },
+    damage: { amount: 1 },
+    highlight: ["火球"],
+  },
+  {
+    title: "② 炎の鳥×2が墓地から戦場へ！",
+    text: "炎の鳥×2が墓地から戦場に登場！<br>《駿足》《有翼》を持つので、そのままアタックできます。",
+    action: s => {
+      s.pile = [];
+      s.trash = s.trash.filter(c => c !== "炎の鳥A" && c !== "炎の鳥B");
+      s.playerField.push("炎の鳥A");
+      s.playerField.push("炎の鳥B");
+      s.trash.push("火球");
+      return s;
+    },
+    highlight: ["炎の鳥A", "炎の鳥B"],
+  },
+  {
+    title: "③ 炎の鳥×2で集団攻撃！→4点ダメージ",
+    text: "炎の鳥×2（ATK2×2）で集団攻撃！<br>→ 4点ダメージ！（累計8点）<br>4点以上のダメージで呪われた勲章×3が墓地から手札に回収！",
+    action: s => {
+      s.enemyLife -= 4;
+      s.dmgCount = 5;
+      s.mutedCards = ["炎の鳥A", "炎の鳥B"];
+      s.trash = s.trash.filter(c => !c.startsWith("勲章"));
+      s.hand = ["勲章1", "勲章2", "勲章3"];
+      return s;
+    },
+    damage: { amount: 4 },
+    highlight: ["炎の鳥A", "炎の鳥B"],
+    isLoop: true,
+  },
+  {
+    title: "④ 呪われた勲章1枚目（対象：炎の鳥A）→墓地へ",
+    text: "呪われた勲章を炎の鳥Aに対してプレイ。<br>→ 炎の鳥Aに1点ダメージ → 赤猫と違い炎の鳥は消えます。<br>（炎の鳥へのダメージはカウントしません）",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "勲章1");
+      s.pile = ["勲章1"];
+      s.playerField = s.playerField.filter(c => c !== "炎の鳥A");
+      s.trash.push("炎の鳥A");
+      return s;
+    },
+    highlight: ["炎の鳥A"],
+  },
+  {
+    title: "④ 呪われた勲章1枚目トラッシュへ",
+    text: "呪われた勲章がトラッシュへ。",
+    action: s => {
+      s.pile = [];
+      s.trash.push("勲章1");
+      return s;
+    },
+  },
+  {
+    title: "⑤ 呪われた勲章2枚目（対象：炎の鳥B）→墓地へ",
+    text: "2枚目の呪われた勲章を炎の鳥Bに対してプレイ。<br>→ 炎の鳥Bも墓地へ。<br>（炎の鳥へのダメージはカウントしません）",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "勲章2");
+      s.pile = ["勲章2"];
+      s.playerField = s.playerField.filter(c => c !== "炎の鳥B");
+      s.trash.push("炎の鳥B");
+      return s;
+    },
+    highlight: ["炎の鳥B"],
+  },
+  {
+    title: "⑤ 呪われた勲章2枚目トラッシュへ",
+    text: "呪われた勲章がトラッシュへ。<br>墓地に炎の鳥×2が揃いました。",
+    action: s => {
+      s.pile = [];
+      s.trash.push("勲章2");
+      s.mutedCards = [];
+      return s;
+    },
+  },
+  {
+    title: "⑥ 呪われた勲章3枚目（対象：相手）→炎の鳥が復活！",
+    text: "3枚目の呪われた勲章を相手に対してプレイ。1点ダメージ。<br>🔥 ダメージ5回目（相手への累計）<br>→ 炎の鳥×2が再び墓地から戦場へ！以下ループ",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "勲章3");
+      s.pile = ["勲章3"];
+      s.enemyLife -= 1;
+      s.dmgCount = 5;
+      s.trash = s.trash.filter(c => c !== "炎の鳥A" && c !== "炎の鳥B");
+      s.playerField.push("炎の鳥A");
+      s.playerField.push("炎の鳥B");
+      return s;
+    },
+    damage: { amount: 1 },
+    highlight: ["炎の鳥A", "炎の鳥B"],
+    isLoop: true,
+  },
+  {
+    title: "🔁 ③〜⑥を繰り返す",
+    text: "炎の鳥×2でアタック（4点）→勲章回収→勲章で炎の鳥×2を墓地へ→3枚目で相手に→炎の鳥復活のループ！<br><br>1ループで最低5点以上のダメージ。<br>相手のライフ20点を削り取ります。",
+    action: s => {
+      s.pile = [];
+      s.trash.push("勲章3");
+      return s;
+    },
+    isLoop: true,
+  },
+
+  // ===== 発展編：不法侵入禁止区版 =====
+  {
+    title: "━━ 発展編：不法侵入禁止区あり ━━",
+    text: "戦場に不法侵入禁止区がある場合の別ルート。<br>手札：臨終の咆哮・炎の鳥×2・呪われた勲章×2<br>領土：山岳2枚以上・計3枚以上<br>炎の鳥を墓地に用意しなくても動けます！",
+    action: s => {
+      s.enemyLife = 20;
+      s.playerField = ["不法侵入禁止区"];
+      s.hand = ["臨終の咆哮", "炎の鳥A", "炎の鳥B", "勲章1", "勲章2"];
+      s.pile = [];
+      s.trash = [];
+      s.dmgCount = 0;
+      s.howlCount = 0;
+      s.usedTerritories = 0;
+      s.totalTerritories = 3;
+      s.mountainTerritories = 2;
+      return s;
+    },
+    isExtra: true,
+  },
+  {
+    title: "【発展】呪われた勲章×2・臨終の咆哮をプレイ→3点",
+    text: "勲章×2（1点×2）＋臨終の咆哮（咆哮1枚目→1点）<br>→ 計3点ダメージ・ダメージ3回目",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "勲章1" && h !== "勲章2" && h !== "臨終の咆哮");
+      s.pile = [];
+      s.trash.push("勲章1");
+      s.trash.push("勲章2");
+      s.trash.push("臨終の咆哮");
+      s.enemyLife -= 3;
+      s.dmgCount = 3;
+      s.howlCount = 1;
+      s.usedTerritories = 3;
+      return s;
+    },
+    damage: { amount: 3 },
+    isExtra: true,
+  },
+  {
+    title: "【発展】臨終の咆哮の墓地起動：炎の鳥×2を捨てて2点",
+    text: "臨終の咆哮の墓地起動：手札の炎の鳥×2を捨てて発動。<br>咆哮2枚目→2点ダメージ。<br>🔥 ダメージ4回目！炎の鳥×2が戦場へ。<br>不法侵入禁止区の効果で手札へ戻る→ループ！",
+    action: s => {
+      s.hand = [];
+      s.trash.push("炎の鳥A");
+      s.trash.push("炎の鳥B");
+      s.pile = ["臨終の咆哮"];
+      s.enemyLife -= 2;
+      s.dmgCount = 4;
+      s.howlCount = 2;
+      s.trash = s.trash.filter(c => c !== "炎の鳥A" && c !== "炎の鳥B");
+      s.hand = ["炎の鳥A", "炎の鳥B"];
+      return s;
+    },
+    damage: { amount: 2 },
+    isExtra: true,
+    isLoop: true,
+  },
+  {
+    title: "【発展】以降は咆哮の回数が増えるたびダメージ+1点",
+    text: "炎の鳥×2を捨てる→臨終の咆哮が発動→炎の鳥復活→手札へのループ。<br>咆哮3枚目→3点、4枚目→4点、5枚目→5点…<br>加速度的にダメージが増えていきます！",
+    action: s => {
+      s.pile = [];
+      return s;
+    },
+    isExtra: true,
+    isLoop: true,
+  },
+];
+
+let state = {};
+let currentStep = 0;
+
+function getImgKey(name) {
+  if (name === "不法侵入禁止区") return "不法侵入禁止区";
+  if (name === "火球") return "火球";
+  if (name.startsWith("炎の鳥")) return "炎の鳥";
+  if (name === "臨終の咆哮") return "臨終の咆哮";
+  return "呪われた勲章";
+}
+
+function getDisplayName(name) {
+  return name.replace("A","").replace("B","");
+}
+
+function makeCard(name, opts = {}) {
+  const div = document.createElement("div");
+  div.className = "card" + (opts.entering ? " entering" : "") + (opts.inTrash ? " in-trash" : "");
+  if (opts.highlighted) div.classList.add("highlighted");
+  if (opts.muted) div.classList.add("muted");
+  if (name.startsWith("炎の鳥") && opts.phoenix && !opts.muted) div.classList.add("phoenix");
+
+  const img = document.createElement("img");
+  img.src = IMAGES[getImgKey(name)] || "";
+  img.onerror = () => {
+    div.style.background = "#2a3a4a";
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.fontSize = "7px";
+    div.style.color = "#aaa";
+    div.style.textAlign = "center";
+    div.style.padding = "2px";
+    div.textContent = getDisplayName(name);
+  };
+  div.appendChild(img);
+  return div;
+}
+
+function makeHandCard(name, discarding) {
+  const div = document.createElement("div");
+  div.className = "hand-card" + (discarding ? " discarding" : "");
+  const img = document.createElement("img");
+  img.src = IMAGES[getImgKey(name)] || "";
+  img.onerror = () => {
+    div.style.background = "#2a3a4a";
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.fontSize = "7px";
+    div.style.color = "#aaa";
+    div.style.textAlign = "center";
+    div.style.padding = "2px";
+    div.textContent = getDisplayName(name);
+  };
+  div.appendChild(img);
+  return div;
+}
+
+function showDamage(amount, delay = 0) {
+  setTimeout(() => {
+    const el = document.createElement("div");
+    el.className = "damage-float enemy-dmg";
+    el.textContent = `-${amount}点`;
+    const rect = document.getElementById("enemy-life-bar").getBoundingClientRect();
+    el.style.left = (rect.left + rect.width / 2 - 25) + "px";
+    el.style.top = (window.scrollY + rect.top - 10) + "px";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }, delay);
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const highlights = step.highlight || [];
+
+  const eLife = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-num").textContent = eLife;
+  document.getElementById("enemy-life-bar").style.width = (eLife / 20 * 100) + "%";
+
+  document.getElementById("dmg-count").textContent = s.dmgCount;
+  document.getElementById("howl-count").textContent = s.howlCount;
+
+  // 自分フィールド
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  s.playerField.forEach(name => {
+    const isMuted = (s.mutedCards || []).includes(name);
+    const el = makeCard(name, {
+      highlighted: highlights.includes(name),
+      phoenix: true,
+      muted: isMuted,
+    });
+    pf.appendChild(el);
+  });
+
+  // パイル
+  const pa = document.getElementById("pile-area");
+  pa.innerHTML = "";
+  s.pile.forEach(name => {
+    pa.appendChild(makeCard(name, { entering: true, highlighted: true }));
+  });
+
+  // 領土
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  for (let i = 0; i < s.totalTerritories; i++) {
+    const card = document.createElement("div");
+    const isUsed = i < s.usedTerritories;
+    const isMountain = i < s.mountainTerritories;
+    card.className = "territory-card" + (isUsed ? " used" : "");
+    card.textContent = isMountain ? "山" : "土";
+    card.style.background = isMountain ? "#4a2a2a" : "#2a4a2a";
+    card.style.borderColor = isMountain ? "#8a4a4a" : "#4a8a4a";
+    ta.appendChild(card);
+  }
+
+  // トラッシュ
+  const tr = document.getElementById("trash-area");
+  tr.innerHTML = "";
+  s.trash.forEach((name, idx) => {
+    const el = makeCard(name, { inTrash: true });
+    el.style.position = "absolute";
+    el.style.left = (5 + idx * 12) + "px";
+    el.style.top = "4px";
+    el.style.zIndex = idx + 1;
+    tr.appendChild(el);
+  });
+
+  // 手札
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  s.hand.forEach(name => {
+    ha.appendChild(makeHandCard(name, false));
+  });
+
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+
+  const badge = document.getElementById("loop-badge");
+  if (step.isLoop) {
+    badge.style.cssText = "display:block;background:#4a1a5a;color:#ffaaff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #cc44ff;";
+    badge.textContent = "🔁 ループ！";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function applyStep(idx) {
+  const step = steps[idx];
+  state = step.action({
+    ...state,
+    trash: [...state.trash],
+    hand: [...state.hand],
+    playerField: [...state.playerField],
+    pile: [...(state.pile || [])],
+    mutedCards: [...(state.mutedCards || [])],
+  });
+  if (step.damage) {
+    showDamage(step.damage.amount, 300);
+  }
+  render();
+}
+
+function nextStep() {
+  stopPlay();
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    applyStep(currentStep);
+  }
+}
+
+function prevStep() {
+  stopPlay();
+  if (currentStep > 0) {
+    currentStep--;
+    replayTo(currentStep);
+  }
+}
+
+function replayTo(target) {
+  let s = initState();
+  for (let i = 0; i <= target; i++) {
+    s = steps[i].action({
+      ...s,
+      trash: [...s.trash],
+      hand: [...s.hand],
+      playerField: [...s.playerField],
+      pile: [...(s.pile || [])],
+      mutedCards: [...(s.mutedCards || [])],
+    });
+  }
+  state = s;
+  render();
+}
+
+function resetAll() {
+  stopPlay();
+  currentStep = 0;
+  state = initState();
+  render();
+}
+
+let playTimer = null;
+const PLAY_INTERVAL = 2500;
+
+function togglePlay() {
+  if (playTimer) { stopPlay(); } else { startPlay(); }
+}
+
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止";
+  btn.classList.add("playing");
+  playTimer = setInterval(() => {
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      applyStep(currentStep);
+    } else {
+      stopPlay();
+    }
+  }, PLAY_INTERVAL);
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById("playBtn");
+  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
+}
+
+state = initState();
+render();
+</script>
+</body>
+</html>
