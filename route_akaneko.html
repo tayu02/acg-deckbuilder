@@ -25,7 +25,11 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
 .enemy-zone { background: rgba(200,80,80,0.1); border: 1px solid rgba(200,80,80,0.3); }
 .player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
 .hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
-.trash-zone { background: rgba(100,60,20,0.2); border: 1px solid rgba(150,80,30,0.4); }
+.trash-zone {
+background: rgba(100,60,20,0.2); border: 1px solid rgba(150,80,30,0.4);
+border-radius: 8px; padding: 8px; margin-bottom: 6px;
+position: relative; height: 76px;
+}
 
 /* 領土エリア */
 .territory-zone { display: flex; gap: 6px; padding: 6px 8px; margin-bottom: 6px; flex-wrap: wrap; align-items: center; }
@@ -139,13 +143,19 @@ border-radius: 20px; margin-top: 8px; text-align: center;
   <div id="field">
     <div class="zone-label">自分の戦場</div>
     <div class="zone player-zone" id="player-field"></div>
-<div class="zone-label">領土（山岳×2以上）</div>
-<div class="territory-zone" id="territory-area"></div>
+<div style="display:flex; align-items:flex-start; position:relative; margin-bottom:6px;">
+  <div style="flex:1; min-width:0;">
+    <div class="zone-label">領土（山岳×2以上）</div>
+    <div class="territory-zone" id="territory-area"></div>
+  </div>
+  <div style="flex:1; min-width:0;">
+    <div class="zone-label">トラッシュ</div>
+    <div class="trash-zone" id="trash-area"></div>
+  </div>
+</div>
+
 <div class="zone-label">手札</div>
 <div class="zone hand-zone" id="hand-area"></div>
-
-<div class="zone-label">トラッシュ</div>
-<div class="zone trash-zone" id="trash-area"></div>
 
   </div>
 
@@ -637,11 +647,16 @@ function render() {
     ha.appendChild(makeHandCard(name, s.playingCard === name));
   });
 
-  // トラッシュ
+  // トラッシュ（カードを重ねて表示）
   const tr = document.getElementById("trash-area");
   tr.innerHTML = "";
-  s.trash.forEach(name => {
-    tr.appendChild(makeCard(name, { inTrash: true }));
+  s.trash.forEach((name, idx) => {
+    const el = makeCard(name, { inTrash: true });
+    el.style.position = "absolute";
+    el.style.left = (8 + idx * 14) + "px";
+    el.style.top = "8px";
+    el.style.zIndex = idx + 1;
+    tr.appendChild(el);
   });
 
   // 説明
