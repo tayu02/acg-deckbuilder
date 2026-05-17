@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -23,36 +22,36 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
 #field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
 
 /* 道具破棄カウンター */
-#trash-counter {
-position: absolute; top: 6px; right: 8px;
-background: rgba(180,80,0,0.85); color: #ffdd88;
-font-size: 11px; font-weight: bold;
-padding: 2px 7px; border-radius: 10px;
-border: 1px solid #ff8800; z-index: 20;
+#dogu-counter {
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(180,80,0,0.85); color: #ffdd88;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #ff8800; z-index: 20;
 }
 
 .zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
 .zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
 .player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
 .pile-zone {
-background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
-border-radius: 6px; padding: 5px; margin-bottom: 4px;
-min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
 }
 .territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
 .hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
 .trash-zone {
-background: rgba(100,60,20,0.2); border: 1px solid rgba(150,80,30,0.4);
-border-radius: 6px; padding: 5px; margin-bottom: 4px;
-position: relative; height: 64px;
+  background: rgba(100,60,20,0.2); border: 1px solid rgba(150,80,30,0.4);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  position: relative; height: 64px;
 }
 
 /* カード */
 .card {
-width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
-border: 2px solid #4a8a4a; background: #1a2a3a;
-position: relative; flex-shrink: 0;
-transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
 }
 .card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .card.muted { opacity: 0.45; transform: rotate(90deg); }
@@ -62,62 +61,62 @@ transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
 .card.powered { box-shadow: 0 0 12px 3px #ff4400; border-color: #ff6600; }
 
 .counter-badge {
-position: absolute; bottom: 2px; left: 0; right: 0;
-background: rgba(200,80,0,0.92); color: white; font-size: 7px; font-weight: bold;
-padding: 1px 2px; text-align: center; white-space: nowrap; z-index: 10;
+  position: absolute; bottom: 2px; left: 0; right: 0;
+  background: rgba(200,80,0,0.92); color: white; font-size: 7px; font-weight: bold;
+  padding: 1px 2px; text-align: center; white-space: nowrap; z-index: 10;
 }
 .atk-badge {
-position: absolute; top: 2px; left: 0; right: 0;
-background: rgba(180,0,50,0.88); color: white; font-size: 7px; font-weight: bold;
-padding: 1px 2px; text-align: center; z-index: 10;
+  position: absolute; top: 2px; left: 0; right: 0;
+  background: rgba(180,0,50,0.88); color: white; font-size: 7px; font-weight: bold;
+  padding: 1px 2px; text-align: center; z-index: 10;
 }
 
 /* 手札カード */
 .hand-card {
-width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
-border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
 }
 .hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* 領土カード */
 .territory-card {
-width: 34px; height: 22px; border-radius: 4px;
-background: #2a4a2a; border: 1px solid #4a8a4a;
-display: flex; align-items: center; justify-content: center;
-font-size: 9px; color: #a8e0a8; font-weight: bold;
-transition: transform 0.4s, opacity 0.3s;
+  width: 34px; height: 22px; border-radius: 4px;
+  background: #2a4a2a; border: 1px solid #4a8a4a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #a8e0a8; font-weight: bold;
+  transition: transform 0.4s, opacity 0.3s;
 }
 .territory-card.used { transform: rotate(90deg); opacity: 0.4; }
 
 /* ダメージ演出 */
 .damage-float {
-position: fixed; font-size: 22px; font-weight: bold;
-pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
-white-space: nowrap;
+  position: fixed; font-size: 22px; font-weight: bold;
+  pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
+  white-space: nowrap;
 }
 .damage-float.enemy-dmg { color: #ff4444; text-shadow: 0 0 12px #ff0000; }
 
 @keyframes floatUp {
-0% { opacity: 1; transform: translateY(0) scale(1.3); }
-100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+  0% { opacity: 1; transform: translateY(0) scale(1.3); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
 }
 @keyframes slideIn {
-from { opacity: 0; transform: translateY(-14px); }
-to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* 説明 */
 #description {
-background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
-border-radius: 10px; padding: 12px 14px; margin-top: 8px;
-font-size: 13px; line-height: 1.75; min-height: 64px;
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
 }
 #step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
 #step-text { color: #d0e8d0; }
 
 #loop-badge {
-display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
-border-radius: 20px; margin-top: 8px; text-align: center;
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
 }
 
 /* コントロール */
@@ -132,7 +131,6 @@ border-radius: 20px; margin-top: 8px; text-align: center;
 .ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
 #step-counter { color: #888; font-size: 13px; }
 </style>
-
 </head>
 <body>
 <div id="stage">
@@ -150,28 +148,27 @@ border-radius: 20px; margin-top: 8px; text-align: center;
   </div>
 
   <div id="field">
-    <div id="trash-counter">🗑 道具破棄：<span id="trash-count">0</span>枚</div>
-#-=
-<div class="zone-label">自分の戦場</div>
-<div class="zone player-zone" id="player-field"></div>
+    <div id="dogu-counter">🗑 道具破棄：<span id="dogu-count">0</span>枚</div>
 
-<div class="zone-label">パイル</div>
-<div class="pile-zone" id="pile-area"></div>
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
 
-<div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:4px;">
-  <div style="flex:1; min-width:0;">
-    <div class="zone-label">領土（3以上）</div>
-    <div class="territory-zone" id="territory-area"></div>
-  </div>
-  <div style="flex:1; min-width:0;">
-    <div class="zone-label">トラッシュ</div>
-    <div class="trash-zone" id="trash-area"></div>
-  </div>
-</div>
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
 
-<div class="zone-label">手札</div>
-<div class="zone hand-zone" id="hand-area"></div>
+    <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:4px;">
+      <div style="flex:1; min-width:0;">
+        <div class="zone-label">領土（3以上）</div>
+        <div class="territory-zone" id="territory-area"></div>
+      </div>
+      <div style="flex:1; min-width:0;">
+        <div class="zone-label">トラッシュ</div>
+        <div class="trash-zone" id="trash-area"></div>
+      </div>
+    </div>
 
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
   </div>
 
   <div id="controls">
@@ -285,7 +282,7 @@ const steps = [
       });
       s.trash.push("ガラクタの王A");
       s.trashCount += 1;
-      s.hand = ["ガラクタの王H"];
+      s.pile = ["ガラクタの王H"];
       s.usedTerritories = 0;
       s.loopCount += 1;
       return s;
@@ -302,7 +299,8 @@ const steps = [
       s.tekkiAtk = 20;
       s.loopCount = 10;
       s.playerField = ["簡易祭壇", "ガラクタの王A", "鉄鴉"];
-      s.hand = ["ガラクタの王H"];
+      s.hand = [];
+      s.pile = ["ガラクタの王H"];
       s.trash = [];
       s.usedTerritories = 0;
       return s;
@@ -348,8 +346,8 @@ const steps = [
     action: s => {
       s.enemyLife = 20;
       s.playerField = ["簡易祭壇", "ガラクタの王A", "鉄鴉", "道具の骨組み", "妖狐の巻物"];
-      s.hand = ["ガラクタの王H"];
-      s.pile = [];
+      s.hand = [];
+      s.pile = ["ガラクタの王H"];
       s.trash = [];
       s.trashCount = 0;
       s.tekkiAtk = 0;
@@ -509,7 +507,7 @@ function render() {
   document.getElementById("enemy-life-bar").style.width = (eLife / 20 * 100) + "%";
 
   // 道具破棄カウンター
-  document.getElementById("trash-count").textContent = s.trashCount;
+  document.getElementById("dogu-count").textContent = s.trashCount;
 
   // 自分フィールド
   const pf = document.getElementById("player-field");
@@ -660,6 +658,5 @@ function stopPlay() {
 state = initState();
 render();
 </script>
-
 </body>
 </html>
