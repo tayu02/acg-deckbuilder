@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ガラクタルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+/* ライフ */
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+/* フィールド */
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+/* 道具破棄カウンター */
+#trash-counter {
+position: absolute; top: 6px; right: 8px;
+background: rgba(180,80,0,0.85); color: #ffdd88;
+font-size: 11px; font-weight: bold;
+padding: 2px 7px; border-radius: 10px;
+border: 1px solid #ff8800; z-index: 20;
+}
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+border-radius: 6px; padding: 5px; margin-bottom: 4px;
+min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.trash-zone {
+background: rgba(100,60,20,0.2); border: 1px solid rgba(150,80,30,0.4);
+border-radius: 6px; padding: 5px; margin-bottom: 4px;
+position: relative; height: 64px;
+}
+
+/* カード */
+.card {
+width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+border: 2px solid #4a8a4a; background: #1a2a3a;
+position: relative; flex-shrink: 0;
+transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.in-trash { opacity: 0.55; filter: grayscale(0.6); border-color: #6a4a2a; }
+.card.powered { box-shadow: 0 0 12px 3px #ff4400; border-color: #ff6600; }
+
+.counter-badge {
+position: absolute; bottom: 2px; left: 0; right: 0;
+background: rgba(200,80,0,0.92); color: white; font-size: 7px; font-weight: bold;
+padding: 1px 2px; text-align: center; white-space: nowrap; z-index: 10;
+}
+.atk-badge {
+position: absolute; top: 2px; left: 0; right: 0;
+background: rgba(180,0,50,0.88); color: white; font-size: 7px; font-weight: bold;
+padding: 1px 2px; text-align: center; z-index: 10;
+}
+
+/* 手札カード */
+.hand-card {
+width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* 領土カード */
+.territory-card {
+width: 34px; height: 22px; border-radius: 4px;
+background: #2a4a2a; border: 1px solid #4a8a4a;
+display: flex; align-items: center; justify-content: center;
+font-size: 9px; color: #a8e0a8; font-weight: bold;
+transition: transform 0.4s, opacity 0.3s;
+}
+.territory-card.used { transform: rotate(90deg); opacity: 0.4; }
+
+/* ダメージ演出 */
+.damage-float {
+position: fixed; font-size: 22px; font-weight: bold;
+pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
+white-space: nowrap;
+}
+.damage-float.enemy-dmg { color: #ff4444; text-shadow: 0 0 12px #ff0000; }
+
+@keyframes floatUp {
+0% { opacity: 1; transform: translateY(0) scale(1.3); }
+100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+}
+@keyframes slideIn {
+from { opacity: 0; transform: translateY(-14px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+/* 説明 */
+#description {
+background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+/* コントロール */
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🗑 ガラクタルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div id="trash-counter">🗑 道具破棄：<span id="trash-count">0</span>枚</div>
+#-=
+<div class="zone-label">自分の戦場</div>
+<div class="zone player-zone" id="player-field"></div>
+
+<div class="zone-label">パイル</div>
+<div class="pile-zone" id="pile-area"></div>
+
+<div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:4px;">
+  <div style="flex:1; min-width:0;">
+    <div class="zone-label">領土（3以上）</div>
+    <div class="territory-zone" id="territory-area"></div>
+  </div>
+  <div style="flex:1; min-width:0;">
+    <div class="zone-label">トラッシュ</div>
+    <div class="trash-zone" id="trash-area"></div>
+  </div>
+</div>
+
+<div class="zone-label">手札</div>
+<div class="zone hand-zone" id="hand-area"></div>
+
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+const IMAGES = {
+  ガラクタの王:   "https://acgtcg.com/img/BP4-075",
+  鉄鴉:           "https://acgtcg.com/img/ACG-161",
+  簡易祭壇:       "https://acgtcg.com/img/BP1-039",
+  道具の骨組み:   "https://acgtcg.com/img/BP4-079",
+  妖狐の巻物:     "https://acgtcg.com/img/ACG-020",
+};
+
+function initState() {
+  return {
+    enemyLife: 20,
+    playerField: ["簡易祭壇", "ガラクタの王A", "鉄鴉"],
+    hand: ["ガラクタの王H"],
+    pile: [],
+    trash: [],
+    trashCount: 0,   // 道具破棄カウンター
+    tekkiAtk: 0,     // 鉄鴉のATK
+    saiLevel: 0,     // 簡易祭壇の起動回数
+    loopCount: 0,
+    usedTerritories: 0,
+    totalTerritories: 3,
+  };
+}
+
+const steps = [
+  {
+    title: "初期状態",
+    text: "盤面：簡易祭壇・ガラクタの王・鉄鴉<br>手札：ガラクタの王<br>領土：3以上あればOK",
+    action: s => s,
+  },
+
+  // ===== ループ1回目 =====
+  {
+    title: "① 手札のガラクタの王をプレイ（コスト3）",
+    text: "手札のガラクタの王をパイルに置き、コスト3を支払います。",
+    action: s => {
+      s.hand = [];
+      s.pile = ["ガラクタの王H"];
+      s.usedTerritories = 3;
+      return s;
+    },
+    highlight: ["ガラクタの王H"],
+  },
+  {
+    title: "② 唯一の効果：盤面のガラクタの王を墓地へ",
+    text: "ガラクタの王は《唯一》を持つため、先に盤面にいたガラクタの王を墓地へ送ります。<br>🗑 道具破棄①",
+    action: s => {
+      s.playerField = s.playerField.filter(c => c !== "ガラクタの王A");
+      s.trash.push("ガラクタの王A");
+      s.trashCount += 1;
+      return s;
+    },
+    highlight: ["ガラクタの王A"],
+  },
+  {
+    title: "③ 簡易祭壇の起動：鉄鴉を墓地へ→デッキトップに回収",
+    text: "ガラクタの王の誘発効果が解決する前に、簡易祭壇を起動。<br>盤面の鉄鴉を墓地へ送り（🗑 道具破棄②）、墓地の鉄鴉とガラクタの王をデッキトップへ置きます。",
+    action: s => {
+      s.playerField = s.playerField.filter(c => c !== "鉄鴉");
+      s.trash.push("鉄鴉");
+      s.trash = s.trash.filter(c => c !== "ガラクタの王A");
+      s.trashCount += 1;
+      return s;
+    },
+    highlight: ["簡易祭壇"],
+  },
+  {
+    title: "④ ガラクタの王の誘発効果：デッキトップ3枚を捲る",
+    text: "ガラクタの王が戦場に出た誘発効果を発動。<br>デッキトップ3枚を公開し、コスト合計3以下になるように道具カードを戦場に出せます。<br>→ ガラクタの王（3コスト）＋鉄鴉（0コスト）を戦場へ！",
+    action: s => {
+      s.pile = [];
+      s.playerField.push("ガラクタの王A");
+      s.playerField.push("鉄鴉");
+      s.trash = s.trash.filter(c => c !== "鉄鴉");
+      return s;
+    },
+    highlight: ["ガラクタの王A", "鉄鴉"],
+  },
+  {
+    title: "⑤ 唯一の効果：古いガラクタの王を墓地へ → ループ！",
+    text: "新しいガラクタの王が出たことで、唯一の効果が再び発動。<br>元のガラクタの王が墓地へ → 手札にガラクタの王を補充して繰り返します。<br>1ループで道具2枚破棄。",
+    action: s => {
+      s.playerField = s.playerField.filter((c, i, arr) => {
+        if (c === "ガラクタの王A") {
+          const firstIdx = arr.indexOf("ガラクタの王A");
+          return i !== firstIdx;
+        }
+        return true;
+      });
+      s.trash.push("ガラクタの王A");
+      s.trashCount += 1;
+      s.hand = ["ガラクタの王H"];
+      s.usedTerritories = 0;
+      s.loopCount += 1;
+      return s;
+    },
+    isLoop: true,
+  },
+
+  // ===== ループ×10 =====
+  {
+    title: "🔁 10ループ繰り返す",
+    text: "①〜⑤を10回繰り返します。<br>1ループで道具2枚破棄 × 10ループ = 道具20枚破棄！<br>鉄鴉のATKが20まで上昇しています。",
+    action: s => {
+      s.trashCount = 20;
+      s.tekkiAtk = 20;
+      s.loopCount = 10;
+      s.playerField = ["簡易祭壇", "ガラクタの王A", "鉄鴉"];
+      s.hand = ["ガラクタの王H"];
+      s.trash = [];
+      s.usedTerritories = 0;
+      return s;
+    },
+    isLoop: true,
+  },
+
+  // ===== フィニッシュ =====
+  {
+    title: "⑥ フィニッシュ：簡易祭壇を使わない！",
+    text: "今回は簡易祭壇を起動しません。<br>ガラクタの王の誘発効果で鉄鴉を戦場に出し、そのまま維持します。<br>鉄鴉のATK = このターン墓地に送った道具の数 = 20！",
+    action: s => {
+      s.pile = ["ガラクタの王H"];
+      s.hand = [];
+      s.usedTerritories = 3;
+      s.tekkiAtk = 20;
+      return s;
+    },
+    highlight: ["鉄鴉"],
+  },
+  {
+    title: "⑦ 鉄鴉の起動効果：妨害無効のバーンダメージ！",
+    text: "鉄鴉をムーブして起動効果を発動。<br>「このプレイは妨害されない」<br>相手にATK分（20点）のダメージ！→ 相手ライフ0！",
+    action: s => {
+      s.pile = [];
+      s.enemyLife = 0;
+      s.playerField = s.playerField.map(c => c === "鉄鴉" ? "鉄鴉_muted" : c);
+      return s;
+    },
+    damage: { target: "enemy", amount: 20 },
+    highlight: ["鉄鴉"],
+  },
+  {
+    title: "🏆 フィニッシュ！",
+    text: "鉄鴉のバーン20点で相手ライフが0に！<br>このプレイは妨害されないため確実に決まります。<br><br>【まとめ】<br>・ループ10回で道具20枚破棄<br>・鉄鴉ATK20でバーン20点<br>・相手ライフ20点を一撃で！",
+    action: s => s,
+  },
+
+  // ===== 発展編 =====
+  {
+    title: "━━ 発展編：領土が足りない時の補助 ━━",
+    text: "ガラクタの王のコスト3には複数の色条件が必要です。<br>領土が揃わない時に役立つ2枚を紹介します。<br>①道具の骨組み<br>②妖狐の巻物",
+    action: s => {
+      s.enemyLife = 20;
+      s.playerField = ["簡易祭壇", "ガラクタの王A", "鉄鴉", "道具の骨組み", "妖狐の巻物"];
+      s.hand = ["ガラクタの王H"];
+      s.pile = [];
+      s.trash = [];
+      s.trashCount = 0;
+      s.tekkiAtk = 0;
+      s.usedTerritories = 0;
+      s.totalTerritories = 2;
+      return s;
+    },
+    isExtra: true,
+  },
+  {
+    title: "【発展①】道具の骨組み",
+    text: "道具の骨組みの効果：<br>起動①：ムーブして補修カウンターを1個置く<br>起動②：補修カウンターが1個以上あればすべて取り除き、手札のコストX以下の道具カードを戦場に出す<br><br>→ 手札のガラクタの王（コスト3）を<b>色条件を無視して</b>戦場に出せます！",
+    action: s => s,
+    highlight: ["道具の骨組み"],
+    isExtra: true,
+  },
+  {
+    title: "【発展①】道具の骨組みで起動①",
+    text: "道具の骨組みをムーブして補修カウンターを1個置きます。",
+    action: s => {
+      s.playerField = s.playerField.map(c => c === "道具の骨組み" ? "道具の骨組み_muted" : c);
+      return s;
+    },
+    highlight: ["道具の骨組み"],
+    isExtra: true,
+  },
+  {
+    title: "【発展①】道具の骨組みで起動②：ガラクタの王を直接展開！",
+    text: "次のターン、補修カウンターを取り除いて起動②を発動。<br>手札のガラクタの王（コスト3）を色条件を踏み倒して戦場へ！<br>→ 領土が平地しかなくてもガラクタの王を出せます。",
+    action: s => {
+      s.playerField = s.playerField.map(c => c === "道具の骨組み_muted" ? "道具の骨組み" : c);
+      s.hand = [];
+      s.pile = ["ガラクタの王H"];
+      return s;
+    },
+    highlight: ["ガラクタの王H", "道具の骨組み"],
+    isExtra: true,
+  },
+  {
+    title: "【発展②】妖狐の巻物",
+    text: "妖狐の巻物の効果：<br>・カウンターが戦場を離れるたびに妖狐カウンターを1個置く<br>・起動でムーブ→以下の色条件キーワード能力のどれかを得る<br>　《平野》《山岳》《水生》《森林》<br><br>→ 足りない色条件を妖狐カウンターで補えます！",
+    action: s => {
+      s.pile = [];
+      return s;
+    },
+    highlight: ["妖狐の巻物"],
+    isExtra: true,
+  },
+  {
+    title: "【発展②】妖狐の巻物で色条件を補う",
+    text: "例：平地の領土しかない状態でも、妖狐の巻物に妖狐カウンターが溜まっていれば、起動でムーブして《山岳》などを得られます。<br><br>ガラクタルートでは道具のカウンターが頻繁に動くため、妖狐カウンターが自然と溜まっていきます！",
+    action: s => {
+      s.totalTerritories = 1;
+      s.usedTerritories = 0;
+      return s;
+    },
+    highlight: ["妖狐の巻物"],
+    isExtra: true,
+  },
+  {
+    title: "✅ まとめ：サポートカードの役割",
+    text: "【道具の骨組み】<br>・色条件を踏み倒してガラクタの王を展開<br>・領土が揃わない序盤に特に有効<br><br>【妖狐の巻物】<br>・ループ中にカウンターが勝手に溜まる<br>・足りない色を補い、領土事故を防ぐ<br><br>この2枚があるとガラクタルートがより安定します！",
+    action: s => s,
+    isExtra: true,
+  },
+];
+
+let state = {};
+let currentStep = 0;
+
+function getImgKey(name) {
+  if (name.startsWith("ガラクタの王")) return "ガラクタの王";
+  if (name.startsWith("鉄鴉")) return "鉄鴉";
+  if (name === "簡易祭壇") return "簡易祭壇";
+  if (name.startsWith("道具の骨組み")) return "道具の骨組み";
+  if (name.startsWith("妖狐の巻物")) return "妖狐の巻物";
+  return "ガラクタの王";
+}
+
+function getDisplayName(name) {
+  return name.replace("A","").replace("H","").replace("_muted","");
+}
+
+function makeCard(name, opts = {}) {
+  const div = document.createElement("div");
+  const isMuted = name.includes("_muted") || opts.muted;
+  div.className = "card" + (opts.entering ? " entering" : "") + (opts.inTrash ? " in-trash" : "");
+  if (isMuted) div.classList.add("muted");
+  if (opts.highlighted) div.classList.add("highlighted");
+  if (opts.powered) div.classList.add("powered");
+
+  const img = document.createElement("img");
+  img.src = IMAGES[getImgKey(name)] || "";
+  img.onerror = () => {
+    div.style.background = "#2a3a4a";
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.fontSize = "7px";
+    div.style.color = "#aaa";
+    div.style.textAlign = "center";
+    div.style.padding = "2px";
+    div.textContent = getDisplayName(name);
+  };
+  div.appendChild(img);
+
+  if (opts.atk > 0) {
+    const b = document.createElement("div");
+    b.className = "atk-badge";
+    b.textContent = `ATK${opts.atk}`;
+    div.appendChild(b);
+  }
+  return div;
+}
+
+function makeHandCard(name) {
+  const div = document.createElement("div");
+  div.className = "hand-card";
+  const img = document.createElement("img");
+  img.src = IMAGES[getImgKey(name)] || "";
+  img.onerror = () => {
+    div.style.background = "#2a3a4a";
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.fontSize = "7px";
+    div.style.color = "#aaa";
+    div.style.textAlign = "center";
+    div.style.padding = "2px";
+    div.textContent = getDisplayName(name);
+  };
+  div.appendChild(img);
+  return div;
+}
+
+function showDamage(target, amount, delay = 0) {
+  setTimeout(() => {
+    const el = document.createElement("div");
+    el.className = "damage-float enemy-dmg";
+    el.textContent = `-${amount}点`;
+    const rect = document.getElementById("enemy-life-bar").getBoundingClientRect();
+    el.style.left = (rect.left + rect.width / 2 - 25) + "px";
+    el.style.top = (window.scrollY + rect.top - 10) + "px";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }, delay);
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const highlights = step.highlight || [];
+
+  // ライフ
+  const eLife = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-num").textContent = eLife;
+  document.getElementById("enemy-life-bar").style.width = (eLife / 20 * 100) + "%";
+
+  // 道具破棄カウンター
+  document.getElementById("trash-count").textContent = s.trashCount;
+
+  // 自分フィールド
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  s.playerField.forEach(name => {
+    const isTekki = name.startsWith("鉄鴉");
+    const el = makeCard(name, {
+      highlighted: highlights.includes(name) || highlights.includes(getDisplayName(name)),
+      atk: isTekki && s.tekkiAtk > 0 ? s.tekkiAtk : 0,
+      powered: isTekki && s.tekkiAtk >= 20,
+    });
+    pf.appendChild(el);
+  });
+
+  // パイル
+  const pa = document.getElementById("pile-area");
+  pa.innerHTML = "";
+  s.pile.forEach(name => {
+    pa.appendChild(makeCard(name, { entering: true, highlighted: true }));
+  });
+
+  // 領土
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  for (let i = 0; i < s.totalTerritories; i++) {
+    const card = document.createElement("div");
+    card.className = "territory-card" + (i < s.usedTerritories ? " used" : "");
+    card.textContent = "土";
+    ta.appendChild(card);
+  }
+
+  // トラッシュ（重ねて表示）
+  const tr = document.getElementById("trash-area");
+  tr.innerHTML = "";
+  s.trash.forEach((name, idx) => {
+    const el = makeCard(name, { inTrash: true });
+    el.style.position = "absolute";
+    el.style.left = (5 + idx * 12) + "px";
+    el.style.top = "4px";
+    el.style.zIndex = idx + 1;
+    tr.appendChild(el);
+  });
+
+  // 手札
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  s.hand.forEach(name => ha.appendChild(makeHandCard(name)));
+
+  // 説明
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+
+  // バッジ
+  const badge = document.getElementById("loop-badge");
+  if (step.isLoop) {
+    badge.style.cssText = "display:block;background:#7a1a1a;color:#ffaaaa;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #c85a5a;";
+    badge.textContent = "🔁 ここからループ！";
+  } else if (step.isExtra) {
+    badge.style.cssText = "display:block;background:#1a3a5a;color:#88ccff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #4a8aaa;";
+    badge.textContent = "✨ 発展編";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function applyStep(idx) {
+  const step = steps[idx];
+  state = step.action({
+    ...state,
+    trash: [...state.trash],
+    hand: [...state.hand],
+    playerField: [...state.playerField],
+    pile: [...(state.pile || [])],
+  });
+  if (step.damage) {
+    showDamage(step.damage.target, step.damage.amount, 300);
+  }
+  render();
+}
+
+function nextStep() {
+  stopPlay();
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    applyStep(currentStep);
+  }
+}
+
+function prevStep() {
+  stopPlay();
+  if (currentStep > 0) {
+    currentStep--;
+    replayTo(currentStep);
+  }
+}
+
+function replayTo(target) {
+  let s = initState();
+  for (let i = 0; i <= target; i++) {
+    s = steps[i].action({
+      ...s,
+      trash: [...s.trash],
+      hand: [...s.hand],
+      playerField: [...s.playerField],
+      pile: [...(s.pile || [])],
+    });
+  }
+  state = s;
+  render();
+}
+
+function resetAll() {
+  stopPlay();
+  currentStep = 0;
+  state = initState();
+  render();
+}
+
+// 自動再生
+let playTimer = null;
+const PLAY_INTERVAL = 2500;
+
+function togglePlay() {
+  if (playTimer) { stopPlay(); } else { startPlay(); }
+}
+
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止";
+  btn.classList.add("playing");
+  playTimer = setInterval(() => {
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      applyStep(currentStep);
+    } else {
+      stopPlay();
+    }
+  }, PLAY_INTERVAL);
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById("playBtn");
+  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
+}
+
+state = initState();
+render();
+</script>
+
+</body>
+</html>
