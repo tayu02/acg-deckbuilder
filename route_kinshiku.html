@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>禁止区狼ルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+#loop-counter {
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(20,100,20,0.85); color: #88ff88;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #44ff44; z-index: 20;
+}
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.exile-zone {
+  background: rgba(80,20,80,0.2); border: 1px solid rgba(150,50,150,0.4);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.exiled { opacity: 0.5; filter: grayscale(0.5); border-color: #6a2a6a; }
+.card.returning { box-shadow: 0 0 12px 3px #44aaff; border-color: #44aaff; animation: slideIn 0.4s ease; }
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  background: #2a4a2a; border: 1px solid #4a8a4a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #a8e0a8; font-weight: bold;
+  transition: transform 0.4s, opacity 0.3s;
+}
+.territory-card.used { transform: rotate(90deg); opacity: 0.4; }
+.territory-card.mountain { background: #4a2a2a; border-color: #8a4a4a; color: #ffaaaa; }
+
+.damage-float {
+  position: fixed; font-size: 22px; font-weight: bold;
+  pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
+  white-space: nowrap;
+}
+.damage-float.enemy-dmg { color: #ff4444; text-shadow: 0 0 12px #ff0000; }
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0) scale(1.3); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🐺 禁止区狼ルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div id="loop-counter">🔁 ループ：<span id="loop-count">0</span>回 / <span id="total-dmg">0</span>点</div>
+
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">除外</div>
+    <div class="exile-zone" id="exile-area"></div>
+
+    <div class="zone-label">領土（森×3・山×1）</div>
+    <div class="territory-zone" id="territory-area"></div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+const IMAGES = {
+  不法侵入禁止区: "https://acgtcg.com/img/BP1-040",
+  足跡の発火:     "https://acgtcg.com/img/ACG-085",
+  救助する森狼:   "https://acgtcg.com/img/BP1-041",
+  鉄洗いグマ:     "https://acgtcg.com/img/ACG-159",
+  鉄クズ:         "https://acgtcg.com/img/ACG-160",
+  鉄鴉:           "https://acgtcg.com/img/ACG-161",
+};
+
+function initState() {
+  return {
+    enemyLife: 20,
+    playerField: ["不法侵入禁止区", "足跡の発火"],
+    hand: ["救助する森狼"],
+    exile: [],
+    loopCount: 0,
+    totalDmg: 0,
+    wolfState: "hand", // hand / exile / field / returning
+    trash: [],
+    tekkiAtk: 0,
+    territories: ["森","森","森","山"],
+    usedTerritories: 0,
+  };
+}
+
+const steps = [
+  {
+    title: "初期状態",
+    text: "盤面：不法侵入禁止区・足跡の発火<br>手札：救助する森狼<br>領土：森×3・山×1",
+    action: s => s,
+  },
+  {
+    title: "① 救助する森狼の手札効果を起動",
+    text: "救助する森狼の手札効果：<br>森林域が3以上ある時、手札のこれを除外する。<br>→ 救助する森狼が手札から除外領域へ！",
+    action: s => {
+      s.hand = [];
+      s.exile = ["救助する森狼"];
+      s.wolfState = "exile";
+      return s;
+    },
+    highlight: ["救助する森狼"],
+  },
+  {
+    title: "② 除外した救助する森狼が戦場へ（登場時生贄付き）",
+    text: "除外した救助する森狼が「登場時に自身を生贄に捧げる」効果付きで戦場に登場！<br>プレイではなく除外から出てきました。",
+    action: s => {
+      s.exile = [];
+      s.playerField.push("救助する森狼");
+      s.wolfState = "field";
+      return s;
+    },
+    highlight: ["救助する森狼"],
+    entering: true,
+  },
+  {
+    title: "③ 足跡の発火が反応：相手に1点ダメージ！",
+    text: "動物が戦場に出たので足跡の発火の効果が発動。<br>→ 相手に1点ダメージ！",
+    action: s => {
+      s.enemyLife -= 1;
+      s.totalDmg += 1;
+      return s;
+    },
+    damage: true,
+    highlight: ["足跡の発火"],
+  },
+  {
+    title: "④ 不法侵入禁止区の効果：救助する森狼を手札に戻す！",
+    text: "不法侵入禁止区の効果：プレイ以外で出た動物は手札に戻ります。<br>→ 救助する森狼が生贄に捧げられる前に手札へ！<br>→ 再び手札効果が使えます。ループ！",
+    action: s => {
+      s.playerField = s.playerField.filter(c => c !== "救助する森狼");
+      s.hand = ["救助する森狼"];
+      s.wolfState = "hand";
+      s.loopCount += 1;
+      return s;
+    },
+    highlight: ["不法侵入禁止区", "救助する森狼"],
+    isLoop: true,
+  },
+  {
+    title: "🔁 ループ！相手のライフがなくなるまで繰り返す",
+    text: "①〜④を繰り返すだけで1ループ1点ダメージ。<br>相手のライフ20点に達するまで20回繰り返します。<br><br>妨害がなければほぼ確実に決まる無限ループです！",
+    action: s => {
+      s.loopCount = 10;
+      s.totalDmg = 10;
+      s.enemyLife = 10;
+      return s;
+    },
+    isLoop: true,
+  },
+  {
+    title: "20ループで相手ライフ0！",
+    text: "20回繰り返すと相手ライフが0に！<br><br>【まとめ】<br>・救助する森狼：手札→除外→戦場（生贄付き）<br>・足跡の発火：登場で1点<br>・不法侵入禁止区：生贄前に手札へ戻す<br><br>この3枚が揃えば無限に1点ずつ刻めます！",
+    action: s => {
+      s.loopCount = 20;
+      s.totalDmg = 20;
+      s.enemyLife = 0;
+      return s;
+    },
+  },
+
+  // ===== 発展編：鉄鴉コンボ =====
+  {
+    title: "━━ 発展編：鉄鴉を加えたダメージ増加 ━━",
+    text: "盤面：鉄洗いグマ・鉄クズ×4・不法侵入禁止区<br>手札：救助する森狼<br>領土：森×3・平地×1・山×2<br>鉄鴉を絡めることでループ1回のダメージを4点に！",
+    action: s => {
+      s.enemyLife = 20;
+      s.playerField = ["不法侵入禁止区", "鉄洗いグマ", "鉄クズ1", "鉄クズ2", "鉄クズ3", "鉄クズ4"];
+      s.hand = ["救助する森狼"];
+      s.exile = [];
+      s.loopCount = 0;
+      s.totalDmg = 0;
+      s.tekkiAtk = 0;
+      s.territories = ["森","森","森","平","山","山"];
+      s.usedTerritories = 0;
+      return s;
+    },
+    isExtra: true,
+  },
+  {
+    title: "【発展①】鉄洗いグマの効果：鉄クズ×4を墓地へ",
+    text: "鉄洗いグマをムーブして起動効果を発動。<br>戦場の鉄クズをすべて墓地へ送ります。<br>→ 鉄クズ4枚が墓地へ（道具破棄4枚）",
+    action: s => {
+      s.playerField = s.playerField.filter(c => !c.startsWith("鉄クズ"));
+      s.playerField = s.playerField.map(c => c === "鉄洗いグマ" ? "鉄洗いグマ_muted" : c);
+      s.trash = ["鉄クズ1","鉄クズ2","鉄クズ3","鉄クズ4"];
+      s.tekkiAtk = 4;
+      return s;
+    },
+    highlight: ["鉄洗いグマ"],
+    isExtra: true,
+  },
+  {
+    title: "【発展②】鉄クズの墓地起動：鉄鴉をデッキから回収",
+    text: "鉄クズの墓地起動効果：<br>墓地の鉄クズ4枚を除外して、墓地のコスト4以下の道具カード1枚を手札に加える。<br>→ 鉄鴉（コスト0）をデッキから手札へ！",
+    action: s => {
+      s.trash = [];
+      s.exile = ["鉄クズ1","鉄クズ2","鉄クズ3","鉄クズ4"];
+      s.hand.push("鉄鴉");
+      return s;
+    },
+    highlight: ["鉄鴉"],
+    isExtra: true,
+  },
+  {
+    title: "【発展③】鉄鴉をプレイ（コスト0）→早業でムーブ→4点！",
+    text: "鉄鴉をプレイして戦場へ。コスト0なので領土消費なし。<br>《早業》を持つのでそのままムーブして起動効果を発動。<br>→ このターン道具4枚破棄 = ATK4 = 相手に4点ダメージ！",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "鉄鴉");
+      s.playerField.push("鉄鴉_muted");
+      s.enemyLife -= 4;
+      s.totalDmg += 4;
+      return s;
+    },
+    damage: true,
+    dmgAmount: 4,
+    highlight: ["鉄鴉"],
+    isExtra: true,
+  },
+  {
+    title: "【発展④】救助する森狼の手札効果→除外→戦場へ",
+    text: "救助する森狼を手札から除外。<br>「登場時生贄」付きで戦場に登場します。<br>プレイ以外での登場なので不法侵入禁止区が反応…",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "救助する森狼");
+      s.exile = [...s.exile, "救助する森狼"];
+      s.playerField.push("救助する森狼");
+      return s;
+    },
+    highlight: ["救助する森狼"],
+    isExtra: true,
+  },
+  {
+    title: "【発展⑤】不法侵入禁止区：戦場のカードを全て手札へ！",
+    text: "不法侵入禁止区の効果：<br>プレイ以外で出た動物がいる場合、このターンに戦場に出た全カードを手札に戻します。<br>→ 救助する森狼も鉄鴉も両方手札へ！",
+    action: s => {
+      s.playerField = s.playerField.filter(c => c !== "救助する森狼" && c !== "鉄鴉_muted");
+      s.exile = s.exile.filter(c => c !== "救助する森狼");
+      s.hand = ["救助する森狼", "鉄鴉"];
+      s.loopCount += 1;
+      return s;
+    },
+    highlight: ["不法侵入禁止区", "救助する森狼", "鉄鴉"],
+    isLoop: true,
+    isExtra: true,
+  },
+  {
+    title: "【発展⑥】鉄鴉を再プレイ→ムーブ→4点！以下ループ",
+    text: "鉄鴉はコスト0なので再びプレイ可能。<br>早業でムーブして4点ダメージ！<br>その後また救助する森狼を除外→戦場→手札に戻す→鉄鴉も戻るループ！<br><br>1ループで4点、5ループで20点フィニッシュ！",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "鉄鴉");
+      s.playerField.push("鉄鴉_muted");
+      s.enemyLife -= 4;
+      s.totalDmg += 4;
+      return s;
+    },
+    damage: true,
+    dmgAmount: 4,
+    highlight: ["鉄鴉"],
+    isLoop: true,
+    isExtra: true,
+  },
+  {
+    title: "✅ まとめ：鉄鴉コンボのポイント",
+    text: "【基本ループとの違い】<br>・基本：1ループ1点（足跡の発火）<br>・鉄鴉コンボ：1ループ4点（鉄鴉ATK）<br><br>【必要なカード】<br>・鉄洗いグマ＋鉄クズ×4：鉄鴉を準備<br>・不法侵入禁止区：鉄鴉を手札に戻す<br>・救助する森狼：ループのトリガー<br><br>5ループで20点！一気に決まります！",
+    action: s => s,
+    isExtra: true,
+  },
+];
+
+let state = {};
+let currentStep = 0;
+
+function makeCard(name, opts = {}) {
+  const div = document.createElement("div");
+  div.className = "card" + (opts.entering ? " entering" : "");
+  if (opts.highlighted) div.classList.add("highlighted");
+  if (opts.exiled) div.classList.add("exiled");
+  if (opts.returning) div.classList.add("returning");
+  if (opts.muted) div.classList.add("muted");
+
+  const img = document.createElement("img");
+  img.src = IMAGES[name] || "";
+  img.onerror = () => {
+    div.style.background = "#2a3a4a";
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.fontSize = "7px";
+    div.style.color = "#aaa";
+    div.style.textAlign = "center";
+    div.style.padding = "2px";
+    div.textContent = name;
+  };
+  div.appendChild(img);
+  return div;
+}
+
+function makeHandCard(name) {
+  const div = document.createElement("div");
+  div.className = "hand-card";
+  const img = document.createElement("img");
+  img.src = IMAGES[name] || "";
+  img.onerror = () => {
+    div.style.background = "#2a3a4a";
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.fontSize = "7px";
+    div.style.color = "#aaa";
+    div.style.textAlign = "center";
+    div.style.padding = "2px";
+    div.textContent = name;
+  };
+  div.appendChild(img);
+  return div;
+}
+
+function showDamage(delay = 0, amount = 1) {
+  setTimeout(() => {
+    const el = document.createElement("div");
+    el.className = "damage-float enemy-dmg";
+    el.textContent = `-${amount}点`;
+    const rect = document.getElementById("enemy-life-bar").getBoundingClientRect();
+    el.style.left = (rect.left + rect.width / 2 - 20) + "px";
+    el.style.top = (window.scrollY + rect.top - 10) + "px";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }, delay);
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const highlights = step.highlight || [];
+
+  const eLife = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-num").textContent = eLife;
+  document.getElementById("enemy-life-bar").style.width = (eLife / 20 * 100) + "%";
+  document.getElementById("loop-count").textContent = s.loopCount;
+  document.getElementById("total-dmg").textContent = s.totalDmg;
+
+  // 戦場
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  s.playerField.forEach(name => {
+    const baseName = name.replace("_muted","").replace(/\d+$/,"");
+    const isMuted = name.includes("_muted");
+    const el = makeCard(baseName, {
+      highlighted: highlights.includes(baseName) || highlights.includes(name),
+      entering: name === "救助する森狼" && step.entering,
+      muted: isMuted,
+    });
+    if (baseName === "鉄鴉" && s.tekkiAtk > 0) {
+      const b = document.createElement("div");
+      b.style.cssText = "position:absolute;top:2px;left:0;right:0;background:rgba(180,0,50,0.88);color:white;font-size:7px;font-weight:bold;padding:1px 2px;text-align:center;z-index:10;";
+      b.textContent = `ATK${s.tekkiAtk}`;
+      el.style.position = "relative";
+      el.appendChild(b);
+    }
+    pf.appendChild(el);
+  });
+
+  // 除外
+  const ea = document.getElementById("exile-area");
+  ea.innerHTML = "";
+  s.exile.forEach(name => {
+    ea.appendChild(makeCard(name, { exiled: true, highlighted: highlights.includes(name) }));
+  });
+
+  // 領土
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  s.territories.forEach((t, i) => {
+    const card = document.createElement("div");
+    card.className = "territory-card" + (i < s.usedTerritories ? " used" : "") + (t === "山" ? " mountain" : "");
+    card.textContent = t;
+    ta.appendChild(card);
+  });
+
+  // 手札
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  s.hand.forEach(name => ha.appendChild(makeHandCard(name)));
+
+  // 説明
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+
+  // バッジ
+  const badge = document.getElementById("loop-badge");
+  if (step.isLoop && step.isExtra) {
+    badge.style.cssText = "display:block;background:#4a1a3a;color:#ffaadd;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #aa44aa;";
+    badge.textContent = "🔁 ループ！1回4点！";
+  } else if (step.isLoop) {
+    badge.style.cssText = "display:block;background:#1a4a1a;color:#88ff88;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #44aa44;";
+    badge.textContent = "🔁 ここからループ！";
+  } else if (step.isExtra) {
+    badge.style.cssText = "display:block;background:#1a3a5a;color:#88ccff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #4a8aaa;";
+    badge.textContent = "✨ 発展編";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function applyStep(idx) {
+  const step = steps[idx];
+  state = step.action({
+    ...state,
+    exile: [...state.exile],
+    hand: [...state.hand],
+    playerField: [...state.playerField],
+    territories: [...state.territories],
+    trash: [...(state.trash||[])],
+  });
+  if (step.damage) showDamage(300, step.dmgAmount || 1);
+  render();
+}
+
+function nextStep() {
+  stopPlay();
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    applyStep(currentStep);
+  }
+}
+
+function prevStep() {
+  stopPlay();
+  if (currentStep > 0) {
+    currentStep--;
+    replayTo(currentStep);
+  }
+}
+
+function replayTo(target) {
+  let s = initState();
+  for (let i = 0; i <= target; i++) {
+    s = steps[i].action({
+      ...s,
+      exile: [...s.exile],
+      hand: [...s.hand],
+      playerField: [...s.playerField],
+      territories: [...s.territories],
+      trash: [...(s.trash||[])],
+    });
+  }
+  state = s;
+  render();
+}
+
+function resetAll() {
+  stopPlay();
+  currentStep = 0;
+  state = initState();
+  render();
+}
+
+let playTimer = null;
+const PLAY_INTERVAL = 2500;
+
+function togglePlay() {
+  if (playTimer) { stopPlay(); } else { startPlay(); }
+}
+
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止";
+  btn.classList.add("playing");
+  playTimer = setInterval(() => {
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      applyStep(currentStep);
+    } else {
+      stopPlay();
+    }
+  }, PLAY_INTERVAL);
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById("playBtn");
+  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
+}
+
+state = initState();
+render();
+</script>
+</body>
+</html>
