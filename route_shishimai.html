@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>獅子舞ルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+#token-counter {
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(150,80,0,0.85); color: #ffddaa;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #ffaa44; z-index: 20;
+}
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.token { border-color: #aa6600; background: #2a1a0a; opacity: 0.85; }
+
+.token-stack {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 56px; flex-shrink: 0;
+}
+.token-count-badge {
+  position: absolute; bottom: -6px; right: -6px;
+  background: #ff8800; color: white; font-size: 9px; font-weight: bold;
+  padding: 1px 4px; border-radius: 8px; border: 1px solid #ffaa44; z-index: 10;
+}
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px;
+  background: #2a3a5a; border: 2px solid #4a6a9a; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #88aacc; text-align: center; padding: 2px;
+}
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  background: #2a4a2a; border: 1px solid #4a8a4a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #a8e0a8; font-weight: bold;
+  transition: transform 0.4s, opacity 0.3s;
+}
+.territory-card.used { transform: rotate(90deg); opacity: 0.4; }
+.territory-card.plain { background: #3a3a1a; border-color: #8a8a4a; color: #ffffaa; }
+.territory-card.mountain { background: #4a2a2a; border-color: #8a4a4a; color: #ffaaaa; }
+.territory-card.forest { background: #1a3a1a; border-color: #4a8a4a; color: #aaffaa; }
+.territory-card.any { background: #2a2a3a; border-color: #6a6a8a; color: #ccccff; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🦁 獅子舞ルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div id="token-counter">🦁 トークン：<span id="token-count">0</span>体</div>
+
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
+
+    <div class="zone-label">領土（平地・山岳・森林・何でも1）</div>
+    <div class="territory-zone" id="territory-area"></div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+
+
+<script>
+const IMAGES = {
+  獅子舞行軍:   "https://acgtcg.com/img/ACG-144",
+  玩具の申し子: "https://acgtcg.com/img/ACG-157",
+  泥の像:       "https://acgtcg.com/img/ACG-143",
+};
+
+function initState() {
+  return {
+    enemyLife: 20,
+    playerField: ["獅子舞行軍", "玩具の申し子"],
+    hand: ["手札"],
+    pile: [],
+    tokenCount: 0,
+    doroMuted: false,    // 泥の像ムーブ済み
+    gangu_muted: false,  // 玩具の申し子ムーブ済み
+    territories: ["平", "山", "森", "任"],
+    usedTerritories: 0,
+  };
+}
+
+const steps = [
+  {
+    title: "初期状態",
+    text: "盤面：獅子舞行軍・玩具の申し子（泥の像を装備）<br>手札：1枚<br>領土：平地・山岳・森林・何でも1（計4枚）<br><br>玩具の申し子に泥の像が装備されています。",
+    action: s => {
+      s.playerField = ["獅子舞行軍", "玩具の申し子+泥の像"];
+      return s;
+    },
+  },
+  {
+    title: "① 玩具の申し子の起動効果：手札1枚破棄",
+    text: "玩具の申し子の準備フェイズ起動効果：<br>手札のカード1枚を捨てて、デッキからコスト1の《装備》を持つカードを探して装備させます。<br>→ 泥の像を装備！（すでに装備済みの場合はウェイクと組み合わせて）",
+    action: s => {
+      s.hand = [];
+      s.gangu_muted = true;
+      return s;
+    },
+    highlight: ["玩具の申し子+泥の像"],
+  },
+  {
+    title: "② 泥の像の起動効果：コピートークンを生成！",
+    text: "泥の像（装備中）の起動効果：<br><ムーブ>して、自分（玩具の申し子）のコピートークン1体を戦場に出します。<br>《駿足》付きのコピーが登場！",
+    action: s => {
+      s.doroMuted = true;
+      s.tokenCount += 1;
+      return s;
+    },
+    highlight: ["玩具の申し子+泥の像"],
+  },
+  {
+    title: "③ 獅子舞行軍の効果：玩具の申し子をウェイク！",
+    text: "獅子舞行軍の効果：<br>「玩具の申し子と同じ名前のカードが戦場に出た」→ コピートークンが同名！<br>→ 獅子舞行軍の効果で玩具の申し子がウェイク！",
+    action: s => {
+      s.gangu_muted = false;
+      s.doroMuted = false;
+      return s;
+    },
+    highlight: ["獅子舞行軍", "玩具の申し子+泥の像"],
+    isLoop: true,
+  },
+  {
+    title: "🔁 ループ！①〜③を繰り返す",
+    text: "玩具の申し子がウェイクしたので再び起動できます。<br>①手札破棄→泥の像装備（ウェイク）<br>②泥の像でコピートークン生成<br>③獅子舞行軍でウェイク<br>→ 手札がある限り、またはデッキに泥の像がある限り繰り返せます！",
+    action: s => {
+      s.tokenCount = 10;
+      return s;
+    },
+    isLoop: true,
+  },
+  {
+    title: "⑤ 十分なトークンが揃ったら全軍アタック！",
+    text: "コピートークンはすべて《駿足》を持つのでそのままアタックできます。<br>ATKの合計が相手ライフを超えたら全軍突撃！<br>→ 相手ライフを一気に削り切ります！",
+    action: s => {
+      s.tokenCount = 20;
+      s.enemyLife = 0;
+
+      return s;
+    },
+    isFinish: true,
+  },
+  {
+    title: "✅ まとめ：獅子舞ルートのポイント",
+    text: "【必要なカード】<br>・獅子舞行軍：同名カード登場でウェイク<br>・玩具の申し子：手札破棄で泥の像を装備<br>・泥の像：ムーブでコピートークン生成<br><br>【汎用性】<br>手札に泥の像があれば玩具の申し子なしでも動作！<br>泥の像をコスト1の動物に自分で装備させてもOK。<br><br>【条件】<br>領土：平地1・山岳1・森林1・何でも1（計4枚）",
+    action: s => s,
+  },
+];
+
+let state = {};
+let currentStep = 0;
+
+function makeCard(name, opts = {}) {
+  const div = document.createElement("div");
+  div.className = "card" + (opts.entering ? " entering" : "");
+  if (opts.highlighted) div.classList.add("highlighted");
+  if (opts.muted) div.classList.add("muted");
+  if (opts.isToken) div.classList.add("token");
+
+  const baseName = name.replace("+泥の像", "").replace("コピー", "");
+  const imgKey = name.includes("獅子舞行軍") ? "獅子舞行軍"
+    : name.includes("玩具の申し子") ? "玩具の申し子"
+    : name.includes("泥の像") ? "泥の像"
+    : null;
+
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => {
+      div.style.background = "#2a3a4a";
+      div.style.display = "flex";
+      div.style.alignItems = "center";
+      div.style.justifyContent = "center";
+      div.style.fontSize = "7px";
+      div.style.color = "#aaa";
+      div.style.textAlign = "center";
+      div.style.padding = "2px";
+      div.textContent = name.substring(0, 6);
+    };
+    div.appendChild(img);
+  } else {
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.fontSize = "7px";
+    div.style.color = "#cc9944";
+    div.style.textAlign = "center";
+    div.style.padding = "2px";
+    div.textContent = name;
+  }
+
+  // 泥の像装備バッジ
+  if (name.includes("+泥の像")) {
+    const b = document.createElement("div");
+    b.style.cssText = "position:absolute;bottom:2px;left:0;right:0;background:rgba(100,60,0,0.9);color:#ffcc66;font-size:6px;text-align:center;padding:1px;z-index:10;";
+    b.textContent = "泥の像装備";
+    div.appendChild(b);
+  }
+
+  return div;
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const highlights = step.highlight || [];
+
+  const eLife = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-num").textContent = eLife;
+  document.getElementById("enemy-life-bar").style.width = (eLife / 20 * 100) + "%";
+  document.getElementById("token-count").textContent = s.tokenCount;
+
+  // 戦場
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+
+  s.playerField.forEach(name => {
+    const isGangu = name.includes("玩具の申し子");
+    const isShishi = name.includes("獅子舞行軍");
+    const isMuted = (isGangu && s.gangu_muted) || (name.includes("泥の像") && s.doroMuted);
+    const isHighlighted = highlights.some(h => name.includes(h) || h.includes(name.split("+")[0]));
+    pf.appendChild(makeCard(name, { muted: isMuted, highlighted: isHighlighted }));
+  });
+
+  // トークンを重ねて表示
+  if (s.tokenCount > 0) {
+    const stack = document.createElement("div");
+    stack.className = "token-stack";
+    const tokenCard = makeCard("玩具の申し子", { isToken: true });
+    tokenCard.style.border = "2px solid #aa6600";
+    stack.appendChild(tokenCard);
+    const badge = document.createElement("div");
+    badge.className = "token-count-badge";
+    badge.textContent = `×${s.tokenCount}`;
+    stack.appendChild(badge);
+    pf.appendChild(stack);
+  }
+
+  // パイル
+  const pa = document.getElementById("pile-area");
+  pa.innerHTML = "";
+  s.pile.forEach(name => {
+    pa.appendChild(makeCard(name, { entering: true, highlighted: true }));
+  });
+
+  // 領土
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  s.territories.forEach((t, i) => {
+    const card = document.createElement("div");
+    const isUsed = i < s.usedTerritories;
+    const typeClass = t === "平" ? " plain" : t === "山" ? " mountain" : t === "森" ? " forest" : " any";
+    card.className = "territory-card" + typeClass + (isUsed ? " used" : "");
+    card.textContent = t === "任" ? "任" : t;
+    ta.appendChild(card);
+  });
+
+  // 手札
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  s.hand.forEach(() => {
+    const div = document.createElement("div");
+    div.className = "hand-card";
+    div.textContent = "手札";
+    ha.appendChild(div);
+  });
+
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+
+  const badge = document.getElementById("loop-badge");
+  if (step.isLoop) {
+    badge.style.cssText = "display:block;background:#5a3a0a;color:#ffddaa;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #ffaa44;";
+    badge.textContent = "🔁 ループ！トークンが増え続ける！";
+  } else if (step.isFinish) {
+    badge.style.cssText = "display:block;background:#5a1a00;color:#ffaa44;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #ff6600;";
+    badge.textContent = "⚔️ フィニッシュ！";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function applyStep(idx) {
+  const step = steps[idx];
+  state = step.action({
+    ...state,
+    hand: [...state.hand],
+    playerField: [...state.playerField],
+    pile: [...(state.pile || [])],
+    territories: [...state.territories],
+  });
+  render();
+}
+
+function nextStep() {
+  stopPlay();
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    applyStep(currentStep);
+  }
+}
+
+function prevStep() {
+  stopPlay();
+  if (currentStep > 0) {
+    currentStep--;
+    replayTo(currentStep);
+  }
+}
+
+function replayTo(target) {
+  let s = initState();
+  for (let i = 0; i <= target; i++) {
+    s = steps[i].action({
+      ...s,
+      hand: [...s.hand],
+      playerField: [...s.playerField],
+      pile: [...(s.pile || [])],
+      territories: [...s.territories],
+    });
+  }
+  state = s;
+  render();
+}
+
+function resetAll() {
+  stopPlay();
+  currentStep = 0;
+  state = initState();
+  render();
+}
+
+let playTimer = null;
+const PLAY_INTERVAL = 2500;
+
+function togglePlay() {
+  if (playTimer) { stopPlay(); } else { startPlay(); }
+}
+
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止";
+  btn.classList.add("playing");
+  playTimer = setInterval(() => {
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      applyStep(currentStep);
+    } else {
+      stopPlay();
+    }
+  }, PLAY_INTERVAL);
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById("playBtn");
+  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
+}
+
+state = initState();
+render();
+</script>
+</body>
+</html>
