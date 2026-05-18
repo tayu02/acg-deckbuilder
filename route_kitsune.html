@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>狐ルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.grave-zone {
+  background: rgba(60,40,20,0.3); border: 1px solid rgba(120,80,40,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+
+.card-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0;
+}
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.grave { opacity: 0.55; filter: grayscale(0.6); border-color: #6a4a2a; }
+
+.counter-label {
+  font-size: 9px; font-weight: bold; color: #ffaaff;
+  background: rgba(100,0,100,0.8); border-radius: 6px;
+  padding: 1px 5px; white-space: nowrap;
+}
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  background: #2a4a2a; border: 1px solid #4a8a4a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #a8e0a8; font-weight: bold;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+
+/* ナビメニュー */
+#nav-menu {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  padding: 8px; background: rgba(0,0,0,0.5);
+  border: 1px solid #3a6a4a; border-radius: 10px; margin-bottom: 8px;
+}
+.nav-btn {
+  padding: 4px 8px; border: none; border-radius: 6px;
+  font-size: 11px; cursor: pointer; font-weight: bold; flex-shrink: 0;
+}
+.nav-btn.saidan    { background: #3a1a5a; color: #ddaaff; }
+.nav-btn.henge     { background: #1a3a5a; color: #aaddff; }
+.nav-btn.mike      { background: #5a3a0a; color: #ffddaa; }
+.nav-btn.futago    { background: #2a2a5a; color: #ccccff; }
+.nav-btn.makimono  { background: #0a3a2a; color: #aaffdd; }
+.nav-btn.finish    { background: #3a3a0a; color: #ffff88; }
+.nav-btn.matome    { background: #2a4a2a; color: #a8e0a8; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🦊 狐ルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+
+    <div class="zone-label">墓地</div>
+    <div class="grave-zone" id="grave-area"></div>
+
+    <div class="zone-label">領土</div>
+    <div class="territory-zone" id="territory-area"></div>
+  </div>
+
+  <div id="nav-menu">
+    <button class="nav-btn saidan"   onclick="jumpTo(0)">🦊 祭壇</button>
+    <button class="nav-btn henge"    onclick="jumpTo(5)">🦊 変化</button>
+    <button class="nav-btn mike"     onclick="jumpTo(10)">🦊 見狐化狐</button>
+    <button class="nav-btn futago"   onclick="jumpTo(15)">🦊 双子</button>
+    <button class="nav-btn makimono" onclick="jumpTo(19)">🦊 巻物</button>
+    <button class="nav-btn finish"   onclick="jumpTo(24)">⚔️ フィニッシュ</button>
+    <button class="nav-btn matome"   onclick="jumpTo(30)">✅ まとめ</button>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+const IMAGES = {
+  見狐:     "https://acgtcg.com/img/BP1-023",
+  化狐:     "https://acgtcg.com/img/BP1-028",
+  置狐:     "https://acgtcg.com/img/BP1-025",
+  組狐:     "https://acgtcg.com/img/BP1-026",
+  双子狐:   "https://acgtcg.com/img/BP1-024",
+  狐の隠里: "https://acgtcg.com/img/BP1-030",
+  妖狐の祭壇: "https://acgtcg.com/img/BP1-032",
+  妖狐の変化: "https://acgtcg.com/img/BP1-031",
+  妖狐の巻物:  "https://acgtcg.com/img/ACG-020",
+  妖狐の禁術:  "https://acgtcg.com/img/ACG-021",
+  狐火:        "https://acgtcg.com/img/ACG-046",
+  狐葉:        "https://acgtcg.com/img/BP1-027",
+};
+
+// state.field = [{name, counters, muted}]
+// state.hand = [{name}]
+// state.grave = [{name}]
+// state.pile = [string]
+
+function initState() {
+  return {
+    enemyLife: 20,
+    field: [],
+    hand: [],
+    grave: [],
+    pile: [],
+    territories: ["山","森"],
+    route: "",
+  };
+}
+
+const steps = [
+  // ===== 祭壇ルート =====
+  {
+    title: "━━ 祭壇ルート ━━",
+    text: "戦場：狐の隠里（妖狐カウンター2個）・見狐・妖狐の祭壇・置狐などのキツネ存在<br>カウンターは置狐や組狐などで事前に用意します。",
+    action: s => {
+      s.route = "祭壇";
+      s.field = [
+        {name:"狐の隠里", counters:2, muted:false},
+        {name:"見狐",     counters:0, muted:false},
+        {name:"妖狐の祭壇", counters:0, muted:false},
+        {name:"置狐",     counters:0, muted:false},
+      ];
+      s.hand = [];
+      s.grave = [];
+      s.pile = [];
+      s.territories = ["山","森"];
+      return s;
+    },
+    isSaidan: true,
+  },
+  {
+    title: "i) 祭壇起動：隠里→見狐にカウンター移動",
+    text: "妖狐の祭壇の起動効果：<br>自軍キツネ存在1つから妖狐カウンターを取り除き、別の存在に乗せる。<br>→ 隠里からカウンターを取り除き、見狐に乗せる。（隠里-1、見狐+1）",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "狐の隠里") return {...c, counters: c.counters - 1};
+        if (c.name === "見狐") return {...c, counters: c.counters + 1};
+        if (c.name === "妖狐の祭壇") return {...c, muted: true};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["妖狐の祭壇", "狐の隠里", "見狐"],
+    isSaidan: true,
+    isLoop: true,
+  },
+  {
+    title: "ii) 隠里の効果：祭壇をウェイク（隠里-2、見狐+2）",
+    text: "狐の隠里の効果：カウンターが置かれるたびに妖狐カウンター1個を消費して対象をウェイク。<br>→ 隠里から2個消費して妖狐の祭壇をウェイク！<br>（隠里-2 / 見狐+2）",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "狐の隠里") return {...c, counters: c.counters - 1};
+        if (c.name === "見狐") return {...c, counters: c.counters + 1};
+        if (c.name === "妖狐の祭壇") return {...c, muted: false};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["狐の隠里", "妖狐の祭壇"],
+    isSaidan: true,
+    isLoop: true,
+  },
+  {
+    title: "iii) 祭壇起動：見狐→隠里にカウンター移動",
+    text: "再び祭壇を起動。見狐のカウンターを隠里に移動。<br>（見狐-n、隠里+n）<br>隠里のカウンターが増えていきます！",
+    action: s => {
+      const mikune = s.field.find(c => c.name === "見狐");
+      const n = mikune ? mikune.counters : 1;
+      s.field = s.field.map(c => {
+        if (c.name === "狐の隠里") return {...c, counters: c.counters + n};
+        if (c.name === "見狐") return {...c, counters: 0};
+        if (c.name === "妖狐の祭壇") return {...c, muted: true};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["妖狐の祭壇", "見狐", "狐の隠里"],
+    isSaidan: true,
+    isLoop: true,
+  },
+  {
+    title: "iv) 隠里の効果：祭壇をウェイク→ループ！",
+    text: "隠里のカウンターが増え続け、祭壇が何度もウェイクします。<br>繰り返すことで見狐に大量のカウンターを蓄積できます！<br>見狐から好きな存在にカウンターを移せます。",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "狐の隠里") return {...c, counters: c.counters - 2};
+        if (c.name === "見狐") return {...c, counters: c.counters + 2};
+        if (c.name === "妖狐の祭壇") return {...c, muted: false};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["狐の隠里", "妖狐の祭壇"],
+    isSaidan: true,
+    isLoop: true,
+  },
+
+  // ===== 変化ルート =====
+  {
+    title: "━━ 変化ルート ━━",
+    text: "戦場：狐の隠里・化狐・妖狐の変化・コスト1以上のキツネ動物<br>手札：置狐1枚・戦場に置狐1枚（合計2枚必要）<br>まず戦場と手札に置狐を1枚ずつ準備します。",
+    action: s => {
+      s.route = "変化";
+      s.field = [
+        {name:"狐の隠里", counters:0, muted:false},
+        {name:"化狐",     counters:0, muted:false},
+        {name:"妖狐の変化", counters:0, muted:false},
+        {name:"置狐",     counters:0, muted:false},
+        {name:"コスト1キツネ", counters:0, muted:false},
+      ];
+      s.hand = [{name:"置狐"}];
+      s.grave = [{name:"置狐（墓地）"}];
+      s.pile = [];
+      s.territories = ["山","森"];
+      return s;
+    },
+    isHenge: true,
+  },
+  {
+    title: "i) 戦場の置狐を生贄に妖狐の変化を起動",
+    text: "妖狐の変化の起動：コスト1以上のキツネ動物を生贄にして発動。<br>→ 戦場の置狐を生贄に！<br>置狐の誘発：化狐に妖狐カウンター+2",
+    action: s => {
+      s.field = s.field.filter(c => c.name !== "置狐");
+      s.field = s.field.map(c => {
+        if (c.name === "化狐") return {...c, counters: c.counters + 2};
+        if (c.name === "妖狐の変化") return {...c, muted: true};
+        return c;
+      });
+      s.grave.push({name:"置狐（墓地）"});
+      s.pile = ["妖狐の変化の効果（解決待ち）"];
+      return s;
+    },
+    highlight: ["置狐", "妖狐の変化", "化狐"],
+    isHenge: true,
+  },
+  {
+    title: "ii) 変化の解決前に化狐を起動：墓地の置狐をデッキトップへ",
+    text: "変化の効果がパイルで待機中に、化狐を起動。<br>化狐：カウンター1個消費して墓地のキツネカードをデッキトップへ。<br>→ 墓地の置狐をデッキトップへ（化狐-1）",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "化狐") return {...c, counters: c.counters - 1, muted: true};
+        return c;
+      });
+      s.grave = s.grave.filter(c => c.name !== "置狐（墓地）");
+      return s;
+    },
+    highlight: ["化狐"],
+    isHenge: true,
+  },
+  {
+    title: "iii) 変化を解決：手札の置狐を戦場に出して1ドロー",
+    text: "妖狐の変化の効果を解決。<br>手札のコスト1以上のキツネ動物を戦場に出して1枚引く。<br>→ 手札の置狐が戦場へ！ドローでデッキトップの置狐が手札へ！",
+    action: s => {
+      s.hand = [];
+      s.field.push({name:"置狐", counters:0, muted:false});
+      s.field = s.field.map(c => {
+        if (c.name === "化狐") return {...c, muted: false};
+        return c;
+      });
+      s.pile = [];
+      s.hand = [{name:"置狐"}];
+      return s;
+    },
+    highlight: ["置狐", "妖狐の変化"],
+    isHenge: true,
+  },
+  {
+    title: "iv) 置狐の誘発：隠里+2、隠里で変化ウェイク（隠里-2）",
+    text: "置狐が戦場に出た誘発：自軍キツネ存在に妖狐カウンター+2。<br>→ 隠里に+2！<br>隠里の効果で妖狐の変化をウェイク！（隠里-2）<br>→ 変化がウェイクして再び起動できます。ループ！",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "妖狐の変化") return {...c, muted: false};
+        return c;
+      });
+      s.grave.push({name:"置狐（墓地）"});
+      return s;
+    },
+    highlight: ["置狐", "狐の隠里", "妖狐の変化"],
+    isHenge: true,
+    isLoop: true,
+  },
+
+  // ===== 見狐化狐ルート =====
+  {
+    title: "━━ 見狐化狐ルート ━━",
+    text: "戦場：見狐・化狐（妖狐カウンター2個以上・ウェイク）<br>墓地：見狐1枚<br>必ずしも無限カウンターを狙わないルートです。<br>化狐で無限回攻撃することが可能です。",
+    action: s => {
+      s.route = "見狐化狐";
+      s.field = [
+        {name:"見狐", counters:0, muted:false},
+        {name:"化狐", counters:3, muted:false},
+      ];
+      s.hand = [];
+      s.grave = [{name:"見狐（墓地）"}];
+      s.pile = [];
+      s.territories = ["山","森"];
+      return s;
+    },
+    isMiKe: true,
+  },
+  {
+    title: "i) 化狐起動：墓地の見狐を対象に（化狐-1、見狐+1）",
+    text: "化狐の起動：妖狐カウンター1個を消費して墓地のキツネのカードを選び、そのカードに妖狐カウンター1個を置く。<br>→ 墓地の見狐に+1（化狐-1、見狐+1）",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "化狐") return {...c, counters: c.counters - 1, muted: true};
+        if (c.name === "見狐") return {...c, counters: c.counters + 1};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["化狐", "見狐（墓地）"],
+    isMiKe: true,
+  },
+  {
+    title: "ii) 化狐ムーブで見狐のコピーを得る",
+    text: "化狐の別の効果：ムーブして対象の能力をコピー。<br>→ 化狐が見狐の能力を得ます！<br>（見狐の妖狐カウンターが2個以上あればこの後ウェイク効果が使えます）",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "化狐") return {...c, muted: true, isCopy: true};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["化狐"],
+    isMiKe: true,
+  },
+  {
+    title: "iii) 見狐で化狐をウェイク（化狐+2、見狐-2）",
+    text: "見狐の起動：妖狐カウンター2個を消費して対象をウェイク。<br>→ 化狐をウェイク！（化狐+2、見狐-2）",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "見狐") return {...c, counters: c.counters - 2};
+        if (c.name === "化狐") return {...c, counters: c.counters + 2, muted: false};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["見狐", "化狐"],
+    isMiKe: true,
+    isLoop: true,
+  },
+  {
+    title: "iv) 化狐（見狐コピー）で化狐をウェイク（化狐-2、見狐+2）→ループ！",
+    text: "化狐は見狐のコピーなので同じウェイク効果を持ちます。<br>化狐自身が化狐をウェイク！（化狐-2、見狐+2）<br>→ iiiとivを繰り返すことで化狐が無限にウェイク！<br>化狐で無限回攻撃できます！",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "化狐") return {...c, counters: c.counters - 2, muted: true};
+        if (c.name === "見狐") return {...c, counters: c.counters + 2};
+        return c;
+      });
+      setTimeout(() => {
+        s.field = s.field.map(c => {
+          if (c.name === "化狐") return {...c, muted: false};
+          return c;
+        });
+      }, 0);
+      s.field = s.field.map(c => {
+        if (c.name === "化狐") return {...c, muted: false};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["化狐", "見狐"],
+    isMiKe: true,
+    isLoop: true,
+  },
+  // ===== 双子ルート =====
+  {
+    title: "━━ 双子ルート（祭壇ルートの亜種） ━━",
+    text: "戦場：狐の隠里・双子狐×2・妖狐の祭壇<br>大量の妖狐カウンターが必要（隠里8や双子6ずつなど）<br><br>双子狐はデッキに2枚しか入れられないため、お互いに参照しながらカウンターを増幅させます。<br>非常に難解で実用的ではありませんが、理論上は無限カウンターが可能です。",
+    action: s => {
+      s.route = "双子";
+      s.field = [
+        {name:"狐の隠里",   counters:8, muted:false},
+        {name:"双子狐A",    counters:0, muted:false},
+        {name:"双子狐B",    counters:0, muted:false},
+        {name:"妖狐の祭壇", counters:0, muted:false},
+      ];
+      s.hand = [];
+      s.grave = [];
+      s.pile = [];
+      s.territories = ["山","森"];
+      return s;
+    },
+    isFutago: true,
+  },
+  {
+    title: "【双子】i) 隠里起動→祭壇ウェイク予約（隠里-2）",
+    text: "隠里の起動：妖狐カウンター2個消費して対象（祭壇）をウェイクする効果をパイルに積みます。",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "狐の隠里") return {...c, counters: c.counters - 2};
+        return c;
+      });
+      s.pile = ["隠里→祭壇ウェイク（解決待ち）"];
+      return s;
+    },
+    highlight: ["狐の隠里", "妖狐の祭壇"],
+    isFutago: true,
+  },
+  {
+    title: "【双子】ii) 解決前に祭壇起動：隠里→双子A・双子Bへ（隠里-6、双子A+6、双子B+6）",
+    text: "隠里の効果が解決する前に祭壇を起動。<br>双子狐の効果「もう一方の双子狐にも同数カウンター」を利用し、<br>隠里から6個取り除いて双子A・Bそれぞれに+6します。",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "狐の隠里") return {...c, counters: c.counters - 6};
+        if (c.name === "双子狐A") return {...c, counters: c.counters + 6};
+        if (c.name === "双子狐B") return {...c, counters: c.counters + 6};
+        if (c.name === "妖狐の祭壇") return {...c, muted: true};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["妖狐の祭壇", "狐の隠里", "双子狐A", "双子狐B"],
+    isFutago: true,
+  },
+  {
+    title: "【双子】iii) 隠里の効果解決→祭壇ウェイク",
+    text: "隠里の効果が解決して妖狐の祭壇がウェイク！<br>双子A・Bそれぞれ6個の状態からさらに手順を続けます。<br><br>以降の手順でカウンターを操作し続けることで無限カウンターに到達できますが、非常に複雑です。<br>このルートは理論上の可能性として理解しておきましょう。",
+    action: s => {
+      s.pile = [];
+      s.field = s.field.map(c => {
+        if (c.name === "妖狐の祭壇") return {...c, muted: false};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["妖狐の祭壇"],
+    isFutago: true,
+    isLoop: true,
+  },
+
+  // ===== 巻物ルート =====
+  {
+    title: "━━ 巻物ルート ━━",
+    text: "戦場：狐の隠里・見狐・組狐（ウェイク）・妖狐の巻物<br>最短2ターン目から動けます！<br>（組狐1ターン目・他2ターン目）<br>禁術や九尾への活用が主目的です。",
+    action: s => {
+      s.route = "巻物";
+      s.field = [
+        {name:"狐の隠里",   counters:0, muted:false},
+        {name:"見狐",       counters:0, muted:false},
+        {name:"組狐",       counters:0, muted:false},
+        {name:"妖狐の巻物", counters:0, muted:false},
+      ];
+      s.hand = [];
+      s.grave = [];
+      s.pile = [];
+      s.territories = ["森"];
+      return s;
+    },
+    isMakimono: true,
+  },
+  {
+    title: "i) 妖狐の巻物をムーブ（巻物+1）",
+    text: "妖狐の巻物の固有効果：カウンター以外のカウンターが戦場を離れた時、妖狐カウンター+1。<br>→ 巻物をムーブして妖狐カウンター+1！",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "妖狐の巻物") return {...c, counters: c.counters + 1, muted: true};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["妖狐の巻物"],
+    isMakimono: true,
+    isLoop: true,
+  },
+  {
+    title: "ii) 組狐をムーブ：隠里を対象に起動（隠里+2）",
+    text: "組狐の起動：ムーブして自軍キツネ存在1つに妖狐カウンター+2。<br>→ 狐の隠里に+2！",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "組狐") return {...c, muted: true};
+        if (c.name === "狐の隠里") return {...c, counters: c.counters + 2};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["組狐", "狐の隠里"],
+    isMakimono: true,
+    isLoop: true,
+  },
+  {
+    title: "iii) 隠里起動：巻物をウェイク（隠里-2、見狐+2）",
+    text: "狐の隠里の起動：妖狐カウンター2個消費して対象をウェイク。<br>→ 妖狐の巻物をウェイク！（隠里-2）<br>隠里の誘発で見狐に+2！",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "狐の隠里") return {...c, counters: c.counters - 2};
+        if (c.name === "見狐") return {...c, counters: c.counters + 2};
+        if (c.name === "妖狐の巻物") return {...c, muted: false};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["狐の隠里", "妖狐の巻物", "見狐"],
+    isMakimono: true,
+    isLoop: true,
+  },
+  {
+    title: "iv) 見狐起動：組狐をウェイク（見狐-2）→ループ！",
+    text: "見狐の起動：妖狐カウンター2個消費して対象をウェイク。<br>→ 組狐をウェイク！（見狐-2）<br><br>i〜ivを繰り返すと妖狐の巻物に無限カウンターが乗ります！<br>禁術や九尾の発動条件に活用できます。",
+    action: s => {
+      s.field = s.field.map(c => {
+        if (c.name === "見狐") return {...c, counters: c.counters - 2};
+        if (c.name === "組狐") return {...c, muted: false};
+        return c;
+      });
+      return s;
+    },
+    highlight: ["見狐", "組狐"],
+    isMakimono: true,
+    isLoop: true,
+  },
+
+  // ===== フィニッシュ編 =====
+  {
+    title: "━━ フィニッシュ編：無限カウンターの使い方 ━━",
+    text: "無限カウンターを達成した後の勝ち方は5つあります。<br><br>①見狐の無限ウェイクによる無限回攻撃<br>②組狐カウンター変換による無限ATK攻撃<br>③禁術バーン<br>④狐火バーン<br>⑤狐葉による無限ドロー→ライブラリーアウト",
+    action: s => {
+      s.route = "フィニッシュ";
+      s.field = [
+        {name:"見狐",      counters:99, muted:false},
+        {name:"組狐",      counters:99, muted:false},
+        {name:"妖狐の禁術",counters:99, muted:false},
+        {name:"狐火",      counters:0,  muted:false},
+        {name:"狐葉",      counters:0,  muted:false},
+      ];
+      s.hand = [];
+      s.grave = [];
+      s.pile = [];
+      s.territories = ["山","森"];
+      return s;
+    },
+    isFinish: true,
+  },
+  {
+    title: "①見狐の無限ウェイクによる無限回攻撃",
+    text: "見狐化狐ルートなどで化狐が無限にウェイクできる状態を作り、化狐で無限回攻撃します。<br>相手のライフを1点ずつ削り切るシンプルな勝ち方です。",
+    action: s => s,
+    highlight: ["見狐"],
+    isFinish: true,
+  },
+  {
+    title: "②組狐カウンター変換による無限ATK攻撃",
+    text: "組狐の起動効果：「宣言したカウンター以外のカウンターを宣言したカウンターに変換する」<br><br>手順：<br>i) 妖狐カウンターを乗せる効果を大量にパイルに積む<br>ii) 解決前に組狐起動→「以後置かれる妖狐カウンターを妖狐カウンターに」<br>iii) 解決前に組狐起動→「以後置かれる妖狐カウンターをATK+1/DEF+1カウンターに」<br><br>iiiが先に解決→iiが解決→iが解決することで<br>妖狐カウンターとATK+1/DEF+1カウンターの両立が可能になります。<br>動物のATKが無限に上昇→1回の攻撃で相手ライフを削り切れます！",
+    action: s => s,
+    highlight: ["組狐"],
+    isFinish: true,
+  },
+  {
+    title: "③禁術バーン",
+    text: "妖狐の禁術の効果：自軍の妖狐カウンターが乗った存在を生贄に捧げて、相手にカウンターの数分のダメージを与えます。<br><br>無限カウンターが乗った存在を生贄にすることで<br>→ 相手に無限点のバーンダメージ！<br>日没フェイズに発動するため奇襲性が高いです。",
+    action: s => s,
+    highlight: ["妖狐の禁術"],
+    isFinish: true,
+  },
+  {
+    title: "④狐火バーン",
+    text: "狐火の効果：準備フェイズ開始時にターンプレイヤーにATK分のダメージを与えます。<br><br>②の手順でATKを無限に上昇させた狐火が戦場にいれば、<br>相手の準備フェイズに無限点バーン！<br>相手のターンに発動するため、相手は対処が困難です。",
+    action: s => s,
+    highlight: ["狐火"],
+    isFinish: true,
+  },
+  {
+    title: "⑤狐葉による無限ドロー→ライブラリーアウト",
+    text: "狐葉の効果：準備フェイズ開始時にATK枚数分のカードを引きます。<br><br>④と同様にATKを無限に上昇させた狐葉が戦場にいれば、<br>準備フェイズに無限ドロー→デッキが尽きる→ライブラリーアウト勝利！<br><br>自分のターンにも相手のターンにも発動するため、自分のドローも無限になります。",
+    action: s => s,
+    highlight: ["狐葉"],
+    isFinish: true,
+  },
+
+  {
+    title: "✅ まとめ：狐ルート5形態",
+    text: "【祭壇ルート】隠里↔見狐↔祭壇でカウンター無限増殖<br>【変化ルート】置狐を生贄に変化起動→ループで化狐に無限カウンター<br>【見狐化狐ルート】化狐が見狐コピーを得て無限ウェイク→化狐で無限攻撃<br>【双子ルート】双子狐×2で増幅。非常に難解だが理論上無限カウンター可能<br>【巻物ルート】巻物に無限カウンター。最短2ターン目から可能。禁術・九尾に活用<br><br>【フィニッシュ手段】<br>①無限ウェイク攻撃 ②無限ATK攻撃 ③禁術バーン ④狐火バーン ⑤狐葉ライブラリーアウト",
+    action: s => s,
+  },
+];
+
+let state = {};
+let currentStep = 0;
+
+function getImg(name) {
+  return Object.keys(IMAGES).find(k => name.includes(k));
+}
+
+function makeFieldCard(card, highlighted) {
+  const wrap = document.createElement("div");
+  wrap.className = "card-wrap";
+
+  const div = document.createElement("div");
+  div.className = "card" + (card.muted ? " muted" : "") + (highlighted ? " highlighted" : "");
+  if (card.entering) div.classList.add("entering");
+
+  const imgKey = getImg(card.name);
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => {
+      div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";
+      div.textContent = card.name;
+    };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;background:#2a3a4a;";
+    div.textContent = card.name;
+  }
+  wrap.appendChild(div);
+
+  // カウンター表示
+  if (card.counters > 0) {
+    const label = document.createElement("div");
+    label.className = "counter-label";
+    label.textContent = `妖狐×${card.counters}`;
+    wrap.appendChild(label);
+  }
+
+  return wrap;
+}
+
+function makeSimpleCard(name, isGrave) {
+  const div = document.createElement("div");
+  div.className = "card" + (isGrave ? " grave" : "");
+  const imgKey = getImg(name);
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => {
+      div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";
+      div.textContent = name;
+    };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;background:#2a3a4a;";
+    div.textContent = name;
+  }
+  return div;
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const highlights = step.highlight || [];
+
+  document.getElementById("enemy-life-num").textContent = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-bar").style.width = (Math.max(0, s.enemyLife) / 20 * 100) + "%";
+
+  // 戦場
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  (s.field || []).forEach(card => {
+    const isHighlighted = highlights.some(h => card.name.includes(h) || h.includes(card.name.split("（")[0]));
+    pf.appendChild(makeFieldCard(card, isHighlighted));
+  });
+
+  // パイル
+  const pa = document.getElementById("pile-area");
+  pa.innerHTML = "";
+  (s.pile || []).forEach(eff => {
+    const el = document.createElement("div");
+    el.style.cssText = "background:rgba(80,70,0,0.7);border:1px solid #aa9900;border-radius:6px;padding:3px 6px;font-size:10px;color:#ffee88;";
+    el.textContent = "▶ " + eff;
+    pa.appendChild(el);
+  });
+
+  // 手札
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  (s.hand || []).forEach(c => ha.appendChild(makeSimpleCard(c.name, false)));
+
+  // 墓地
+  const ga = document.getElementById("grave-area");
+  ga.innerHTML = "";
+  (s.grave || []).forEach(c => ga.appendChild(makeSimpleCard(c.name, true)));
+
+  // 領土
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  (s.territories || []).forEach(t => {
+    const card = document.createElement("div");
+    card.className = "territory-card";
+    card.textContent = t;
+    ta.appendChild(card);
+  });
+
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+
+  const badge = document.getElementById("loop-badge");
+  if (step.isLoop && step.isSaidan) {
+    badge.style.cssText = "display:block;background:#3a1a5a;color:#ddaaff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #aa44ff;";
+    badge.textContent = "🔁 ループ！祭壇ルート";
+  } else if (step.isLoop && step.isHenge) {
+    badge.style.cssText = "display:block;background:#1a3a5a;color:#aaddff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #44aaff;";
+    badge.textContent = "🔁 ループ！変化ルート";
+  } else if (step.isLoop && step.isMiKe) {
+    badge.style.cssText = "display:block;background:#5a3a0a;color:#ffddaa;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #ffaa44;";
+    badge.textContent = "🔁 ループ！見狐化狐ルート";
+  } else if (step.isSaidan) {
+    badge.style.cssText = "display:block;background:#3a1a5a;color:#ddaaff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #aa44ff;";
+    badge.textContent = "🦊 祭壇ルート";
+  } else if (step.isHenge) {
+    badge.style.cssText = "display:block;background:#1a3a5a;color:#aaddff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #44aaff;";
+    badge.textContent = "🦊 変化ルート";
+  } else if (step.isMiKe) {
+    badge.style.cssText = "display:block;background:#5a3a0a;color:#ffddaa;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #ffaa44;";
+    badge.textContent = "🦊 見狐化狐ルート";
+  } else if (step.isLoop && step.isFutago) {
+    badge.style.cssText = "display:block;background:#2a2a5a;color:#ccccff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #8888ff;";
+    badge.textContent = "🔁 ループ！双子ルート";
+  } else if (step.isLoop && step.isMakimono) {
+    badge.style.cssText = "display:block;background:#0a3a2a;color:#aaffdd;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #44ffaa;";
+    badge.textContent = "🔁 ループ！巻物ルート";
+  } else if (step.isFinish) {
+    badge.style.cssText = "display:block;background:#3a3a0a;color:#ffff88;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #ffff44;";
+    badge.textContent = "⚔️ フィニッシュ編";
+  } else if (step.isFutago) {
+    badge.style.cssText = "display:block;background:#2a2a5a;color:#ccccff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #8888ff;";
+    badge.textContent = "🦊 双子ルート";
+  } else if (step.isMakimono) {
+    badge.style.cssText = "display:block;background:#0a3a2a;color:#aaffdd;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #44ffaa;";
+    badge.textContent = "🦊 巻物ルート";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function deepCopy(s) {
+  return {
+    ...s,
+    field: (s.field || []).map(c => ({...c})),
+    hand: (s.hand || []).map(c => ({...c})),
+    grave: (s.grave || []).map(c => ({...c})),
+    pile: [...(s.pile || [])],
+    territories: [...(s.territories || [])],
+  };
+}
+
+function applyStep(idx) {
+  const step = steps[idx];
+  state = step.action(deepCopy(state));
+  render();
+}
+
+function jumpTo(idx) {
+  stopPlay();
+  currentStep = idx;
+  applyStep(currentStep);
+}
+
+function nextStep() {
+  stopPlay();
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    applyStep(currentStep);
+  }
+}
+
+function prevStep() {
+  stopPlay();
+  if (currentStep > 0) {
+    currentStep--;
+    replayTo(currentStep);
+  }
+}
+
+function replayTo(target) {
+  let s = initState();
+  for (let i = 0; i <= target; i++) {
+    s = steps[i].action(deepCopy(s));
+  }
+  state = s;
+  render();
+}
+
+function resetAll() {
+  stopPlay();
+  currentStep = 0;
+  state = initState();
+  render();
+}
+
+let playTimer = null;
+const PLAY_INTERVAL = 2500;
+
+function togglePlay() {
+  if (playTimer) { stopPlay(); } else { startPlay(); }
+}
+
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止";
+  btn.classList.add("playing");
+  playTimer = setInterval(() => {
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      applyStep(currentStep);
+    } else {
+      stopPlay();
+    }
+  }, PLAY_INTERVAL);
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById("playBtn");
+  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
+}
+
+state = initState();
+render();
+</script>
+</body>
+</html>
