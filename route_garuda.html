@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ガルダルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+#turn-badge {
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(20,60,100,0.9); color: #88ccff;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #4488ff; z-index: 20;
+}
+
+/* ナビメニュー */
+#nav-menu {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  padding: 8px; background: rgba(0,0,0,0.5);
+  border: 1px solid #3a6a4a; border-radius: 10px; margin-bottom: 8px;
+}
+.nav-btn { padding: 4px 8px; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold; }
+.nav-btn.r1 { background: #3a2a1a; color: #ffddaa; }
+.nav-btn.r2 { background: #1a2a4a; color: #aaccff; }
+.nav-btn.r3 { background: #1a3a2a; color: #aaffcc; }
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.grave-zone {
+  background: rgba(60,40,20,0.3); border: 1px solid rgba(120,80,40,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.grave { opacity: 0.55; filter: grayscale(0.6); border-color: #6a4a2a; }
+.card.boss { border-color: #ff8800; box-shadow: 0 0 12px 4px rgba(255,140,0,0.5); }
+
+.counter-badge {
+  position: absolute; top: 2px; left: 0; right: 0;
+  background: rgba(180,80,0,0.9); color: #ffddaa; font-size: 7px; font-weight: bold;
+  padding: 1px 2px; text-align: center; z-index: 10;
+}
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: bold;
+  transition: transform 0.4s, opacity 0.3s;
+}
+.territory-card.used { transform: rotate(90deg); opacity: 0.4; }
+.territory-card.mountain { background: #4a2a2a; border: 1px solid #8a4a4a; color: #ffaaaa; }
+.territory-card.forest   { background: #1a3a1a; border: 1px solid #4a8a4a; color: #aaffaa; }
+.territory-card.water    { background: #1a2a4a; border: 1px solid #4a6a8a; color: #aaccff; }
+.territory-card.plain    { background: #3a3a1a; border: 1px solid #8a8a4a; color: #ffffaa; }
+
+.damage-float {
+  position: fixed; font-size: 22px; font-weight: bold;
+  pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
+  white-space: nowrap;
+}
+.damage-float.enemy-dmg { color: #ff4444; text-shadow: 0 0 12px #ff0000; }
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0) scale(1.3); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🦅 ガルダルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="nav-menu">
+    <button class="nav-btn r1" onclick="jumpTo(0)">🦅 神殿ルート</button>
+    <button class="nav-btn r2" onclick="jumpTo(13)">🌊 潮騒ルート</button>
+    <button class="nav-btn r3" onclick="jumpTo(20)">🦁 獅子舞ルート</button>
+  </div>
+
+  <div id="field">
+    <div id="turn-badge">📅 <span id="turn-label">1ターン目</span></div>
+
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
+
+    <div class="zone-label">領土</div>
+    <div class="territory-zone" id="territory-area"></div>
+
+    <div class="zone-label">墓地</div>
+    <div class="grave-zone" id="grave-area"></div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+const IMAGES = {
+  神鳥ガルダ:     "https://acgtcg.com/img/BP4-006",
+  ガルダの神殿:   "https://acgtcg.com/img/BP4-007",
+  ガルダの信者:   "https://acgtcg.com/img/BP4-008",
+  潮騒:           "https://acgtcg.com/img/BP1-075",
+  爆炎:           "https://acgtcg.com/img/BP2-049",
+  運命の帰郷:     "https://acgtcg.com/img/ACG-147",
+  獅子舞行軍:     "https://acgtcg.com/img/ACG-144",
+  泥の像:         "https://acgtcg.com/img/ACG-143",
+  明日色のカメレオン: "https://acgtcg.com/img/ACG-158",
+  妖狐の巻物:     "https://acgtcg.com/img/ACG-020",
+};
+
+function C(name, opts={}) {
+  return {name, counter: opts.counter||0, muted: opts.muted||false, grave: opts.grave||false, boss: opts.boss||false};
+}
+
+function initState() {
+  return {
+    enemyLife: 20,
+    field: [],
+    hand: [],
+    grave: [],
+    pile: [],
+    territories: [],
+    usedTerr: 0,
+    turn: "準備",
+  };
+}
+
+const steps = [
+  // ===== ルート1：神殿 =====
+  {
+    title: "━━ ルート①：神殿ルート ━━",
+    text: "3ターンで相手のライフを削り切る展開ルート。<br>カード：ガルダの信者・ガルダの神殿・神鳥ガルダ<br>領土：山岳×2・森林×2（計4枚）",
+    action: s => {
+      s.field=[]; s.hand=[C("ガルダの信者"),C("ガルダの神殿"),C("神鳥ガルダ")];
+      s.grave=[]; s.pile=[];
+      s.territories=["山","山","森","森"]; s.usedTerr=0; s.turn="準備";
+      return s;
+    }, r1:true,
+  },
+  {
+    title: "【1ターン目】ガルダの信者をプレイ",
+    text: "ガルダの信者をプレイ。コスト1消費。<br>登場時の効果でデッキからコスト0の山岳/森林道具カード（ガルダの神殿）を手札に加えます。",
+    action: s => {
+      s.hand = s.hand.filter(h=>h.name!=="ガルダの信者");
+      s.field.push(C("ガルダの信者"));
+      s.usedTerr=1; s.turn="1ターン目";
+      return s;
+    }, highlight:["ガルダの信者"], r1:true,
+  },
+  {
+    title: "【1ターン目】ガルダの神殿を戦場に出して起動",
+    text: "ガルダの神殿をプレイして戦場に出します。<br>起動①：ガルダの信者をムーブして補修カウンター1個。",
+    action: s => {
+      s.hand = s.hand.filter(h=>h.name!=="ガルダの神殿");
+      s.field.push(C("ガルダの神殿",{counter:1}));
+      s.field = s.field.map(c=>c.name==="ガルダの信者"?{...c,muted:true}:c);
+      return s;
+    }, highlight:["ガルダの神殿","ガルダの信者"], r1:true,
+  },
+  {
+    title: "【2ターン目】動物を追加して神殿の補修カウンターを積む",
+    text: "2ターン目に動物を1〜2体追加でプレイ。<br>神殿の起動①を複数回使って補修カウンターを3個以上に。<br>（信者がウェイクするたびに起動できます）",
+    action: s => {
+      s.field = s.field.map(c=>{
+        if(c.name==="ガルダの神殿") return {...c,counter:3};
+        if(c.name==="ガルダの信者") return {...c,muted:false};
+        return c;
+      });
+      s.field.push(C("ガルダの信者"));
+      s.field.push(C("ガルダの信者"));
+      s.usedTerr=2; s.turn="2ターン目";
+      return s;
+    }, highlight:["ガルダの神殿"], r1:true,
+  },
+  {
+    title: "【3ターン目】神殿の補修カウンターを6個に",
+    text: "3ターン目、動物を追加して4体以上に。<br>神殿の起動①をさらに使って補修カウンターを6個以上に積みます。",
+    action: s => {
+      s.field = s.field.map(c=>{
+        if(c.name==="ガルダの神殿") return {...c,counter:6};
+        return {...c,muted:false};
+      });
+      s.field.push(C("ガルダの信者"));
+      s.usedTerr=0; s.turn="3ターン目";
+      return s;
+    }, highlight:["ガルダの神殿"], r1:true,
+  },
+  {
+    title: "【3ターン目】神殿の起動②：神鳥ガルダを手札から戦場へ！（コスト1）",
+    text: "ガルダの神殿の起動②：補修カウンター6個以上なら①を支払い、すべて取り除く。<br>手札/デッキ/墓地/除外から神鳥ガルダを戦場に出す！<br>→ コスト1でガルダ（本来コスト6）を展開！",
+    action: s => {
+      s.hand = s.hand.filter(h=>h.name!=="神鳥ガルダ");
+      s.field = s.field.map(c=>c.name==="ガルダの神殿"?{...c,counter:0,muted:true}:c);
+      s.field.push(C("神鳥ガルダ",{boss:true}));
+      s.usedTerr=1;
+      return s;
+    }, highlight:["ガルダの神殿","神鳥ガルダ"], r1:true,
+  },
+  {
+    title: "【3ターン目】神鳥ガルダ登場！2点バーン＋2ドロー（相手18点）",
+    text: "神鳥ガルダの登場効果：<br>山岳域2以上→ 相手に2点ダメージ！<br>森林域2以上→ カード2枚ドロー！<br>両方達成で2点バーン＋2ドロー。（相手ライフ18）",
+    action: s => {
+      s.enemyLife-=2;
+      return s;
+    }, damage:2, highlight:["神鳥ガルダ"], r1:true,
+  },
+  {
+    title: "【3ターン目】神鳥ガルダで攻撃！（相手12点）",
+    text: "神鳥ガルダは《駿足》持ちなのでそのまま攻撃！<br>ATK6で攻撃→相手に6点ダメージ！（相手ライフ12）",
+    action: s => {
+      s.field = s.field.map(c=>c.name==="神鳥ガルダ"?{...c,muted:true}:c);
+      s.enemyLife-=6;
+      return s;
+    }, damage:6, highlight:["神鳥ガルダ"], r1:true,
+  },
+  {
+    title: "【3ターン目】神殿の起動②：信者2体を生贄にガルダをウェイク",
+    text: "2枚目の神殿の起動②（または別の起動手段）で信者2体を生贄にガルダをウェイク！<br>→ 再度攻撃！（相手ライフ6）",
+    action: s => {
+      s.field = s.field.filter((_,i,a)=>{
+        const shinjas = a.filter(c=>c.name==="ガルダの信者");
+        if(s.field[i]?.name==="ガルダの信者" && shinjas.indexOf(s.field[i])<2) return false;
+        return true;
+      });
+      const shinjas = s.field.filter(c=>c.name==="ガルダの信者");
+      s.field = s.field.filter(c=>c.name!=="ガルダの信者");
+      shinjas.slice(2).forEach(c=>s.field.push(c));
+      s.field = s.field.map(c=>c.name==="神鳥ガルダ"?{...c,muted:false}:c);
+      s.enemyLife-=6;
+      return s;
+    }, damage:6, highlight:["神鳥ガルダ"], r1:true,
+  },
+  {
+    title: "【3ターン目】2枚目の神殿でさらにウェイク→フィニッシュ！",
+    text: "もう1枚の神殿を出して同じ手順でガルダをウェイク。<br>→ さらに6点攻撃！（相手ライフ0）🏆",
+    action: s => {
+      s.field.push(C("ガルダの神殿",{muted:true}));
+      s.field = s.field.map(c=>c.name==="神鳥ガルダ"?{...c,muted:false}:c);
+      s.enemyLife=0;
+      return s;
+    }, damage:6, highlight:["神鳥ガルダ"], r1:true,
+  },
+  {
+    title: "✅ 神殿ルートまとめ",
+    text: "【ポイント】<br>・ガルダの信者がガルダの神殿をサーチ<br>・神殿の補修カウンターを6個溜めてコスト1でガルダを展開<br>・ガルダのウェイク手段：信者2体を生贄<br><br>【ダメージ内訳】<br>登場バーン2点＋攻撃6×3回＝20点！",
+    action: s => s, r1:true,
+  },
+
+  // ===== ルート2：潮騒 =====
+  {
+    title: "━━ ルート②：潮騒ルート ━━",
+    text: "ガルダを一度墓地に落として潮騒で蘇生する速攻ルート。<br>カード：ガルダの信者・神鳥ガルダ・潮騒・爆炎<br>領土：山岳×2・森林×2・水生×1（計5枚）",
+    action: s => {
+      s.enemyLife=20;
+      s.field=[]; s.hand=[C("神鳥ガルダ"),C("潮騒"),C("爆炎"),C("ガルダの信者")];
+      s.grave=[]; s.pile=[];
+      s.territories=["山","山","森","森","水"]; s.usedTerr=0; s.turn="準備";
+      return s;
+    }, r2:true,
+  },
+  {
+    title: "【1ターン目】ガルダの信者をプレイ",
+    text: "ガルダの信者を1ターン目にプレイ。<br>登場効果でデッキからガルダの神殿（コスト0道具）をサーチしておくと後の動きが広がります。",
+    action: s => {
+      s.hand = s.hand.filter(h=>h.name!=="ガルダの信者");
+      s.field.push(C("ガルダの信者"));
+      s.usedTerr=1; s.turn="1ターン目";
+      return s;
+    }, highlight:["ガルダの信者"], r2:true,
+  },
+  {
+    title: "【2ターン目】神鳥ガルダをプレイ（手札1枚捨ててコスト1）",
+    text: "神鳥ガルダの固有：プレイ時、手札1枚を捨てるとコスト②軽減。<br>→ 手札1枚捨ててコスト1でプレイ！<br>登場効果で2ドロー or 2点バーン。<br>ただし《日没開始時に生贄》を持つので墓地へ行ってしまいます。",
+    action: s => {
+      s.hand = s.hand.filter(h=>h.name!=="神鳥ガルダ");
+      s.field.push(C("神鳥ガルダ",{boss:true}));
+      s.enemyLife-=2;
+      s.usedTerr=1; s.turn="2ターン目";
+      return s;
+    }, damage:2, highlight:["神鳥ガルダ"], r2:true,
+  },
+  {
+    title: "【2ターン目】ガルダが墓地へ→潮騒で蘇生！",
+    text: "ガルダが日没で墓地へ。<br>潮騒をプレイ：このターン墓地に置かれた動物1体を戦場に戻す。<br>→ ガルダが戦場に蘇生！登場効果で再び2ドロー！<br>《駿足》でそのまま攻撃！（相手ライフ14）",
+    action: s => {
+      s.hand = s.hand.filter(h=>h.name!=="潮騒");
+      s.field = s.field.filter(c=>c.name!=="神鳥ガルダ");
+      s.grave.push(C("神鳥ガルダ",{grave:true}));
+      s.field.push(C("神鳥ガルダ",{boss:true,muted:true}));
+      s.grave = s.grave.filter(c=>c.name!=="神鳥ガルダ");
+      s.enemyLife-=6;
+      s.usedTerr=2;
+      return s;
+    }, damage:6, highlight:["潮騒","神鳥ガルダ"], r2:true,
+  },
+  {
+    title: "【3ターン目】爆炎をガルダに装備→攻撃！（相手6点）",
+    text: "爆炎をプレイ：ガルダにATK+2/DEF+1と《突破》を付与。<br>→ ATK8でガルダが攻撃！（相手ライフ6）",
+    action: s => {
+      s.hand = s.hand.filter(h=>h.name!=="爆炎");
+      s.field = s.field.map(c=>c.name==="神鳥ガルダ"?{...c,muted:true}:c);
+      s.enemyLife-=8;
+      s.usedTerr=2; s.turn="3ターン目";
+      return s;
+    }, damage:8, highlight:["神鳥ガルダ","爆炎"], r2:true,
+  },
+  {
+    title: "【3ターン目】墓地の爆炎起動でフィニッシュ！",
+    text: "爆炎の墓地起動：山岳領土とこれを除外して相手に2点ダメージ。<br>→ 残り6点のうち2点バーン！（相手ライフ4）<br>潮騒でガルダを再蘇生して攻撃、または信者＋神殿でウェイクして攻撃でフィニッシュ！",
+    action: s => {
+      s.grave.push(C("爆炎",{grave:true}));
+      s.enemyLife=0;
+      return s;
+    }, damage:4, highlight:["神鳥ガルダ"], r2:true,
+  },
+  {
+    title: "✅ 潮騒ルートまとめ",
+    text: "【ポイント】<br>・ガルダを手札1枚捨ててコスト1で出す→登場効果で2ドロー or 2点バーン<br>・日没で墓地に落ちるが潮騒で即蘇生→そのまま攻撃<br>・爆炎でATK強化→墓地起動でバーン追加<br><br>2ターン目からガルダ攻撃が可能な速攻ルート！",
+    action: s => s, r2:true,
+  },
+
+  // ===== ルート3：獅子舞 =====
+  {
+    title: "━━ ルート③：獅子舞ルート ━━",
+    text: "運命の帰郷→獅子舞行軍＋泥の像で無限トークンを展開！<br>ガルダの信者はコスト0の道具をサーチできるので泥の像（コスト0）を装備させます。<br>領土：平地・山岳・水生・森林（各1以上・計4枚）",
+    action: s => {
+      s.enemyLife=20;
+      s.field=[C("明日色のカメレオン")];
+      s.hand=[C("運命の帰郷")];
+      s.grave=[]; s.pile=[];
+      s.territories=["平","山","水","森"]; s.usedTerr=0; s.turn="準備";
+      return s;
+    }, r3:true,
+  },
+  {
+    title: "【獅子舞①】運命の帰郷をプレイ→獅子舞行軍を戦場に",
+    text: "運命の帰郷：戦場に動物と道具があるなら、デッキからコスト3の縄張りを戦場に出す。<br>→ 獅子舞行軍（コスト3）が戦場に！<br>条件の軽減は明日色のカメレオンや妖狐の巻物の4色条件で対応します。",
+    action: s => {
+      s.hand = s.hand.filter(h=>h.name!=="運命の帰郷");
+      s.field.push(C("獅子舞行軍"));
+      s.usedTerr=4; s.turn="コンボターン";
+      return s;
+    }, highlight:["運命の帰郷","獅子舞行軍"], r3:true,
+  },
+  {
+    title: "【獅子舞②】ガルダの信者をプレイ→泥の像をサーチ＆装備",
+    text: "ガルダの信者をプレイ。<br>登場効果：デッキからコスト0の山岳/森林道具→泥の像（コスト0）をサーチして装備！<br>これで獅子舞ルートのパーツが揃いました。",
+    action: s => {
+      s.field.push(C("ガルダの信者+泥の像"));
+      return s;
+    }, highlight:["ガルダの信者+泥の像","獅子舞行軍"], r3:true,
+  },
+  {
+    title: "【獅子舞③】泥の像起動→コピートークン生成→獅子舞行軍でウェイク→無限ループ！",
+    text: "泥の像の起動：ムーブして自分（信者）のコピートークンを戦場に出す。<br>獅子舞行軍の効果：同名カードが登場→信者をウェイク！<br>→ 無限にコピートークンを生成！<br><br>大量のトークンで相手を圧倒します！<br>テングザルを対象にすれば同様に動作します。",
+    action: s => {
+      s.field.push(C("信者トークン×∞"));
+      return s;
+    }, highlight:["ガルダの信者+泥の像","獅子舞行軍"], r3:true,
+  },
+  {
+    title: "✅ ガルダルートまとめ",
+    text: "【神殿ルート】<br>信者でサーチ→神殿でガルダをコスト1展開→信者生贄でウェイク×3回攻撃<br><br>【潮騒ルート】<br>ガルダを手捨てコスト1で出す→日没で落ちても潮騒で即蘇生→速攻プラン<br><br>【獅子舞ルート】<br>運命の帰郷→獅子舞行軍→信者＋泥の像→無限トークン展開<br>（獅子舞ルートの詳細は獅子舞ルート解説を参照）",
+    action: s => s,
+  },
+];
+
+let state={}, currentStep=0;
+
+function getImg(name){
+  const k=Object.keys(IMAGES).find(k=>name.includes(k));
+  return k?IMAGES[k]:null;
+}
+
+function makeCard(c, highlighted){
+  const div=document.createElement("div");
+  div.className="card"+(c.muted?" muted":"")+(c.grave?" grave":"")+(c.boss?" boss":"")+(highlighted?" highlighted":"")+(c.entering?" entering":"");
+  const img=getImg(c.name);
+  if(img){
+    const i=document.createElement("img");
+    i.src=img;
+    i.onerror=()=>{div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";div.textContent=c.name;};
+    div.appendChild(i);
+  } else {
+    div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;background:#2a3a4a;";
+    div.textContent=c.name;
+  }
+  if(c.counter>0){
+    const b=document.createElement("div");
+    b.className="counter-badge";
+    b.textContent=`補修×${c.counter}`;
+    div.appendChild(b);
+  }
+  return div;
+}
+
+function showDamage(amount){
+  const el=document.createElement("div");
+  el.className="damage-float enemy-dmg";
+  el.textContent=`-${amount}点`;
+  const rect=document.getElementById("enemy-life-bar").getBoundingClientRect();
+  el.style.left=(rect.left+rect.width/2-25)+"px";
+  el.style.top=(window.scrollY+rect.top-10)+"px";
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1200);
+}
+
+function render(){
+  const s=state, step=steps[currentStep], hl=step.highlight||[];
+  document.getElementById("enemy-life-num").textContent=Math.max(0,s.enemyLife);
+  document.getElementById("enemy-life-bar").style.width=(Math.max(0,s.enemyLife)/20*100)+"%";
+  document.getElementById("turn-label").textContent=s.turn||"";
+
+  const pf=document.getElementById("player-field"); pf.innerHTML="";
+  s.field.forEach(c=>{
+    const isHl=hl.some(h=>c.name.includes(h)||h.includes(c.name.split("+")[0]));
+    pf.appendChild(makeCard(c,isHl));
+  });
+
+  const pa=document.getElementById("pile-area"); pa.innerHTML="";
+  (s.pile||[]).forEach(e=>{
+    const el=document.createElement("div");
+    el.style.cssText="background:rgba(80,70,0,0.7);border:1px solid #aa9900;border-radius:6px;padding:3px 6px;font-size:10px;color:#ffee88;";
+    el.textContent="▶ "+e; pa.appendChild(el);
+  });
+
+  const ta=document.getElementById("territory-area"); ta.innerHTML="";
+  (s.territories||[]).forEach((t,i)=>{
+    const card=document.createElement("div");
+    const tc=t==="山"?" mountain":t==="森"?" forest":t==="水"?" water":" plain";
+    card.className="territory-card"+tc+(i<s.usedTerr?" used":"");
+    card.textContent=t; ta.appendChild(card);
+  });
+
+  const ga=document.getElementById("grave-area"); ga.innerHTML="";
+  (s.grave||[]).forEach(c=>{ const d=makeCard({...c,grave:true},false); ga.appendChild(d); });
+
+  const ha=document.getElementById("hand-area"); ha.innerHTML="";
+  (s.hand||[]).forEach(c=>{
+    const div=document.createElement("div"); div.className="hand-card";
+    const img=getImg(c.name);
+    if(img){const i=document.createElement("img");i.src=img;i.onerror=()=>{div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";div.textContent=c.name;};div.appendChild(i);}
+    else{div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";div.textContent=c.name;}
+    ha.appendChild(div);
+  });
+
+  document.getElementById("step-title").textContent=step.title;
+  document.getElementById("step-text").innerHTML=step.text;
+  document.getElementById("step-counter").textContent=`${currentStep+1} / ${steps.length}`;
+
+  const badge=document.getElementById("loop-badge");
+  if(step.r1){badge.style.cssText="display:block;background:#3a2a1a;color:#ffddaa;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #ffaa44;";badge.textContent="🦅 神殿ルート";}
+  else if(step.r2){badge.style.cssText="display:block;background:#1a2a4a;color:#aaccff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #4488ff;";badge.textContent="🌊 潮騒ルート";}
+  else if(step.r3){badge.style.cssText="display:block;background:#1a3a2a;color:#aaffcc;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #44ffaa;";badge.textContent="🦁 獅子舞ルート";}
+  else badge.style.display="none";
+}
+
+function deepCopy(s){
+  return {...s,field:(s.field||[]).map(c=>({...c})),hand:(s.hand||[]).map(c=>({...c})),grave:(s.grave||[]).map(c=>({...c})),pile:[...(s.pile||[])],territories:[...(s.territories||[])]};
+}
+
+function applyStep(idx){
+  state=steps[idx].action(deepCopy(state));
+  if(steps[idx].damage) setTimeout(()=>showDamage(steps[idx].damage),300);
+  render();
+}
+function jumpTo(idx){stopPlay();currentStep=idx;applyStep(currentStep);}
+function nextStep(){stopPlay();if(currentStep<steps.length-1){currentStep++;applyStep(currentStep);}}
+function prevStep(){stopPlay();if(currentStep>0){currentStep--;let s=initState();for(let i=0;i<=currentStep;i++)s=steps[i].action(deepCopy(s));state=s;render();}}
+function resetAll(){stopPlay();currentStep=0;state=initState();render();}
+
+let playTimer=null;
+const PLAY_INTERVAL=2500;
+function togglePlay(){if(playTimer){stopPlay();}else{startPlay();}}
+function startPlay(){const btn=document.getElementById("playBtn");btn.textContent="⏸ 停止";btn.classList.add("playing");playTimer=setInterval(()=>{if(currentStep<steps.length-1){currentStep++;applyStep(currentStep);}else{stopPlay();}},PLAY_INTERVAL);}
+function stopPlay(){if(playTimer){clearInterval(playTimer);playTimer=null;}const btn=document.getElementById("playBtn");if(btn){btn.textContent="▶ 再生";btn.classList.remove("playing");}}
+
+state=initState();
+render();
+</script>
+</body>
+</html>
