@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鉄鴉ルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+#turn-badge {
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(20,60,100,0.9); color: #88ccff;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #4488ff; z-index: 20;
+}
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.trash-zone {
+  background: rgba(100,60,20,0.2); border: 1px solid rgba(150,80,30,0.4);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  position: relative; height: 64px;
+}
+.exile-zone {
+  background: rgba(80,20,80,0.2); border: 1px solid rgba(150,50,150,0.4);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.in-trash { opacity: 0.55; filter: grayscale(0.6); border-color: #6a4a2a; }
+.card.exiled { opacity: 0.4; filter: grayscale(0.7); border-color: #6a2a6a; }
+.card.powered { box-shadow: 0 0 14px 4px #ff4400; border-color: #ff6600; }
+
+.atk-badge {
+  position: absolute; top: 2px; left: 0; right: 0;
+  background: rgba(180,0,50,0.9); color: white; font-size: 7px; font-weight: bold;
+  padding: 1px 2px; text-align: center; z-index: 10;
+}
+.counter-badge {
+  position: absolute; bottom: 2px; left: 0; right: 0;
+  background: rgba(200,80,0,0.92); color: white; font-size: 7px; font-weight: bold;
+  padding: 1px 2px; text-align: center; z-index: 10;
+}
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  background: #2a4a2a; border: 1px solid #4a8a4a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #a8e0a8; font-weight: bold;
+  transition: transform 0.4s, opacity 0.3s;
+}
+.territory-card.used { transform: rotate(90deg); opacity: 0.4; }
+.territory-card.forest { background: #1a3a1a; border-color: #4a8a4a; color: #aaffaa; }
+
+.damage-float {
+  position: fixed; font-size: 22px; font-weight: bold;
+  pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
+  white-space: nowrap;
+}
+.damage-float.enemy-dmg { color: #ff4444; text-shadow: 0 0 12px #ff0000; }
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0) scale(1.3); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🐦 鉄鴉ルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div id="turn-badge">📅 <span id="turn-label">1ターン目</span></div>
+
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
+
+    <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:4px;">
+      <div style="flex:1; min-width:0;">
+        <div class="zone-label">領土</div>
+        <div class="territory-zone" id="territory-area"></div>
+      </div>
+      <div style="flex:1; min-width:0;">
+        <div class="zone-label">トラッシュ</div>
+        <div class="trash-zone" id="trash-area"></div>
+      </div>
+    </div>
+
+    <div class="zone-label">除外</div>
+    <div class="exile-zone" id="exile-area"></div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+const IMAGES = {
+  道具の骨組み: "https://acgtcg.com/img/BP4-079",
+  鉄洗いグマ:   "https://acgtcg.com/img/ACG-159",
+  鉄クズ:       "https://acgtcg.com/img/ACG-160",
+  鉄鴉:         "https://acgtcg.com/img/ACG-161",
+};
+
+function initState() {
+  return {
+    enemyLife: 20,
+    playerField: [],
+    hand: ["道具の骨組み", "鉄洗いグマ"],
+    pile: [],
+    trash: [],
+    exile: [],
+    tekkiAtk: 0,
+    hone_muted: false,
+    hone_counter: 0,
+    kuma_muted: false,
+    tekki_muted: false,
+    usedTerritories: 0,
+    totalTerritories: 1,
+    territories: ["森"],
+    turnLabel: "準備",
+  };
+}
+
+const steps = [
+  {
+    title: "初期状態",
+    text: "手札に道具の骨組みと鉄洗いグマがあります。<br>3ターンかけてコンボを成立させます。",
+    action: s => s,
+    turn: "準備",
+  },
+
+  // ===== 1ターン目 =====
+  {
+    title: "【1ターン目】道具の骨組みをプレイ",
+    text: "道具の骨組みをプレイして戦場に出します。<br>コスト1消費。",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "道具の骨組み");
+      s.playerField.push("道具の骨組み");
+      s.territories = ["森"];
+      s.totalTerritories = 1;
+      s.usedTerritories = 1;
+      s.turnLabel = "1ターン目";
+      return s;
+    },
+    highlight: ["道具の骨組み"],
+    turn: "1ターン目",
+  },
+
+  // ===== 2ターン目 =====
+  {
+    title: "【2ターン目】鉄洗いグマをプレイ→鉄クズを戦場に",
+    text: "鉄洗いグマをプレイ。登場時の誘発効果でデッキから鉄クズ1枚を戦場に出します。",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "鉄洗いグマ");
+      s.playerField.push("鉄洗いグマ");
+      s.playerField.push("鉄クズ①");
+      s.territories = ["森", "土"];
+      s.totalTerritories = 2;
+      s.usedTerritories = 1;
+      s.turnLabel = "2ターン目";
+      return s;
+    },
+    highlight: ["鉄洗いグマ", "鉄クズ①"],
+    turn: "2ターン目",
+  },
+  {
+    title: "【2ターン目】道具の骨組みをムーブ→補修カウンター1個",
+    text: "道具の骨組みの起動①：ムーブして補修カウンターを1個置きます。<br>次のターンの起動②の準備です。",
+    action: s => {
+      s.hone_muted = true;
+      s.hone_counter = 1;
+      return s;
+    },
+    highlight: ["道具の骨組み"],
+    turn: "2ターン目",
+  },
+
+  // ===== 3ターン目 =====
+  {
+    title: "【3ターン目・準備フェイズ】鉄洗いグマの誘発→鉄クズ2枚目",
+    text: "準備フェイズ開始時、鉄洗いグマの誘発効果でデッキから鉄クズ2枚目を戦場に出します。",
+    action: s => {
+      s.playerField.push("鉄クズ②");
+      s.hone_muted = false;
+      s.territories = ["森", "土", "土"];
+      s.totalTerritories = 3;
+      s.usedTerritories = 0;
+      s.turnLabel = "3ターン目";
+      return s;
+    },
+    highlight: ["鉄洗いグマ", "鉄クズ②"],
+    turn: "3ターン目",
+  },
+  {
+    title: "【3ターン目】鉄洗いグマ起動：鉄クズ×2を生贄→道具2枚を墓地へ",
+    text: "鉄洗いグマをムーブして起動効果を発動。<br>戦場の鉄クズ×2をすべて生贄に捧げる。<br>→ デッキから道具2枚を墓地に置く：<b>鉄鴉</b>と<b>何かの道具</b>を墓地へ。<br>このターン道具4枚が墓地に置かれました（鉄クズ×2・鉄鴉・道具X）。",
+    action: s => {
+      s.playerField = s.playerField.filter(c => c !== "鉄クズ①" && c !== "鉄クズ②");
+      s.kuma_muted = true;
+      s.trash.push("鉄クズ①");
+      s.trash.push("鉄クズ②");
+      s.trash.push("鉄鴉");
+      s.trash.push("道具X");
+      return s;
+    },
+    highlight: ["鉄洗いグマ"],
+    turn: "3ターン目",
+  },
+  {
+    title: "【3ターン目】鉄クズの墓地起動：鉄鴉を手札へ回収",
+    text: "墓地の鉄クズの起動効果：コスト①を支払い、墓地のすべての鉄クズを除外する。<br>→ 鉄クズ×2を除外して、コストX（2）以下の道具カード1枚を手札に加える。<br>→ 鉄鴉（コスト0）を手札に回収！",
+    action: s => {
+      s.trash = s.trash.filter(c => c !== "鉄クズ①" && c !== "鉄クズ②");
+      s.trash = s.trash.filter(c => c !== "鉄鴉");
+      s.exile.push("鉄クズ①");
+      s.exile.push("鉄クズ②");
+      s.hand.push("鉄鴉");
+      s.usedTerritories = 1;
+      return s;
+    },
+    highlight: ["鉄鴉"],
+    turn: "3ターン目",
+  },
+  {
+    title: "【3ターン目】道具の骨組みの起動②：鉄鴉を戦場に！",
+    text: "道具の骨組みをムーブして起動②を発動。<br>補修カウンターをすべて取り除き、手札のコスト1以下の道具カードを戦場に出す。<br>→ 鉄鴉（コスト0）を戦場に登場！",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "鉄鴉");
+      s.hone_muted = true;
+      s.hone_counter = 0;
+      s.playerField.push("鉄鴉");
+      // このターンの道具墓地送り：鉄クズ×2 + 鉄鴉 + 道具X = 4枚
+      s.tekkiAtk = 4;
+      return s;
+    },
+    highlight: ["道具の骨組み", "鉄鴉"],
+    turn: "3ターン目",
+  },
+  {
+    title: "【3ターン目】鉄鴉がATK4で登場！早業でムーブ→4点バーン！",
+    text: "このターン道具が4枚墓地に置かれた（鉄クズ×2・鉄鴉・道具X）ので<br>鉄鴉はATK+1/DEF+1カウンター×4 = <b>ATK4</b>で登場！<br><br>《早業》を持つのでそのままムーブして起動効果を発動。<br>→ <b>相手に4点ダメージ！妨害されない！</b><br>冬・鉄檻があっても攻撃ではないので止められません。",
+    action: s => {
+      s.tekki_muted = true;
+      s.enemyLife -= 4;
+      return s;
+    },
+    damage: 4,
+    highlight: ["鉄鴉"],
+    turn: "3ターン目",
+  },
+  {
+    title: "✅ まとめ：鉄鴉ルートのポイント",
+    text: "【ターン構成】<br>1ターン目：道具の骨組み設置<br>2ターン目：鉄洗いグマ登場→鉄クズ①・骨組みにカウンター<br>3ターン目：鉄クズ②登場→グマ起動で鉄鴉墓地→鉄クズ起動で鉄鴉回収→骨組み起動で鉄鴉展開→4点バーン<br><br>【強み】<br>・決まったら勝ち、ではなく毎ターン安定して4点以上を刻める<br>・鉄鴉のバーンは妨害されない<br>・冬・鉄檻など攻撃メタも貫通する",
+    action: s => s,
+    turn: "まとめ",
+  },
+];
+
+let state = {};
+let currentStep = 0;
+
+function makeCard(name, opts = {}) {
+  const div = document.createElement("div");
+  div.className = "card" + (opts.entering ? " entering" : "") + (opts.inTrash ? " in-trash" : "") + (opts.exiled ? " exiled" : "");
+  if (opts.highlighted) div.classList.add("highlighted");
+  if (opts.muted) div.classList.add("muted");
+  if (opts.powered) div.classList.add("powered");
+
+  const baseName = name.replace("①","").replace("②","");
+  const imgKey = Object.keys(IMAGES).find(k => baseName.includes(k));
+
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => {
+      div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:7px;color:#aaa;text-align:center;padding:2px;";
+      div.textContent = name;
+    };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:7px;color:#aaa;text-align:center;padding:2px;background:#2a3a2a;";
+    div.textContent = name;
+  }
+
+  if (opts.atk > 0) {
+    const b = document.createElement("div");
+    b.className = "atk-badge";
+    b.textContent = `ATK${opts.atk}`;
+    div.appendChild(b);
+  }
+  if (opts.counter > 0) {
+    const b = document.createElement("div");
+    b.className = "counter-badge";
+    b.textContent = `補修×${opts.counter}`;
+    div.appendChild(b);
+  }
+  return div;
+}
+
+function makeHandCard(name) {
+  const div = document.createElement("div");
+  div.className = "hand-card";
+  const imgKey = Object.keys(IMAGES).find(k => name.includes(k));
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => {
+      div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:7px;color:#aaa;text-align:center;padding:2px;";
+      div.textContent = name;
+    };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:7px;color:#aaa;text-align:center;padding:2px;";
+    div.textContent = name;
+  }
+  return div;
+}
+
+function showDamage(amount, delay = 0) {
+  setTimeout(() => {
+    const el = document.createElement("div");
+    el.className = "damage-float enemy-dmg";
+    el.textContent = `-${amount}点`;
+    const rect = document.getElementById("enemy-life-bar").getBoundingClientRect();
+    el.style.left = (rect.left + rect.width / 2 - 25) + "px";
+    el.style.top = (window.scrollY + rect.top - 10) + "px";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }, delay);
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const highlights = step.highlight || [];
+
+  const eLife = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-num").textContent = eLife;
+  document.getElementById("enemy-life-bar").style.width = (eLife / 20 * 100) + "%";
+  document.getElementById("turn-label").textContent = s.turnLabel || "";
+
+  // 戦場
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  s.playerField.forEach(name => {
+    const isHone = name === "道具の骨組み";
+    const isKuma = name === "鉄洗いグマ";
+    const isTekki = name === "鉄鴉";
+    const el = makeCard(name, {
+      highlighted: highlights.some(h => name.includes(h) || h.includes(name)),
+      muted: (isHone && s.hone_muted) || (isKuma && s.kuma_muted) || (isTekki && s.tekki_muted),
+      atk: isTekki && s.tekkiAtk > 0 ? s.tekkiAtk : 0,
+      counter: isHone && s.hone_counter > 0 ? s.hone_counter : 0,
+      powered: isTekki && s.tekkiAtk >= 4,
+    });
+    pf.appendChild(el);
+  });
+
+  // パイル
+  const pa = document.getElementById("pile-area");
+  pa.innerHTML = "";
+  s.pile.forEach(name => {
+    pa.appendChild(makeCard(name, { entering: true, highlighted: true }));
+  });
+
+  // 領土
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  (s.territories || ["土"]).forEach((t, i) => {
+    const card = document.createElement("div");
+    const isUsed = i < s.usedTerritories;
+    card.className = "territory-card" + (isUsed ? " used" : "") + (t === "森" ? " forest" : "");
+    card.textContent = t;
+    ta.appendChild(card);
+  });
+
+  // トラッシュ
+  const tr = document.getElementById("trash-area");
+  tr.innerHTML = "";
+  s.trash.forEach((name, idx) => {
+    const el = makeCard(name, { inTrash: true });
+    el.style.position = "absolute";
+    el.style.left = (5 + idx * 12) + "px";
+    el.style.top = "4px";
+    el.style.zIndex = idx + 1;
+    tr.appendChild(el);
+  });
+
+  // 除外
+  const ea = document.getElementById("exile-area");
+  ea.innerHTML = "";
+  s.exile.forEach(name => {
+    ea.appendChild(makeCard(name, { exiled: true }));
+  });
+
+  // 手札
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  s.hand.forEach(name => ha.appendChild(makeHandCard(name)));
+
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+
+  const badge = document.getElementById("loop-badge");
+  badge.style.display = "none";
+}
+
+function applyStep(idx) {
+  const step = steps[idx];
+  state = step.action({
+    ...state,
+    trash: [...state.trash],
+    exile: [...state.exile],
+    hand: [...state.hand],
+    playerField: [...state.playerField],
+    pile: [...(state.pile || [])],
+    territories: [...(state.territories || ["森"])],
+  });
+  if (step.damage) showDamage(step.damage, 300);
+  render();
+}
+
+function nextStep() {
+  stopPlay();
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    applyStep(currentStep);
+  }
+}
+
+function prevStep() {
+  stopPlay();
+  if (currentStep > 0) {
+    currentStep--;
+    replayTo(currentStep);
+  }
+}
+
+function replayTo(target) {
+  let s = initState();
+  for (let i = 0; i <= target; i++) {
+    s = steps[i].action({
+      ...s,
+      trash: [...s.trash],
+      exile: [...s.exile],
+      hand: [...s.hand],
+      playerField: [...s.playerField],
+      pile: [...(s.pile || [])],
+      territories: [...(s.territories || ["森"])],
+    });
+  }
+  state = s;
+  render();
+}
+
+function resetAll() {
+  stopPlay();
+  currentStep = 0;
+  state = initState();
+  render();
+}
+
+let playTimer = null;
+const PLAY_INTERVAL = 2500;
+
+function togglePlay() {
+  if (playTimer) { stopPlay(); } else { startPlay(); }
+}
+
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止";
+  btn.classList.add("playing");
+  playTimer = setInterval(() => {
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      applyStep(currentStep);
+    } else {
+      stopPlay();
+    }
+  }, PLAY_INTERVAL);
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById("playBtn");
+  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
+}
+
+state = initState();
+render();
+</script>
+</body>
+</html>
