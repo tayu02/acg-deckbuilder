@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>カジキルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+#kajiki-counter {
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(0,80,150,0.85); color: #88ccff;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #4488ff; z-index: 20;
+}
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.exile-zone {
+  background: rgba(80,20,80,0.2); border: 1px solid rgba(150,50,150,0.4);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.exiled { opacity: 0.4; filter: grayscale(0.7); border-color: #6a2a6a; }
+.card.is-copy { border-color: #00aacc; box-shadow: 0 0 8px 2px rgba(0,150,200,0.4); }
+.card.boss { border-color: #ff6600; box-shadow: 0 0 14px 4px rgba(255,100,0,0.5); }
+
+.copy-badge {
+  position: absolute; top: 2px; left: 0; right: 0;
+  background: rgba(0,100,150,0.9); color: #aaddff; font-size: 6px; font-weight: bold;
+  padding: 1px 2px; text-align: center; z-index: 10;
+}
+.atk-badge {
+  position: absolute; bottom: 2px; left: 0; right: 0;
+  background: rgba(180,60,0,0.9); color: #ffddaa; font-size: 7px; font-weight: bold;
+  padding: 1px 2px; text-align: center; z-index: 10;
+}
+
+/* パイルの効果スタック表示 */
+.pile-effect {
+  background: rgba(80,70,0,0.7); border: 1px solid #aa9900;
+  border-radius: 6px; padding: 3px 6px; font-size: 10px; color: #ffee88;
+  display: flex; align-items: center; gap: 4px;
+}
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: bold;
+  transition: transform 0.4s, opacity 0.3s;
+}
+.territory-card.used { transform: rotate(90deg); opacity: 0.4; }
+.territory-card.water  { background: #1a2a4a; border: 1px solid #4a6a8a; color: #aaccff; }
+.territory-card.mountain { background: #4a2a2a; border: 1px solid #8a4a4a; color: #ffaaaa; }
+.territory-card.forest { background: #1a3a1a; border: 1px solid #4a8a4a; color: #aaffaa; }
+
+.damage-float {
+  position: fixed; font-size: 22px; font-weight: bold;
+  pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
+  white-space: nowrap;
+}
+.damage-float.enemy-dmg { color: #ff4444; text-shadow: 0 0 12px #ff0000; }
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0) scale(1.3); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🐟 カジキルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div id="kajiki-counter">🐟 群泳カジキ：<span id="kajiki-count">1</span>体</div>
+
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">パイル（効果スタック）</div>
+    <div class="pile-zone" id="pile-area"></div>
+
+    <div class="zone-label">領土（水生×2・山岳×1・森林×1）</div>
+    <div class="territory-zone" id="territory-area"></div>
+
+    <div class="zone-label">除外</div>
+    <div class="exile-zone" id="exile-area"></div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+const IMAGES = {
+  群泳カジキ:   "https://acgtcg.com/img/ACG-136",
+  亜音速カジキ: "https://acgtcg.com/img/ACG-138",
+  反射石:       "https://acgtcg.com/img/ACG-137",
+};
+
+function initState() {
+  return {
+    enemyLife: 20,
+    playerField: ["群泳カジキ"],
+    hand: ["亜音速カジキ", "反射石"],
+    pileEffects: [],   // パイルに積まれた効果
+    exile: [],
+    kajikiCount: 1,
+    usedTerritories: 0,
+    territories: ["水","水","山","森"],
+  };
+}
+
+const steps = [
+  {
+    title: "初期状態",
+    text: "戦場：群泳カジキ（ウェイク状態）<br>手札：亜音速カジキ・反射石<br>領土：水生×2・山岳×1・森林×1（計4枚）",
+    action: s => s,
+  },
+  {
+    title: "① 群泳カジキの起動効果をパイルに乗せてムーブ",
+    text: "群泳カジキの起動効果：「戦場にこれ以外のウェイク状態の群泳カジキがいないなら、ムーブして群泳カジキ1枚をデッキから戦場に出す」<br>→ この効果をパイルに積んで群泳カジキをムーブ！",
+    action: s => {
+      s.playerField = ["群泳カジキ_muted"];
+      s.pileEffects = ["群泳カジキの起動効果"];
+      return s;
+    },
+    highlight: ["群泳カジキ"],
+  },
+  {
+    title: "② 反射石をプレイ→群泳カジキのコピーになる",
+    text: "反射石をプレイ。戦場のコスト2以下の動物1体（群泳カジキ）を対象にして、その能力を得ます。<br>→ 反射石は群泳カジキのすべての能力を得た道具に！<br>道具なので行動待機を受けず、すぐに起動できます。",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "反射石");
+      s.playerField.push("反射石（群泳カジキ）");
+      s.usedTerritories = 2;
+      return s;
+    },
+    highlight: ["反射石（群泳カジキ）"],
+  },
+  {
+    title: "③ 反射石（群泳カジキ）の起動効果をパイルに乗せてムーブ",
+    text: "反射石は群泳カジキの能力を得ているので、同じ起動効果を使えます。<br>→ 効果をパイルに積んで反射石をムーブ！<br>パイルには効果が2つ積まれた状態に。",
+    action: s => {
+      s.playerField = s.playerField.map(c => c === "反射石（群泳カジキ）" ? "反射石（群泳カジキ）_muted" : c);
+      s.pileEffects = ["群泳カジキの起動効果", "反射石（群泳カジキ）の起動効果"];
+      return s;
+    },
+    highlight: ["反射石（群泳カジキ）"],
+  },
+  {
+    title: "④ 反射石の効果解決→群泳カジキ①が戦場に！",
+    text: "パイルの上（反射石の効果）が先に解決。<br>デッキから群泳カジキ1枚を戦場に出します。<br>→ 群泳カジキ①が登場！",
+    action: s => {
+      s.pileEffects = ["群泳カジキの起動効果"];
+      s.playerField.push("群泳カジキ①");
+      s.kajikiCount = 2;
+      return s;
+    },
+    highlight: ["群泳カジキ①"],
+  },
+  {
+    title: "⑤ 群泳カジキの効果解決→群泳カジキ②が戦場に！",
+    text: "次にパイルの効果（群泳カジキの起動）が解決。<br>デッキから群泳カジキ1枚を戦場に出します。<br>→ 群泳カジキ②が登場！<br><br>これで戦場に群泳カジキ関連が4体揃いました！<br>元の群泳カジキ・反射石（コピー）・①・②",
+    action: s => {
+      s.pileEffects = [];
+      s.playerField.push("群泳カジキ②");
+      s.kajikiCount = 4;
+      return s;
+    },
+    highlight: ["群泳カジキ②"],
+  },
+  {
+    title: "⑥ 群泳カジキ4体を除外→亜音速カジキをコスト0でプレイ！",
+    text: "亜音速カジキの固有：プレイ時、戦場の群泳カジキ存在4つを除外してコストを⑧軽減。<br>反射石も「群泳カジキ」として数えられるので4体除外OK！<br>→ 亜音速カジキをコスト0でプレイ！<br>（本来コスト8・水水）",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "亜音速カジキ");
+      s.exile = ["群泳カジキ", "反射石（群泳カジキ）", "群泳カジキ①", "群泳カジキ②"];
+      s.playerField = ["亜音速カジキ"];
+      s.kajikiCount = 0;
+      s.usedTerritories = 0;
+      return s;
+    },
+    highlight: ["亜音速カジキ"],
+  },
+  {
+    title: "⑦ 亜音速カジキが登場！ATK11・DEF8",
+    text: "亜音速カジキが戦場に！<br>除外領域に群泳カジキが1枚以上あるので《駿足》と《突破》を得ます。<br>→ ATK11・DEF8・駿足・突破でそのままアタック可能！<br>→ 相手に11点ダメージ！次のターンで止めを刺せます。",
+    action: s => {
+      s.enemyLife -= 11;
+      return s;
+    },
+    damage: 11,
+    highlight: ["亜音速カジキ"],
+  },
+  {
+    title: "✅ まとめ：カジキルートのポイント",
+    text: "【キーカード】<br>・群泳カジキ：起動で仲間を呼ぶ<br>・反射石：群泳カジキのコピー道具→行動待機なしで即起動<br>・亜音速カジキ：群泳カジキ4体除外でコスト0・ATK11<br><br>【ポイント】<br>反射石は動物ではなく道具なので行動待機を受けない！<br>パイルに効果を2つ積んで順番に解決することで一気に4体展開できます。<br><br>【領土】水生×2・山岳×1・森林×1（計4枚）",
+    action: s => s,
+  },
+];
+
+let state = {};
+let currentStep = 0;
+
+function makeCard(name, opts = {}) {
+  const isMuted = name.includes("_muted");
+  const baseName = name.replace("_muted", "").replace("①","").replace("②","");
+  const div = document.createElement("div");
+  div.className = "card" + (opts.entering ? " entering" : "") + (opts.exiled ? " exiled" : "");
+  if (opts.highlighted) div.classList.add("highlighted");
+  if (isMuted || opts.muted) div.classList.add("muted");
+  if (name.includes("反射石")) div.classList.add("is-copy");
+  if (name.includes("亜音速")) div.classList.add("boss");
+
+  const imgKey = name.includes("群泳") || name.includes("反射石（群泳") ? "群泳カジキ"
+    : name.includes("反射石") ? "反射石"
+    : name.includes("亜音速") ? "亜音速カジキ"
+    : null;
+
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => {
+      div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";
+      div.textContent = baseName;
+    };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;background:#2a3a4a;";
+    div.textContent = baseName;
+  }
+
+  if (name.includes("反射石（群泳")) {
+    const b = document.createElement("div");
+    b.className = "copy-badge";
+    b.textContent = "群泳コピー";
+    div.appendChild(b);
+  }
+  if (name.includes("亜音速")) {
+    const b = document.createElement("div");
+    b.className = "atk-badge";
+    b.textContent = "ATK11 駿足";
+    div.appendChild(b);
+  }
+  return div;
+}
+
+function makeHandCard(name) {
+  const div = document.createElement("div");
+  div.className = "hand-card";
+  const imgKey = name.includes("亜音速") ? "亜音速カジキ"
+    : name.includes("反射石") ? "反射石"
+    : "群泳カジキ";
+  const img = document.createElement("img");
+  img.src = IMAGES[imgKey];
+  img.onerror = () => {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";
+    div.textContent = name;
+  };
+  div.appendChild(img);
+  return div;
+}
+
+function showDamage(amount, delay = 0) {
+  setTimeout(() => {
+    const el = document.createElement("div");
+    el.className = "damage-float enemy-dmg";
+    el.textContent = `-${amount}点`;
+    const rect = document.getElementById("enemy-life-bar").getBoundingClientRect();
+    el.style.left = (rect.left + rect.width / 2 - 25) + "px";
+    el.style.top = (window.scrollY + rect.top - 10) + "px";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }, delay);
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const highlights = step.highlight || [];
+
+  document.getElementById("enemy-life-num").textContent = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-bar").style.width = (Math.max(0, s.enemyLife) / 20 * 100) + "%";
+  document.getElementById("kajiki-count").textContent = s.kajikiCount;
+
+  // 戦場
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  s.playerField.forEach(name => {
+    const isHighlighted = highlights.some(h => name.replace("_muted","").includes(h) || h.includes(name.replace("_muted","").split("（")[0]));
+    pf.appendChild(makeCard(name, { highlighted: isHighlighted }));
+  });
+
+  // パイル（効果スタック表示）
+  const pa = document.getElementById("pile-area");
+  pa.innerHTML = "";
+  if (s.pileEffects && s.pileEffects.length > 0) {
+    s.pileEffects.forEach((effect, idx) => {
+      const el = document.createElement("div");
+      el.className = "pile-effect";
+      el.textContent = `${idx === s.pileEffects.length - 1 ? "▶ " : "　"}${effect}`;
+      pa.appendChild(el);
+    });
+  }
+
+  // 領土
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  s.territories.forEach((t, i) => {
+    const card = document.createElement("div");
+    const typeClass = t === "水" ? " water" : t === "山" ? " mountain" : " forest";
+    card.className = "territory-card" + typeClass + (i < s.usedTerritories ? " used" : "");
+    card.textContent = t;
+    ta.appendChild(card);
+  });
+
+  // 除外
+  const ea = document.getElementById("exile-area");
+  ea.innerHTML = "";
+  s.exile.forEach(name => {
+    ea.appendChild(makeCard(name, { exiled: true }));
+  });
+
+  // 手札
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  s.hand.forEach(name => ha.appendChild(makeHandCard(name)));
+
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+
+  const badge = document.getElementById("loop-badge");
+  badge.style.display = "none";
+}
+
+function applyStep(idx) {
+  const step = steps[idx];
+  state = step.action({
+    ...state,
+    hand: [...state.hand],
+    playerField: [...state.playerField],
+    pileEffects: [...(state.pileEffects || [])],
+    exile: [...state.exile],
+    territories: [...state.territories],
+  });
+  if (step.damage) showDamage(step.damage, 300);
+  render();
+}
+
+function nextStep() {
+  stopPlay();
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    applyStep(currentStep);
+  }
+}
+
+function prevStep() {
+  stopPlay();
+  if (currentStep > 0) {
+    currentStep--;
+    replayTo(currentStep);
+  }
+}
+
+function replayTo(target) {
+  let s = initState();
+  for (let i = 0; i <= target; i++) {
+    s = steps[i].action({
+      ...s,
+      hand: [...s.hand],
+      playerField: [...s.playerField],
+      pileEffects: [...(s.pileEffects || [])],
+      exile: [...s.exile],
+      territories: [...s.territories],
+    });
+  }
+  state = s;
+  render();
+}
+
+function resetAll() {
+  stopPlay();
+  currentStep = 0;
+  state = initState();
+  render();
+}
+
+let playTimer = null;
+const PLAY_INTERVAL = 2500;
+
+function togglePlay() {
+  if (playTimer) { stopPlay(); } else { startPlay(); }
+}
+
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止";
+  btn.classList.add("playing");
+  playTimer = setInterval(() => {
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      applyStep(currentStep);
+    } else {
+      stopPlay();
+    }
+  }, PLAY_INTERVAL);
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById("playBtn");
+  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
+}
+
+state = initState();
+render();
+</script>
+</body>
+</html>
