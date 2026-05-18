@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>帰郷ルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+/* デッキカウンター */
+#deck-counter {
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(20,80,160,0.85); color: #88ccff;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #4488ff; z-index: 20;
+}
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+
+/* デッキエリア */
+.deck-zone {
+  display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px;
+  align-items: center; flex-wrap: wrap;
+}
+
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.exile-zone {
+  background: rgba(80,20,80,0.2); border: 1px solid rgba(150,50,150,0.4);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.win-card { box-shadow: 0 0 16px 5px #00ff88; border-color: #00ff88; animation: pulse 0.8s ease infinite alternate; }
+.card.exiled { opacity: 0.4; filter: grayscale(0.7); border-color: #6a2a6a; }
+
+/* デッキカード（裏面積み重ね表示） */
+.deck-card {
+  width: 40px; height: 56px; border-radius: 4px;
+  background: linear-gradient(135deg, #1a3a5a, #0a1a2a);
+  border: 2px solid #3a6a8a; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: #4a8aaa; font-weight: bold;
+}
+.deck-card.bottom { border-color: #88ff88; background: linear-gradient(135deg, #1a3a2a, #0a2a1a); color: #88ff88; }
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hand-card.revealed { border-color: #ffdd00; box-shadow: 0 0 8px 2px #ffdd00; }
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  background: #2a4a2a; border: 1px solid #4a8a4a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #a8e0a8; font-weight: bold;
+  transition: transform 0.4s, opacity 0.3s;
+}
+.territory-card.used { transform: rotate(90deg); opacity: 0.4; }
+.territory-card.mountain { background: #4a2a2a; border-color: #8a4a4a; color: #ffaaaa; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  from { box-shadow: 0 0 16px 5px #00ff88; }
+  to { box-shadow: 0 0 24px 8px #00ff88; }
+}
+
+/* 勝利演出 */
+#win-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85); z-index: 300;
+  align-items: center; justify-content: center; flex-direction: column;
+}
+#win-overlay.show { display: flex; }
+#win-text {
+  font-size: 48px; font-weight: bold; color: #00ff88;
+  text-shadow: 0 0 30px #00ff88; text-align: center;
+  animation: pulse 0.6s ease infinite alternate;
+}
+#win-sub { font-size: 18px; color: #a8e0a8; margin-top: 12px; text-align: center; }
+#win-close { margin-top: 24px; padding: 10px 24px; background: #1a4a2a; border: 1px solid #4a8a4a; border-radius: 10px; color: #88ff88; font-size: 16px; cursor: pointer; }
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🏠 帰郷ルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div id="deck-counter">📚 デッキ：<span id="deck-count">?</span>枚</div>
+
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
+
+    <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:4px;">
+      <div style="flex:1; min-width:0;">
+        <div class="zone-label">領土（森3・山1以上）</div>
+        <div class="territory-zone" id="territory-area"></div>
+      </div>
+      <div style="flex:1; min-width:0;">
+        <div class="zone-label">デッキ</div>
+        <div class="deck-zone" id="deck-area"></div>
+      </div>
+    </div>
+
+    <div class="zone-label">除外</div>
+    <div class="exile-zone" id="exile-area"></div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<!-- 勝利オーバーレイ -->
+<div id="win-overlay">
+  <div id="win-text">🏆 特殊勝利！</div>
+  <div id="win-sub">運命の帰郷がデッキの最後の1枚として捲れました！</div>
+  <button id="win-close" onclick="document.getElementById('win-overlay').classList.remove('show')">閉じる</button>
+</div>
+
+<script>
+const IMAGES = {
+  道標:       "https://acgtcg.com/img/ACG-146",
+  交互の湯浴み: "https://acgtcg.com/img/ACG-145",
+  運命の帰郷: "https://acgtcg.com/img/ACG-147",
+  見狐:       "https://acgtcg.com/img/BP1-023",
+};
+
+function initState() {
+  return {
+    enemyLife: 20,
+    playerField: [],
+    hand: ["道標", "交互の湯浴み", "見狐"],
+    pile: [],
+    exile: [],
+    // デッキ表現：top=上、bottom=特別カード
+    deckCount: 20,       // デッキ枚数（運命の帰郷除く）
+    deckHasKikyo: false, // 運命の帰郷がデッキ底にあるか
+    revealedCard: null,  // 公開中のカード
+    usedTerritories: 0,
+    territories: ["森","森","森","山"], // 森3・山1
+  };
+}
+
+const steps = [
+  {
+    title: "初期状態",
+    text: "手札：道標・交互の湯浴み・見狐（コスト1）<br>デッキ：道標は他に0枚・運命の帰郷が入っている<br>領土：森×3・山×1（計4以上）",
+    action: s => s,
+  },
+  {
+    title: "① 交互の湯浴みをプレイ",
+    text: "交互の湯浴みをパイルに置いてプレイ。<br>手札のカード1枚を公開します。→ 見狐（コスト1）を公開！",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "交互の湯浴み");
+      s.pile = ["交互の湯浴み"];
+      s.revealedCard = "見狐";
+      s.usedTerritories = 1; // 山1消費
+      return s;
+    },
+    highlight: ["交互の湯浴み", "見狐"],
+  },
+  {
+    title: "② デッキからコスト1のカードを手札へ→シャッフル",
+    text: "見狐と同じコスト1のカードをデッキから探して手札へ。<br>→ 運命の帰郷（コスト1）が手札に！<br>デッキをシャッフルします。",
+    action: s => {
+      s.pile = [];
+      s.hand.push("運命の帰郷");
+      s.revealedCard = null;
+      return s;
+    },
+    highlight: ["運命の帰郷"],
+  },
+  {
+    title: "③ 公開したカードと同コストのカードをデッキ底へ",
+    text: "交互の湯浴みの効果：手札のコスト1のカードをデッキの一番下に置きます。<br>→ 今手札に入れた運命の帰郷をデッキ底に仕込みます！",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "運命の帰郷");
+      s.deckHasKikyo = true;
+      return s;
+    },
+    highlight: ["運命の帰郷"],
+  },
+  {
+    title: "④ 道標をプレイ",
+    text: "道標をパイルに置いてプレイ。<br>道標の効果：デッキを上から1枚ずつ公開して除外し続けます。<br>「道標」カードが出るまで繰り返しますが…",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "道標");
+      s.pile = ["道標"];
+      s.usedTerritories = 4; // 森3・山1消費
+      return s;
+    },
+    highlight: ["道標"],
+  },
+  {
+    title: "⑤ デッキを上から捲って除外していく",
+    text: "道標はデッキに1枚しかないので「道標」が出るまで…<br>デッキの全カードが除外されていきます。<br>最後の1枚：運命の帰郷が捲れる！",
+    action: s => {
+      s.pile = [];
+      s.exile = Array(s.deckCount).fill("除外カード");
+      s.deckCount = 1;
+      return s;
+    },
+  },
+  {
+    title: "⑥ 運命の帰郷が捲れた！→ 特殊勝利！",
+    text: "デッキの最後の1枚として運命の帰郷が捲れました！<br>運命の帰郷の効果：「デッキがこれ1枚の状態で捲れた時、すべての域が1以上なら勝利」<br>→ 領土で4色すべてを確保しているので…🏆 特殊勝利！",
+    action: s => {
+      s.deckCount = 0;
+      s.deckHasKikyo = false;
+      s.exile.push("運命の帰郷");
+      setTimeout(() => {
+        document.getElementById("win-overlay").classList.add("show");
+      }, 600);
+      return s;
+    },
+    highlight: ["運命の帰郷"],
+    isWin: true,
+  },
+  {
+    title: "✅ まとめ：帰郷ルートのポイント",
+    text: "【必須条件】<br>・デッキに道標が1枚だけ<br>・領土で平野・山岳・水生・森林を1以上確保<br><br>【手順】<br>①交互の湯浴みで運命の帰郷をサーチ<br>②運命の帰郷をデッキ底に仕込む<br>③道標を発動→デッキが尽きる→運命の帰郷が捲れる<br><br>シンプルながら確実な特殊勝利ルート！",
+    action: s => s,
+  },
+];
+
+let state = {};
+let currentStep = 0;
+
+function getImgKey(name) {
+  if (name === "道標") return "道標";
+  if (name === "交互の湯浴み") return "交互の湯浴み";
+  if (name === "運命の帰郷") return "運命の帰郷";
+  if (name === "見狐") return "見狐";
+  return null;
+}
+
+function makeCard(name, opts = {}) {
+  const div = document.createElement("div");
+  div.className = "card" + (opts.entering ? " entering" : "");
+  if (opts.highlighted) div.classList.add("highlighted");
+  if (opts.win) div.classList.add("win-card");
+  if (opts.exiled) div.classList.add("exiled");
+
+  const key = getImgKey(name);
+  if (key) {
+    const img = document.createElement("img");
+    img.src = IMAGES[key];
+    img.onerror = () => {
+      div.style.background = "#2a3a4a";
+      div.style.display = "flex";
+      div.style.alignItems = "center";
+      div.style.justifyContent = "center";
+      div.style.fontSize = "7px";
+      div.style.color = "#aaa";
+      div.style.textAlign = "center";
+      div.style.padding = "2px";
+      div.textContent = name;
+    };
+    div.appendChild(img);
+  } else {
+    div.style.background = "#1a2a3a";
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.fontSize = "7px";
+    div.style.color = "#6a8aaa";
+    div.style.textAlign = "center";
+    div.style.padding = "2px";
+    div.textContent = "?";
+  }
+  return div;
+}
+
+function makeHandCard(name, revealed) {
+  const div = document.createElement("div");
+  div.className = "hand-card" + (revealed ? " revealed" : "");
+  const key = getImgKey(name);
+  if (key) {
+    const img = document.createElement("img");
+    img.src = IMAGES[key];
+    img.onerror = () => {
+      div.style.background = "#2a3a4a";
+      div.style.display = "flex";
+      div.style.alignItems = "center";
+      div.style.justifyContent = "center";
+      div.style.fontSize = "7px";
+      div.style.color = "#aaa";
+      div.style.textAlign = "center";
+      div.style.padding = "2px";
+      div.textContent = name;
+    };
+    div.appendChild(img);
+  }
+  return div;
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const highlights = step.highlight || [];
+
+  // ライフ
+  const eLife = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-num").textContent = eLife;
+  document.getElementById("enemy-life-bar").style.width = (eLife / 20 * 100) + "%";
+
+  // デッキカウンター
+  const total = s.deckCount + (s.deckHasKikyo ? 1 : 0);
+  document.getElementById("deck-count").textContent = total;
+
+  // 戦場
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  s.playerField.forEach(name => {
+    pf.appendChild(makeCard(name, { highlighted: highlights.includes(name) }));
+  });
+
+  // パイル
+  const pa = document.getElementById("pile-area");
+  pa.innerHTML = "";
+  s.pile.forEach(name => {
+    pa.appendChild(makeCard(name, { entering: true, highlighted: true }));
+  });
+
+  // 領土
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  s.territories.forEach((t, i) => {
+    const card = document.createElement("div");
+    const isUsed = i < s.usedTerritories;
+    card.className = "territory-card" + (isUsed ? " used" : "") + (t === "山" ? " mountain" : "");
+    card.textContent = t;
+    ta.appendChild(card);
+  });
+
+  // デッキ表示
+  const da = document.getElementById("deck-area");
+  da.innerHTML = "";
+  if (s.deckCount > 0) {
+    const topCard = document.createElement("div");
+    topCard.className = "deck-card";
+    topCard.textContent = `${s.deckCount}枚`;
+    da.appendChild(topCard);
+  }
+  if (s.deckHasKikyo) {
+    const botCard = document.createElement("div");
+    botCard.className = "deck-card bottom";
+    botCard.textContent = "底";
+    const img = document.createElement("img");
+    img.src = IMAGES["運命の帰郷"];
+    img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:2px;opacity:0.7;";
+    img.onerror = () => { botCard.textContent = "帰郷\n底"; };
+    botCard.style.cssText = "position:relative;overflow:hidden;";
+    botCard.innerHTML = '';
+    botCard.appendChild(img);
+    const label = document.createElement("div");
+    label.style.cssText = "position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:7px;color:#88ff88;background:rgba(0,0,0,0.7);";
+    label.textContent = "底";
+    botCard.appendChild(label);
+    da.appendChild(botCard);
+  }
+
+  // 除外
+  const ea = document.getElementById("exile-area");
+  ea.innerHTML = "";
+  if (s.exile.length > 0) {
+    // 除外カードを重ねて表示（最後だけ表示）
+    const lastCard = s.exile[s.exile.length - 1];
+    const isKikyo = lastCard === "運命の帰郷";
+    const el = makeCard(lastCard, {
+      exiled: !isKikyo,
+      win: isKikyo && step.isWin,
+      highlighted: isKikyo && highlights.includes("運命の帰郷"),
+    });
+    // 枚数バッジ
+    if (s.exile.length > 1) {
+      const badge = document.createElement("div");
+      badge.style.cssText = "position:absolute;top:2px;right:2px;background:rgba(80,20,80,0.9);color:#ffaaff;font-size:7px;padding:1px 3px;border-radius:4px;z-index:10;";
+      badge.textContent = `${s.exile.length}枚`;
+      el.style.position = "relative";
+      el.appendChild(badge);
+    }
+    ea.appendChild(el);
+    if (s.exile.length > 1) {
+      const countEl = document.createElement("div");
+      countEl.style.cssText = "font-size:10px;color:#aa66aa;align-self:center;";
+      countEl.textContent = `計${s.exile.length}枚除外`;
+      ea.appendChild(countEl);
+    }
+  }
+
+  // 手札
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  s.hand.forEach(name => {
+    ha.appendChild(makeHandCard(name, s.revealedCard === name));
+  });
+
+  // 説明
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+
+  // バッジ
+  const badge = document.getElementById("loop-badge");
+  if (step.isWin) {
+    badge.style.cssText = "display:block;background:#1a5a2a;color:#88ff88;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #44ff88;";
+    badge.textContent = "🏆 特殊勝利！";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function applyStep(idx) {
+  const step = steps[idx];
+  state = step.action({
+    ...state,
+    exile: [...state.exile],
+    hand: [...state.hand],
+    playerField: [...state.playerField],
+    pile: [...(state.pile || [])],
+    territories: [...state.territories],
+  });
+  render();
+}
+
+function nextStep() {
+  stopPlay();
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    applyStep(currentStep);
+  }
+}
+
+function prevStep() {
+  stopPlay();
+  if (currentStep > 0) {
+    currentStep--;
+    replayTo(currentStep);
+  }
+}
+
+function replayTo(target) {
+  let s = initState();
+  for (let i = 0; i <= target; i++) {
+    s = steps[i].action({
+      ...s,
+      exile: [...s.exile],
+      hand: [...s.hand],
+      playerField: [...s.playerField],
+      pile: [...(s.pile || [])],
+      territories: [...s.territories],
+    });
+  }
+  state = s;
+  render();
+}
+
+function resetAll() {
+  stopPlay();
+  document.getElementById("win-overlay").classList.remove("show");
+  currentStep = 0;
+  state = initState();
+  render();
+}
+
+let playTimer = null;
+const PLAY_INTERVAL = 2500;
+
+function togglePlay() {
+  if (playTimer) { stopPlay(); } else { startPlay(); }
+}
+
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止";
+  btn.classList.add("playing");
+  playTimer = setInterval(() => {
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      applyStep(currentStep);
+    } else {
+      stopPlay();
+    }
+  }, PLAY_INTERVAL);
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById("playBtn");
+  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
+}
+
+state = initState();
+render();
+</script>
+</body>
+</html>
