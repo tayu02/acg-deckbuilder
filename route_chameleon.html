@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>カメレオンルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+#higan-counter {
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(100,0,100,0.85); color: #ffaaff;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #cc44cc; z-index: 20;
+}
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.enemy-zone { background: rgba(200,80,80,0.1); border: 1px solid rgba(200,80,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.trash-zone {
+  background: rgba(100,60,20,0.2); border: 1px solid rgba(150,80,30,0.4);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  position: relative; height: 64px;
+}
+.exile-zone {
+  background: rgba(80,20,80,0.2); border: 1px solid rgba(150,50,150,0.4);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.in-trash { opacity: 0.55; filter: grayscale(0.6); border-color: #6a4a2a; }
+.card.exiled { opacity: 0.45; filter: grayscale(0.7); border-color: #6a2a6a; }
+.card.token { border-color: #cc44cc; box-shadow: 0 0 8px 2px rgba(200,50,200,0.4); }
+.card.doomed { border-color: #ff00ff; box-shadow: 0 0 14px 4px #cc00cc; animation: pulse 0.8s ease infinite alternate; }
+
+.higan-badge {
+  position: absolute; top: 2px; left: 0; right: 0;
+  background: rgba(150,0,150,0.92); color: #ffaaff; font-size: 7px; font-weight: bold;
+  padding: 1px 2px; text-align: center; z-index: 10;
+}
+.token-label {
+  position: absolute; bottom: 2px; left: 0; right: 0;
+  background: rgba(100,0,100,0.88); color: #ffaaff; font-size: 6px;
+  padding: 1px 2px; text-align: center; z-index: 10;
+}
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: bold;
+  transition: transform 0.4s, opacity 0.3s;
+}
+.territory-card.used { transform: rotate(90deg); opacity: 0.4; }
+.territory-card.plain  { background: #3a3a1a; border: 1px solid #8a8a4a; color: #ffffaa; }
+.territory-card.mountain { background: #4a2a2a; border: 1px solid #8a4a4a; color: #ffaaaa; }
+.territory-card.water  { background: #1a2a4a; border: 1px solid #4a6a8a; color: #aaccff; }
+.territory-card.forest { background: #1a3a1a; border: 1px solid #4a8a4a; color: #aaffaa; }
+
+
+
+@keyframes pulse {
+  from { opacity: 1; }
+  to { opacity: 0.5; }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🦎 カメレオンルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div id="higan-counter">💀 彼岸カウンター：<span id="higan-count">0</span>個</div>
+
+    <div class="zone-label">相手の戦場</div>
+    <div class="zone enemy-zone" id="enemy-field"></div>
+
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
+
+    <div class="zone-label">領土（平地・山岳・水生・森林 各1以上）</div>
+    <div class="territory-zone" id="territory-area"></div>
+
+    <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:4px;">
+      <div style="flex:1; min-width:0;">
+        <div class="zone-label">トラッシュ</div>
+        <div class="trash-zone" id="trash-area"></div>
+      </div>
+      <div style="flex:1; min-width:0;">
+        <div class="zone-label">除外</div>
+        <div class="exile-zone" id="exile-area"></div>
+      </div>
+    </div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+
+
+<script>
+const IMAGES = {
+  明日色のカメレオン: "https://acgtcg.com/img/ACG-158",
+  カメレオンの永地:   "https://acgtcg.com/img/ACG-162",
+  此岸色のカメレオン: "https://acgtcg.com/img/ACG-163",
+  彼岸色のカメレオン: "https://acgtcg.com/img/ACG-164",
+};
+
+function initState() {
+  return {
+    enemyLife: 20,
+    playerField: ["明日色のカメレオン"],
+    enemyField: [],
+    hand: ["カメレオンの永地"],
+    pile: [],
+    trash: [],
+    exile: [],
+    higanCount: 0,
+    territories: ["平","山","水","森"],
+    usedTerritories: 0,
+  };
+}
+
+const steps = [
+  {
+    title: "初期状態",
+    text: "盤面：明日色のカメレオン<br>手札：カメレオンの永地<br>領土：平地・山岳・水生・森林（各1以上必要）",
+    action: s => s,
+  },
+  {
+    title: "① カメレオンの永地をプレイ",
+    text: "カメレオンの永地をパイルに置いてプレイ。<br>効果：自分の戦場のカメレオン動物1体を生贄に捧げる。<br>→ 明日色のカメレオンを生贄！",
+    action: s => {
+      s.hand = [];
+      s.pile = ["カメレオンの永地"];
+      s.playerField = [];
+      s.trash.push("明日色のカメレオン");
+      s.usedTerritories = 4;
+      return s;
+    },
+    highlight: ["カメレオンの永地", "明日色のカメレオン"],
+  },
+  {
+    title: "② デッキから彼岸色を墓地・此岸色を戦場に",
+    text: "カメレオンの永地の効果：<br>デッキからカメレオン動物カード1枚を探して墓地に置き（彼岸色）<br>デッキからカメレオン動物カード1枚を探して戦場に出す（此岸色）。",
+    action: s => {
+      s.pile = [];
+      s.trash.push("彼岸色のカメレオン");
+      s.playerField.push("此岸色のカメレオン");
+      return s;
+    },
+    highlight: ["此岸色のカメレオン", "彼岸色のカメレオン"],
+  },
+  {
+    title: "③ 此岸色の効果：彼岸色を除外→複製トークンを相手に",
+    text: "此岸色のカメレオンの登場時効果：<br>墓地のカメレオン動物カード1枚（彼岸色）を除外する。<br>→ その複製トークン1体を<b>相手の戦場に出す</b>！",
+    action: s => {
+      s.trash = s.trash.filter(c => c !== "彼岸色のカメレオン");
+      s.exile.push("彼岸色のカメレオン");
+      s.enemyField.push("彼岸色トークン");
+      return s;
+    },
+    highlight: ["此岸色のカメレオン"],
+  },
+  {
+    title: "④ 複製トークンは彼岸色の能力を持つ",
+    text: "彼岸色のカメレオン（複製トークン）の能力：<br>「誘発（戦場）：あなたの日没フェイズ開始時、これに彼岸カウンターが1個以上なら敗北。なければ彼岸カウンターを1個置く。」<br><br>相手の戦場に呪いのトークンが居座ります。",
+    action: s => s,
+    highlight: ["彼岸色トークン"],
+  },
+  {
+    title: "⑤ 相手の1回目の日没フェイズ：彼岸カウンター1個",
+    text: "相手の日没フェイズ開始時、彼岸カウンターが0個なので…<br>→ 彼岸カウンターを1個置く。<br><br>まだ敗北しません。次の日没フェイズが運命の時！",
+    action: s => {
+      s.higanCount = 1;
+      return s;
+    },
+    highlight: ["彼岸色トークン"],
+  },
+  {
+    title: "⑥ 相手の2回目の日没フェイズ：彼岸カウンター1個以上→敗北！",
+    text: "相手の2回目の日没フェイズ開始時、彼岸カウンターが1個以上…<br>→ 相手はゲームに<b>敗北</b>！🏆",
+    action: s => {
+      s.higanCount = 2;
+      return s;
+    },
+    highlight: ["彼岸色トークン"],
+    isWin: true,
+  },
+  {
+    title: "✅ まとめ：カメレオンルートのポイント",
+    text: "【必要なカード】<br>・明日色のカメレオン：生贄要員<br>・カメレオンの永地：彼岸色・此岸色をデッキから展開<br>・此岸色のカメレオン：彼岸色を除外→複製トークンを相手に<br>・彼岸色のカメレオン：トークンとして相手に渡す呪い<br><br>【条件】<br>領土：平地・山岳・水生・森林 各1以上（計4枚）<br><br>【タイムライン】<br>コンボ発動ターン→相手の日没①（カウンター置く）→相手の日没②（敗北）<br>相手は2ターン以内にトークンを除去しなければなりません！",
+    action: s => s,
+  },
+];
+
+let state = {};
+let currentStep = 0;
+
+function makeCard(name, opts = {}) {
+  const div = document.createElement("div");
+  div.className = "card" + (opts.entering ? " entering" : "") + (opts.inTrash ? " in-trash" : "") + (opts.exiled ? " exiled" : "");
+  if (opts.highlighted) div.classList.add("highlighted");
+  if (opts.isToken) div.classList.add("token");
+  if (opts.doomed) div.classList.add("doomed");
+
+  const imgKey = Object.keys(IMAGES).find(k => name.includes(k));
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => {
+      div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";
+      div.textContent = name;
+    };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#cc88cc;text-align:center;padding:2px;background:#1a0a1a;";
+    div.textContent = name;
+  }
+
+  if (opts.isToken) {
+    const b = document.createElement("div");
+    b.className = "token-label";
+    b.textContent = "複製";
+    div.appendChild(b);
+  }
+  if (opts.higanCount > 0) {
+    const b = document.createElement("div");
+    b.className = "higan-badge";
+    b.textContent = `彼岸×${opts.higanCount}`;
+    div.appendChild(b);
+  }
+  return div;
+}
+
+function makeHandCard(name) {
+  const div = document.createElement("div");
+  div.className = "hand-card";
+  const imgKey = Object.keys(IMAGES).find(k => name.includes(k));
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => {
+      div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";
+      div.textContent = name;
+    };
+    div.appendChild(img);
+  }
+  return div;
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const highlights = step.highlight || [];
+
+  document.getElementById("enemy-life-num").textContent = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-bar").style.width = (Math.max(0, s.enemyLife) / 20 * 100) + "%";
+  document.getElementById("higan-count").textContent = s.higanCount;
+
+  // 相手の戦場
+  const ef = document.getElementById("enemy-field");
+  ef.innerHTML = "";
+  s.enemyField.forEach(name => {
+    const isToken = name.includes("トークン");
+    const isHighlighted = highlights.some(h => name.includes(h) || h.includes("彼岸色"));
+    ef.appendChild(makeCard(name, {
+      isToken,
+      highlighted: isHighlighted,
+      higanCount: isToken ? s.higanCount : 0,
+      doomed: isToken && s.higanCount >= 1,
+    }));
+  });
+
+  // 自分の戦場
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  s.playerField.forEach(name => {
+    const isHighlighted = highlights.some(h => name.includes(h));
+    pf.appendChild(makeCard(name, { highlighted: isHighlighted }));
+  });
+
+  // パイル
+  const pa = document.getElementById("pile-area");
+  pa.innerHTML = "";
+  s.pile.forEach(name => {
+    pa.appendChild(makeCard(name, { entering: true, highlighted: true }));
+  });
+
+  // 領土
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  s.territories.forEach((t, i) => {
+    const card = document.createElement("div");
+    const typeClass = t === "平" ? " plain" : t === "山" ? " mountain" : t === "水" ? " water" : " forest";
+    card.className = "territory-card" + typeClass + (i < s.usedTerritories ? " used" : "");
+    card.textContent = t;
+    ta.appendChild(card);
+  });
+
+  // トラッシュ
+  const tr = document.getElementById("trash-area");
+  tr.innerHTML = "";
+  s.trash.forEach((name, idx) => {
+    const el = makeCard(name, { inTrash: true });
+    el.style.position = "absolute";
+    el.style.left = (5 + idx * 12) + "px";
+    el.style.top = "4px";
+    el.style.zIndex = idx + 1;
+    tr.appendChild(el);
+  });
+
+  // 除外
+  const ea = document.getElementById("exile-area");
+  ea.innerHTML = "";
+  s.exile.forEach(name => {
+    ea.appendChild(makeCard(name, { exiled: true }));
+  });
+
+  // 手札
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  s.hand.forEach(name => ha.appendChild(makeHandCard(name)));
+
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+
+  const badge = document.getElementById("loop-badge");
+  if (step.isWin) {
+    badge.style.cssText = "display:block;background:#3a0a3a;color:#ffaaff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #cc44cc;";
+    badge.textContent = "💀 相手が敗北！";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function applyStep(idx) {
+  const step = steps[idx];
+  state = step.action({
+    ...state,
+    trash: [...state.trash],
+    exile: [...state.exile],
+    hand: [...state.hand],
+    playerField: [...state.playerField],
+    enemyField: [...state.enemyField],
+    pile: [...(state.pile || [])],
+    territories: [...state.territories],
+  });
+  render();
+}
+
+function nextStep() {
+  stopPlay();
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    applyStep(currentStep);
+  }
+}
+
+function prevStep() {
+  stopPlay();
+  if (currentStep > 0) {
+    currentStep--;
+    replayTo(currentStep);
+  }
+}
+
+function replayTo(target) {
+  let s = initState();
+  for (let i = 0; i <= target; i++) {
+    s = steps[i].action({
+      ...s,
+      trash: [...s.trash],
+      exile: [...s.exile],
+      hand: [...s.hand],
+      playerField: [...s.playerField],
+      enemyField: [...s.enemyField],
+      pile: [...(s.pile || [])],
+      territories: [...s.territories],
+    });
+  }
+  state = s;
+  render();
+}
+
+function resetAll() {
+  stopPlay();
+  currentStep = 0;
+  state = initState();
+  render();
+}
+
+let playTimer = null;
+const PLAY_INTERVAL = 2500;
+
+function togglePlay() {
+  if (playTimer) { stopPlay(); } else { startPlay(); }
+}
+
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止";
+  btn.classList.add("playing");
+  playTimer = setInterval(() => {
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      applyStep(currentStep);
+    } else {
+      stopPlay();
+    }
+  }, PLAY_INTERVAL);
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById("playBtn");
+  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
+}
+
+state = initState();
+render();
+</script>
+</body>
+</html>
