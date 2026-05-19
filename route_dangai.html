@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>断崖ルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.player.danger { background: #ff4444; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+#extra-turn-badge {
+  display: none;
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(100,0,150,0.9); color: #ffaaff;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #cc44ff; z-index: 20;
+  animation: pulse 0.8s ease infinite alternate;
+}
+@keyframes pulse { from { opacity:1; } to { opacity:0.5; } }
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.grave-zone {
+  background: rgba(60,40,20,0.3); border: 1px solid rgba(120,80,40,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap;
+}
+.exile-zone {
+  background: rgba(80,20,80,0.2); border: 1px solid rgba(150,50,150,0.4);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap;
+}
+
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.grave { opacity: 0.55; filter: grayscale(0.6); border-color: #6a4a2a; }
+.card.exiled { opacity: 0.4; filter: grayscale(0.7); border-color: #6a2a6a; }
+.card.agile { border-color: #00ffcc; box-shadow: 0 0 10px 2px rgba(0,255,200,0.5); }
+
+.agile-badge {
+  position: absolute; top: 2px; left: 0; right: 0;
+  background: rgba(0,150,120,0.92); color: #aaffee; font-size: 6px; font-weight: bold;
+  padding: 1px 2px; text-align: center; z-index: 10;
+}
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🪃 断崖ルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div id="extra-turn-badge">⚡ エクストラターン！</div>
+
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
+
+    <div style="display:flex; gap:8px; margin-bottom:4px;">
+      <div style="flex:1;">
+        <div class="zone-label">墓地</div>
+        <div class="grave-zone" id="grave-area"></div>
+      </div>
+      <div style="flex:1;">
+        <div class="zone-label">除外</div>
+        <div class="exile-zone" id="exile-area"></div>
+      </div>
+    </div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+const IMAGES = {
+  命削りの運び屋: "https://acgtcg.com/img/ACG-139",
+  火速足袋:       "https://acgtcg.com/img/ACG-140",
+  希望漁り:       "https://acgtcg.com/img/ACG-141",
+  断崖を背に:     "https://acgtcg.com/img/ACG-142",
+};
+
+function initState() {
+  return {
+    playerLife: 20,
+    enemyLife: 20,
+    field: ["命削りの運び屋"],
+    hand: ["希望漁り", "火速足袋"],
+    grave: [],
+    exile: [],
+    pile: [],
+    extraTurn: false,
+    dangaiAgile: false,
+  };
+}
+
+const steps = [
+  {
+    title: "初期状態",
+    text: "戦場：命削りの運び屋（ウェイク）<br>手札：希望漁り・火速足袋<br><br>このルートは無限ターンを獲得し、別の手段で勝利します。",
+    action: s => s,
+  },
+  {
+    title: "① 命削りの運び屋をムーブ→ライフを1に",
+    text: "命削りの運び屋の起動（戦場）：ムーブして任意の量のライフを支払う。<br>→ ライフを19点支払って自分のライフを1に！<br>これで希望漁りの条件（ライフ1点）が整います。",
+    action: s => {
+      s.field = s.field.map(c => c === "命削りの運び屋" ? "命削りの運び屋_muted" : c);
+      s.playerLife = 1;
+      return s;
+    },
+    highlight: ["命削りの運び屋"],
+  },
+  {
+    title: "② 希望漁りをプレイ→「断崖を背に」を宣言",
+    text: "希望漁りをプレイ。<br>固有効果：場面カードの名前を宣言→「断崖を背に」を宣言！<br>ライフが1点なら宣言した場面カードのコストを無視できます。<br>また日没フェイズ開始時にその場面カードを手札に回収できます。",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "希望漁り");
+      s.field.push("希望漁り");
+      return s;
+    },
+    highlight: ["希望漁り"],
+  },
+  {
+    title: "③ 火速足袋をプレイ",
+    text: "火速足袋をプレイして戦場に出します。<br>（この時点では起動は使いません）<br>日没フェイズまで待ちます。",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "火速足袋");
+      s.field.push("火速足袋");
+      return s;
+    },
+    highlight: ["火速足袋"],
+  },
+  {
+    title: "④ 日没フェイズ：希望漁りの誘発→断崖を背にを手札へ",
+    text: "日没フェイズ開始時、希望漁りの誘発が発動。<br>ライフが1点なので→デッキ・墓地・除外から「断崖を背に」を手札に加えます！",
+    action: s => {
+      s.hand.push("断崖を背に");
+      return s;
+    },
+    highlight: ["希望漁り", "断崖を背に"],
+  },
+  {
+    title: "⑤ エクストラターン開始！火速足袋の起動→断崖を背にに《敏捷》",
+    text: "追加ターン開始（★）<br>火速足袋の起動（あなたのターン中のみ）：ムーブして生贄に→手札の動物以外のカード1枚に《敏捷》を付与。<br>→ 手札の「断崖を背に」に《敏捷》！<br>《敏捷》はプレイしてすぐ使える状態になる効果です。",
+    action: s => {
+      s.field = s.field.filter(c => c !== "火速足袋");
+      s.grave.push("火速足袋");
+      s.dangaiAgile = true;
+      s.extraTurn = true;
+      return s;
+    },
+    highlight: ["火速足袋", "断崖を背に"],
+    isLoop: true,
+  },
+  {
+    title: "⑥ 断崖を背にをコスト0でプレイ！",
+    text: "希望漁りの効果でコストを無視してプレイ！<br>断崖を背にの効果：<br>①墓地のカード1枚を手札に加える→火速足袋を回収！<br>②このターンの後、追加の1ターンを得る<br>③断崖を背には除外される",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "断崖を背に");
+      s.grave = s.grave.filter(c => c !== "火速足袋");
+      s.hand.push("火速足袋");
+      s.exile.push("断崖を背に");
+      s.dangaiAgile = false;
+      return s;
+    },
+    highlight: ["断崖を背に", "火速足袋"],
+    isLoop: true,
+  },
+  {
+    title: "⑦ また追加ターン→日没に断崖を背にを回収→無限ループ！",
+    text: "追加ターンの日没フェイズ：希望漁りの誘発が再び発動！<br>除外領域にある「断崖を背に」を手札に回収。<br>→ 追加ターン開始（★に戻る）<br><br>火速足袋→断崖を背に→追加ターン→回収→繰り返し…<br><b>無限ターン確定！</b>",
+    action: s => {
+      s.exile = s.exile.filter(c => c !== "断崖を背に");
+      s.hand.push("断崖を背に");
+      return s;
+    },
+    highlight: ["希望漁り", "断崖を背に"],
+    isLoop: true,
+  },
+  {
+    title: "✅ まとめ：断崖ルートのポイント",
+    text: "【必要カード】<br>・命削りの運び屋：ライフを1に下げる<br>・希望漁り：ライフ1点で断崖を背にを毎日没回収＋コスト無視<br>・火速足袋：断崖を背にに《敏捷》を付与してすぐ使えるように<br>・断崖を背に：墓地から火速足袋を回収＋追加ターン獲得<br><br>【ループの要点】<br>追加ターンも「自分のターン」なので火速足袋のターン限定起動が使える！<br>断崖を背にが除外→日没に希望漁りが回収してくれる！<br><br>【無限ターン後の勝ち方】<br>別の手段（ビートダウン・バーンなど）で勝利してください。",
+    action: s => { s.extraTurn = false; return s; },
+  },
+];
+
+let state = {}, currentStep = 0;
+
+function getImg(name) {
+  const base = name.replace("_muted","");
+  return Object.keys(IMAGES).find(k => base.includes(k));
+}
+
+function makeCard(name, opts = {}) {
+  const isMuted = name.includes("_muted");
+  const base = name.replace("_muted","");
+  const div = document.createElement("div");
+  div.className = "card" + (isMuted ? " muted" : "") + (opts.highlighted ? " highlighted" : "") + (opts.grave ? " grave" : "") + (opts.exiled ? " exiled" : "") + (opts.agile ? " agile" : "");
+
+  const imgKey = getImg(name);
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => { div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;"; div.textContent=base; };
+    div.appendChild(img);
+  } else {
+    div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;background:#2a3a4a;";
+    div.textContent = base;
+  }
+
+  if (opts.agile) {
+    const b = document.createElement("div");
+    b.className = "agile-badge";
+    b.textContent = "《敏捷》";
+    div.appendChild(b);
+  }
+  return div;
+}
+
+function makeHandCard(name, agile) {
+  const div = document.createElement("div");
+  div.className = "hand-card" + (agile ? " agile" : "");
+  const imgKey = getImg(name);
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => { div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;"; div.textContent=name; };
+    div.appendChild(img);
+  } else {
+    div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";
+    div.textContent = name;
+  }
+  return div;
+}
+
+function render() {
+  const s = state, step = steps[currentStep], hl = step.highlight || [];
+
+  document.getElementById("player-life-num").textContent = s.playerLife;
+  document.getElementById("player-life-bar").style.width = (s.playerLife / 20 * 100) + "%";
+  document.getElementById("player-life-bar").className = "life-fill player" + (s.playerLife <= 1 ? " danger" : "");
+  document.getElementById("enemy-life-num").textContent = s.enemyLife;
+  document.getElementById("enemy-life-bar").style.width = (s.enemyLife / 20 * 100) + "%";
+
+  const etb = document.getElementById("extra-turn-badge");
+  etb.style.display = s.extraTurn ? "block" : "none";
+
+  const pf = document.getElementById("player-field"); pf.innerHTML = "";
+  s.field.forEach(name => {
+    const base = name.replace("_muted","");
+    const isHl = hl.some(h => base.includes(h) || h.includes(base));
+    pf.appendChild(makeCard(name, { highlighted: isHl }));
+  });
+
+  const pa = document.getElementById("pile-area"); pa.innerHTML = "";
+  (s.pile||[]).forEach(e => {
+    const el = document.createElement("div");
+    el.style.cssText = "background:rgba(80,70,0,0.7);border:1px solid #aa9900;border-radius:6px;padding:3px 6px;font-size:10px;color:#ffee88;";
+    el.textContent = "▶ " + e; pa.appendChild(el);
+  });
+
+  const ga = document.getElementById("grave-area"); ga.innerHTML = "";
+  s.grave.forEach(name => ga.appendChild(makeCard(name, { grave: true })));
+
+  const ea = document.getElementById("exile-area"); ea.innerHTML = "";
+  s.exile.forEach(name => ea.appendChild(makeCard(name, { exiled: true })));
+
+  const ha = document.getElementById("hand-area"); ha.innerHTML = "";
+  s.hand.forEach(name => {
+    const isAgile = name === "断崖を背に" && s.dangaiAgile;
+    ha.appendChild(makeHandCard(name, isAgile));
+  });
+
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep+1} / ${steps.length}`;
+
+  const badge = document.getElementById("loop-badge");
+  if (step.isLoop) {
+    badge.style.cssText = "display:block;background:#3a0a5a;color:#ffaaff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #cc44ff;";
+    badge.textContent = "🔁 無限ターンループ！";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function deepCopy(s) {
+  return { ...s, field:[...s.field], hand:[...s.hand], grave:[...s.grave], exile:[...s.exile], pile:[...(s.pile||[])] };
+}
+
+function applyStep(idx) {
+  state = steps[idx].action(deepCopy(state));
+  render();
+}
+
+function nextStep() { stopPlay(); if (currentStep < steps.length-1) { currentStep++; applyStep(currentStep); } }
+function prevStep() {
+  stopPlay();
+  if (currentStep > 0) {
+    currentStep--;
+    let s = initState();
+    for (let i = 0; i <= currentStep; i++) s = steps[i].action(deepCopy(s));
+    state = s; render();
+  }
+}
+function resetAll() { stopPlay(); currentStep=0; state=initState(); render(); }
+
+let playTimer = null;
+const PLAY_INTERVAL = 2500;
+function togglePlay() { if (playTimer) { stopPlay(); } else { startPlay(); } }
+function startPlay() { const btn=document.getElementById("playBtn"); btn.textContent="⏸ 停止"; btn.classList.add("playing"); playTimer=setInterval(()=>{ if(currentStep<steps.length-1){currentStep++;applyStep(currentStep);}else{stopPlay();} },PLAY_INTERVAL); }
+function stopPlay() { if(playTimer){clearInterval(playTimer);playTimer=null;} const btn=document.getElementById("playBtn"); if(btn){btn.textContent="▶ 再生";btn.classList.remove("playing");} }
+
+state = initState();
+render();
+</script>
+</body>
+</html>
