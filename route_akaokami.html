@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赤狼ルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+#dmg-counter {
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(150,40,0,0.9); color: #ffddaa;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #ff6600; z-index: 20;
+}
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; min-height: 70px; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.grave-zone {
+  background: rgba(60,40,20,0.3); border: 1px solid rgba(120,80,40,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 64px; position: relative;
+}
+.exile-zone {
+  background: rgba(80,20,80,0.2); border: 1px solid rgba(150,50,150,0.4);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap;
+}
+
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.grave { opacity: 0.55; filter: grayscale(0.5); border-color: #6a4a2a; }
+.card.exiled { opacity: 0.4; filter: grayscale(0.7); border-color: #6a2a6a; }
+.card.powered { border-color: #ff6600; box-shadow: 0 0 10px 3px rgba(255,100,0,0.5); }
+
+.atk-badge {
+  position: absolute; top: 2px; left: 0; right: 0;
+  background: rgba(180,50,0,0.92); color: #ffddaa; font-size: 7px; font-weight: bold;
+  padding: 1px 2px; text-align: center; z-index: 10;
+}
+.num-badge {
+  position: absolute; bottom: 2px; right: 2px;
+  background: rgba(0,80,150,0.9); color: #aaddff; font-size: 8px; font-weight: bold;
+  padding: 1px 3px; border-radius: 3px; z-index: 10;
+}
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: bold;
+  transition: transform 0.4s, opacity 0.3s;
+}
+.territory-card.used { transform: rotate(90deg); opacity: 0.4; }
+.territory-card.mountain { background: #4a2a2a; border: 1px solid #8a4a4a; color: #ffaaaa; }
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.damage-float {
+  position: fixed; font-size: 22px; font-weight: bold;
+  pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
+}
+.damage-float.enemy-dmg { color: #ff4444; text-shadow: 0 0 12px #ff0000; }
+
+@keyframes floatUp {
+  0% { opacity:1; transform:translateY(0) scale(1.3); }
+  100% { opacity:0; transform:translateY(-60px) scale(0.8); }
+}
+@keyframes slideIn {
+  from { opacity:0; transform:translateY(-14px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge { display:none; font-size:13px; font-weight:bold; padding:5px 14px; border-radius:20px; margin-top:8px; text-align:center; }
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🐺 赤狼ルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div id="dmg-counter">🔥 累計：<span id="dmg-count">0</span>点</div>
+
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
+
+    <div class="zone-label">領土（山岳）</div>
+    <div class="territory-zone" id="territory-area"></div>
+
+    <div style="display:flex; gap:6px; margin-bottom:4px;">
+      <div style="flex:1;">
+        <div class="zone-label">墓地</div>
+        <div class="grave-zone" id="grave-area"></div>
+      </div>
+      <div style="flex:1;">
+        <div class="zone-label">除外</div>
+        <div class="exile-zone" id="exile-area"></div>
+      </div>
+    </div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+  <div id="loop-badge"></div>
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+const IMAGES = {
+  執念深い追跡者: "https://acgtcg.com/img/BP3-024",
+  爆炎:           "https://acgtcg.com/img/BP2-049",
+  襲撃:           "https://acgtcg.com/img/ACG-099",
+  燻るマグマ:     "https://acgtcg.com/img/ACG-054",
+};
+
+// ダメージ内訳
+// 爆炎+追跡者アタック: 6点 (ATK4+2突破)
+// 燻るマグマ×2プレイ: 4点
+// 追跡者起動アタック: 5点 (ATK5+突破、領土-2でATK-1)
+// マグマ×2墓地起動: 4点
+// 爆炎墓地起動: 3点
+// 合計: 22点
+
+function initState() {
+  return {
+    enemyLife: 20,
+    field: [],
+    hand: ["襲撃", "執念深い追跡者", "爆炎", "燻るマグマ①", "燻るマグマ②"],
+    grave: [],
+    exile: [],
+    pile: [],
+    mutedCards: [],
+    territories: ["山","山","山","山"],
+    usedTerr: 0,
+    dmg: 0,
+    trackerAtk: 4,
+  };
+}
+
+const steps = [
+  {
+    title: "初期状態",
+    text: "手札：襲撃・執念深い追跡者・爆炎・燻るマグマ×2<br>領土：山岳×4<br><br>動物は出したターンに攻撃できません。<br>襲撃を使うことで追跡者に《駿足》を付与し、即アタックを可能にします！",
+    action: s => s,
+  },
+  {
+    title: "① 襲撃をプレイ→執念深い追跡者を《駿足》付きで展開！",
+    text: "襲撃の効果：山岳域の数X以下のコストの山岳動物を手札から戦場に出す。その動物は《駿足》を得る。<br>→ 追跡者（ATK4）が《駿足》付きで登場！行動待機なしで即アタックできます。",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "襲撃" && h !== "執念深い追跡者");
+      s.field.push("執念深い追跡者");
+      s.usedTerr = 1;
+      s.trackerAtk = 4;
+      return s;
+    },
+    highlight: ["襲撃", "執念深い追跡者"],
+  },
+  {
+    title: "② 爆炎を追跡者に装備→ATK+2でATK6・突破を得る",
+    text: "爆炎をプレイ：追跡者にATK+2/DEF+1と《突破》を付与。<br>→ 追跡者がATK6・突破に！",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "爆炎");
+      s.field = s.field.map(c => c === "執念深い追跡者" ? "執念深い追跡者+爆炎" : c);
+      s.trackerAtk = 6;
+      s.usedTerr = 2;  // 爆炎コスト1（山岳1枚）
+      return s;
+    },
+    highlight: ["執念深い追跡者+爆炎", "爆炎"],
+  },
+  {
+    title: "③ 追跡者でアタック→6点ダメージ！（相手14点）",
+    text: "ATK6・《突破》の追跡者でアタック！<br>防御されても突破で6点、素通りでも6点。<br>→ 相手ライフ14点",
+    action: s => {
+      s.field = s.field.map(c => c.includes("追跡者") ? c + "_muted" : c);
+      s.enemyLife -= 6;
+      s.dmg += 6;
+      return s;
+    },
+    damage: 6,
+    highlight: ["執念深い追跡者+爆炎"],
+  },
+  {
+    title: "④ 燻るマグマ①をプレイ→2点バーン（相手12点）",
+    text: "燻るマグマをプレイ：任意の対象1つに2点ダメージ。<br>→ 相手に直接2点！（相手ライフ12点）",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "燻るマグマ①");
+      s.grave.push("燻るマグマ①");
+      s.usedTerr = (s.usedTerr||0) + 1;  // コスト1（山岳1枚）
+      s.enemyLife -= 2;
+      s.dmg += 2;
+      return s;
+    },
+    damage: 2,
+    highlight: ["燻るマグマ①"],
+  },
+  {
+    title: "⑤ 燻るマグマ②をプレイ→2点バーン（相手10点）",
+    text: "2枚目の燻るマグマをプレイ：さらに2点！<br>→ 相手ライフ10点",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "燻るマグマ②");
+      s.grave.push("燻るマグマ②");
+      s.usedTerr = (s.usedTerr||0) + 1;  // コスト1（山岳1枚）
+      s.enemyLife -= 2;
+      s.dmg += 2;
+      return s;
+    },
+    damage: 2,
+    highlight: ["燻るマグマ②"],
+  },
+  {
+    title: "⑥ 追跡者の起動：領土2つを生贄にウェイク＆ATK-1→ATK5で再アタック！（相手5点）",
+    text: "追跡者の起動効果：すでにムーブ（使用済み）の領土2つを墓地に送って追跡者をウェイク、このターンATK-1。<br>コストで使ったムーブ済み領土をそのまま活用できます！<br>→ ATK5・《突破》で再アタック！5点ダメージ（相手ライフ5点）",
+    action: s => {
+      s.field = s.field.map(c => c.includes("追跡者") ? c.replace("_muted","") + "_muted" : c);
+      // ムーブ済み領土2枚を墓地へ（territories総数から2枚削除）
+      s.territories = s.territories.slice(2);
+      s.usedTerr = Math.max(0, s.usedTerr - 2);
+      s.trackerAtk = 5;
+      s.enemyLife -= 5;
+      s.dmg += 5;
+      return s;
+    },
+    damage: 5,
+    highlight: ["執念深い追跡者+爆炎"],
+  },
+  {
+    title: "⑦ 燻るマグマ×2の墓地起動→各2点バーン（計4点、相手1点）",
+    text: "燻るマグマの墓地起動：墓地の山岳領土1枚とこれを除外→相手に2点ダメージ。<br>追跡者の起動で墓地に送った領土2枚を燃料として活用！<br>→ マグマ2枚で計4点！（相手ライフ1点）",
+    action: s => {
+      s.grave = s.grave.filter(c => !c.includes("マグマ"));
+      // 追跡者が墓地送りにした領土2枚も除外に使用
+      s.exile.push("燻るマグマ①", "燻るマグマ②", "山岳領土①", "山岳領土②");
+      s.enemyLife -= 4;
+      s.dmg += 4;
+      return s;
+    },
+    damage: 4,
+    highlight: ["燻るマグマ①", "燻るマグマ②"],
+  },
+  {
+    title: "⑧ 爆炎の墓地起動→3点バーンでフィニッシュ！（相手0点）",
+    text: "爆炎の墓地起動：山岳領土とこれを除外→相手に2点ダメージ。<br>さらに追跡者に装備していた爆炎の墓地起動で3点！<br>→ 相手ライフ0点！🏆",
+    action: s => {
+      s.exile.push("爆炎");
+      s.enemyLife = 0;
+      s.dmg += 3;
+      return s;
+    },
+    damage: 3,
+    highlight: ["爆炎"],
+  },
+  {
+    title: "✅ まとめ：赤狼ルートのダメージ内訳",
+    text: "【ダメージ内訳】<br>①爆炎装備追跡者アタック：<b>6点</b><br>②燻るマグマ×2プレイ：<b>4点</b><br>③追跡者起動再アタック（ATK5）：<b>5点</b><br>④燻るマグマ×2墓地起動：<b>4点</b><br>⑤爆炎墓地起動：<b>3点</b><br>合計：<b>22点でワンショット！</b><br><br>【発展】爆炎の墓地起動を増やすか、赤狼（救助する森狼）で追跡者を連続アタックさせてから爆炎起動でもフィニッシュ可能！",
+    action: s => s,
+  },
+];
+
+let state={}, currentStep=0;
+
+function getImg(name) {
+  const base = name.replace("+爆炎","").replace("_muted","").replace("①","").replace("②","");
+  return IMAGES[base] || null;
+}
+
+function makeCard(name, opts={}) {
+  const isMuted = name.includes("_muted") || (opts.mutedCards||[]).includes(name);
+  const isPowered = name.includes("+爆炎");
+  const div = document.createElement("div");
+  div.className = "card"
+    + (isMuted ? " muted" : "")
+    + (isPowered ? " powered" : "")
+    + (opts.grave ? " grave" : "")
+    + (opts.exiled ? " exiled" : "")
+    + (opts.highlighted ? " highlighted" : "");
+
+  const url = getImg(name);
+  if (url) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.onerror = () => {
+      div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";
+      div.textContent = name.replace("_muted","").replace("+爆炎","");
+    };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;background:#2a3a4a;";
+    div.textContent = name.replace("_muted","");
+  }
+
+  if (isPowered) {
+    const b = document.createElement("div");
+    b.className = "atk-badge";
+    b.textContent = `ATK${opts.trackerAtk||6} 突破`;
+    div.appendChild(b);
+  }
+
+  const num = name.includes("①") ? "①" : name.includes("②") ? "②" : null;
+  if (num) {
+    const b = document.createElement("div");
+    b.className = "num-badge";
+    b.textContent = num;
+    div.appendChild(b);
+  }
+
+  return div;
+}
+
+function showDamage(amount) {
+  setTimeout(() => {
+    const el = document.createElement("div");
+    el.className = "damage-float enemy-dmg";
+    el.textContent = `-${amount}点`;
+    const rect = document.getElementById("enemy-life-bar").getBoundingClientRect();
+    el.style.left = (rect.left + rect.width/2 - 25) + "px";
+    el.style.top = (window.scrollY + rect.top - 10) + "px";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }, 400);
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const hl = step.highlight || [];
+
+  document.getElementById("player-life-num").textContent = s.playerLife;
+  document.getElementById("player-life-bar").style.width = (s.playerLife/20*100)+"%";
+  document.getElementById("enemy-life-num").textContent = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-bar").style.width = (Math.max(0,s.enemyLife)/20*100)+"%";
+  document.getElementById("dmg-count").textContent = s.dmg;
+
+  // 戦場
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  s.field.forEach(name => {
+    const base = name.replace("_muted","").replace("+爆炎","");
+    const isHl = hl.some(h => name.includes(h.replace("+爆炎","")) || h.includes(base));
+    pf.appendChild(makeCard(name, {highlighted:isHl, trackerAtk:s.trackerAtk}));
+  });
+
+  // パイル
+  const pa = document.getElementById("pile-area");
+  pa.innerHTML = "";
+  (s.pile||[]).forEach(e => {
+    const el = document.createElement("div");
+    el.style.cssText = "background:rgba(80,70,0,0.7);border:1px solid #aa9900;border-radius:6px;padding:3px 6px;font-size:10px;color:#ffee88;";
+    el.textContent = "▶ "+e; pa.appendChild(el);
+  });
+
+  // 領土
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  s.territories.forEach((t,i) => {
+    const card = document.createElement("div");
+    card.className = "territory-card mountain" + (i < s.usedTerr ? " used" : "");
+    card.textContent = t;
+    ta.appendChild(card);
+  });
+
+  // 墓地
+  const ga = document.getElementById("grave-area");
+  ga.innerHTML = "";
+  s.grave.forEach((name,i) => {
+    const el = makeCard(name, {grave:true});
+    el.style.position = "absolute";
+    el.style.left = (4+i*10)+"px";
+    el.style.top = "4px";
+    el.style.zIndex = i+1;
+    ga.appendChild(el);
+  });
+
+  // 除外
+  const ea = document.getElementById("exile-area");
+  ea.innerHTML = "";
+  s.exile.forEach(name => ea.appendChild(makeCard(name, {exiled:true})));
+
+  // 手札
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  s.hand.forEach(name => {
+    const div = document.createElement("div");
+    div.className = "hand-card";
+    const url = getImg(name);
+    if (url) {
+      const img = document.createElement("img");
+      img.src = url;
+      img.onerror = () => { div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;"; div.textContent=name; };
+      div.appendChild(img);
+    }
+    const num = name.includes("①")?"①":name.includes("②")?"②":null;
+    if (num) {
+      const b = document.createElement("div");
+      b.style.cssText="position:absolute;bottom:2px;right:2px;background:rgba(0,80,150,0.9);color:#aaddff;font-size:8px;font-weight:bold;padding:1px 3px;border-radius:3px;z-index:10;";
+      b.textContent=num; div.style.position="relative"; div.appendChild(b);
+    }
+    ha.appendChild(div);
+  });
+
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep+1} / ${steps.length}`;
+
+  const badge = document.getElementById("loop-badge");
+  badge.style.display = "none";
+}
+
+function deepCopy(s) {
+  return {...s,
+    field:[...s.field], hand:[...s.hand],
+    grave:[...s.grave], exile:[...s.exile],
+    pile:[...(s.pile||[])],
+    territories:[...s.territories],
+    mutedCards:[...(s.mutedCards||[])],
+  };
+}
+
+function applyStep(idx) {
+  state = steps[idx].action(deepCopy(state));
+  if (steps[idx].damage) showDamage(steps[idx].damage);
+  render();
+}
+
+function nextStep() { stopPlay(); if(currentStep<steps.length-1){currentStep++;applyStep(currentStep);} }
+function prevStep() {
+  stopPlay();
+  if(currentStep>0){
+    currentStep--;
+    let s=initState();
+    for(let i=0;i<=currentStep;i++) s=steps[i].action(deepCopy(s));
+    state=s; render();
+  }
+}
+function resetAll() { stopPlay(); currentStep=0; state=initState(); render(); }
+
+let playTimer=null;
+const PLAY_INTERVAL=2500;
+function togglePlay(){ if(playTimer){stopPlay();}else{startPlay();} }
+function startPlay(){
+  const btn=document.getElementById("playBtn");
+  btn.textContent="⏸ 停止"; btn.classList.add("playing");
+  playTimer=setInterval(()=>{ if(currentStep<steps.length-1){currentStep++;applyStep(currentStep);}else{stopPlay();} },PLAY_INTERVAL);
+}
+function stopPlay(){
+  if(playTimer){clearInterval(playTimer);playTimer=null;}
+  const btn=document.getElementById("playBtn");
+  if(btn){btn.textContent="▶ 再生";btn.classList.remove("playing");}
+}
+
+state=initState();
+render();
+</script>
+</body>
+</html>
