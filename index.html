@@ -137,6 +137,7 @@
       <option value="ガラクタルート">ガラクタルート</option>
       <option value="カメレオンルート">カメレオンルート</option>
       <option value="ガルダルート">ガルダルート</option>
+      <option value="バッファロールート">バッファロールート</option>
     </select>
     <select id="searchSet" class="stat-select">
       <option value="">発売弾</option>
@@ -430,7 +431,9 @@ const cards = [
 {"code":"BP2-055","name":"静寂の石像","type":"道具","tribe":"","stats":"","cost":"2","condition":"平","effect":"起動：ムーブ＋生贄で誘発/起動効果1つを妨害。","route_search":[],"general_effect":["妨害"],"reading":"せいじゃくのせきぞう","image":"https://acgtcg.com/img/BP2-055"},
 {"code":"BP2-056","name":"再会","type":"場面","tribe":"","stats":"","cost":"2","condition":"平平平","effect":"固有：プレイ時に手札1枚を捨ければコスト①軽減。プレイ：墓地の動物2枚を手札に戻す。","route_search":[],"general_effect":["サーチ"],"reading":"さいかい","image":"https://acgtcg.com/img/BP2-056"},
 {"code":"BP2-057","name":"孔雀の魅了","type":"特技","tribe":"クジャク","stats":"","cost":"3","condition":"平","effect":"プレイ：パイル上の効果を持つコスト2以下の存在1つを破壊。","route_search":[],"general_effect":["除去"],"reading":"くじゃくのみりょう","image":"https://acgtcg.com/img/BP2-057"},
-{"code":"BP2-058","name":"先駆けの白馬","type":"動物","tribe":"ウマ","stats":"ATK 1／DEF 1","cost":"1","condition":"山","effect":"《バッファロー軍》。","route_search":[],"general_effect":[],"reading":"さきがけのはくば","image":"https://acgtcg.com/img/BP2-058"},
+{"code":"BP2-058","name":"先駆けの白馬","type":"動物","tribe":"ウマ","stats":"ATK 1／DEF 1","cost":"1","condition":"山","effect":"《バッファロー軍》
+【誘発（戦場）】これが相手に戦闘ダメージを与えた時、あなたの手札のカード1枚を捨てて発動してもよい。あなたのデッキから《唯一》と《バッファロー軍》を持つ動物カード1枚を探して除外する。ターン終了時まで、あなたはこの効果で除外したカードをコストをⓧ軽減してプレイしてもよい。Xは戦場のこの動物のATKの値に等しい。
+【起動（墓地）】あなたの墓地のこれを除外して、あなたの戦場の《唯一》と《バッファロー軍》を持つ動物1体を対象に発動する。ターン終了時まで、それは《駿足》を得る。","route_search":["バッファロールート"],"general_effect":[],"reading":"さきがけのはくば","image":"https://acgtcg.com/img/BP2-058"},
 {"code":"BP2-059","name":"統治する猟犬","type":"動物","tribe":"イヌ","stats":"ATK 1／DEF 2","cost":"1","condition":"山山","effect":"常時：1ターンに1度しかプレイできない。常時：防御不可。","route_search":[],"general_effect":["ビートバーン"],"reading":"とうちするりょうけん","image":"https://acgtcg.com/img/BP2-059"},
 {"code":"BP2-060","name":"燃え山羊","type":"動物","tribe":"ヤギ","stats":"ATK 3／DEF 2","cost":"2","condition":"山山","effect":"誘発：攻撃時、任意の1つに1点ダメージ。","route_search":[],"general_effect":["ビートバーン"],"reading":"もえやぎ","image":"https://acgtcg.com/img/BP2-060"},
 {"code":"BP2-061","name":"灼熱の石像","type":"道具","tribe":"","stats":"","cost":"2","condition":"山","effect":"起動：ムーブ＋生贄でコスト1以下の縄張り/道具1つを破壊。","route_search":[],"general_effect":["除去"],"reading":"しゃくねつのせきぞう","image":"https://acgtcg.com/img/BP2-061"},
@@ -623,20 +626,38 @@ const cards = [
 {"code":"剣士-ACG-088","name":"脱獄","type":"特技","tribe":"","stats":"","cost":"1","condition":"平／夜","effect":"プレイ：あなたのデッキからコスト1以下の動物カード1枚を探して手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"だつごく","image":"https://acgtcg.com/img/ACG-088"},
 {"code":"剣士-ACG-089","name":"闇夜の工作","type":"特技","tribe":"","stats":"","cost":"1","condition":"夜","effect":"プレイ：戦場のコスト2以下の縄張りか道具1つを除外する。","route_search":[],"general_effect":["除去"],"reading":"やみよのこうさく","image":"https://acgtcg.com/img/ACG-089"},
 {"code":"剣士-ACG-090","name":"帰巣本能","type":"特技","tribe":"","stats":"","cost":"0","condition":"森森","effect":"プレイ：あなたの戦場の動物1体を手札に戻す。","route_search":[],"general_effect":["バウンス"],"reading":"きそうほんのう","image":"https://acgtcg.com/img/ACG-090"},
-{"code":"パン田-ACG-091","name":"少将バッファロー","type":"動物","tribe":"バッファロー","stats":"ATK 2／DEF 2","cost":"3","condition":"山山","effect":"《バッファロー軍》《唯一》《突破》 誘発（戦場）：これが攻撃した時、デッキから「勲章」を含むカード1枚を探して墓地に置く。墓地に置いたなら、ターン終了時まで、これはATK+2/DEF+2を得る。誘発（墓地）：これが戦場から墓地に置かれた時、墓地の「勲章」カード2枚を除外して、デッキから《バッファロー軍》カード1枚を探して手札に加える。","route_search":[],"general_effect":["バフ","サーチ"],"reading":"しょうしょうばっふぁろー","image":"https://acgtcg.com/img/ACG-091"},
-{"code":"パン田-ACG-092","name":"隻腕の大将バッファロー","type":"動物","tribe":"バッファロー","stats":"ATK 6／DEF 6","cost":"6","condition":"山山山山","effect":"《バッファロー軍》《唯一》《突破》 常時（戦場）：これは戦闘ダメージを受けない。誘発（戦場）：これが集団防御された時、ターン終了時まで、これのATKをX倍にする。Xは防御している防御動物の数に等しい。","route_search":[],"general_effect":["バフ"],"reading":"せきわんのたいしょうばっふぁろー","image":"https://acgtcg.com/img/ACG-092"},
-{"code":"パン田-ACG-093","name":"上官中将バッファロー","type":"動物","tribe":"バッファロー","stats":"ATK 1／DEF 4","cost":"2","condition":"山山","effect":"《バッファロー軍》《唯一》《対空》 誘発（戦場）：これが戦闘ダメージを受けた時にウェイクする。起動（手札）：①を支払い、これを捨てて、戦場の《バッファロー軍》動物1体にターン終了時まで《鉄壁》を得る。","route_search":[],"general_effect":["バフ","サーチ"],"reading":"じょうかんちゅうじょうばっふぁろー","image":"https://acgtcg.com/img/ACG-093"},
-{"code":"パン田-ACG-094","name":"勲章持ちリカオン","type":"動物","tribe":"イヌ","stats":"ATK 4／DEF 1","cost":"0","condition":"山山","effect":"《バッファロー軍》《駿足》 常時：あなたの墓地に《バッファロー軍》カードが4枚以上なければプレイできない。誘発（墓地）：これが墓地に置かれた時、戦場の《バッファロー軍》動物1体にターン終了時まで ATK+2/DEF+2を得る。","route_search":[],"general_effect":["バフ"],"reading":"くんしょうもちりかおん","image":"https://acgtcg.com/img/ACG-094"},
-{"code":"パン田-ACG-095","name":"激情のダチョウ","type":"動物","tribe":"ダチョウ","stats":"ATK 1／DEF 1","cost":"1","condition":"山","effect":"《バッファロー軍》 誘発（戦場）：これが相手に戦闘ダメージを与えた時、あなたの墓地に同名がない「勲章」を含むカード1枚をデッキから探して墓地に置く。","route_search":[],"general_effect":["サーチ"],"reading":"げきじょうのだちょう","image":"https://acgtcg.com/img/ACG-095"},
-{"code":"パン田-ACG-096","name":"大隊のダチョウ","type":"動物","tribe":"ダチョウ","stats":"ATK 3／DEF 3","cost":"2","condition":"山山山","effect":"《バッファロー軍》《駿足》 誘発（戦場）：これが相手に戦闘ダメージを与えた時、デッキから「勲章」を含むカード1枚を探して手札に加える。起動（手札）：これを捨てて、墓地の「勲章」カード1枚を手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"だいたいのだちょう","image":"https://acgtcg.com/img/ACG-096"},
-{"code":"パン田-ACG-097","name":"補給クマ","type":"動物","tribe":"クマ","stats":"ATK 1／DEF 1","cost":"1","condition":"山無","effect":"誘発（戦場）：これが戦場に出た時、デッキからコスト1の山岳場面カード1枚を探して手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"ほきゅうくま","image":"https://acgtcg.com/img/ACG-097"},
-{"code":"パン田-ACG-098","name":"灼熱の風","type":"道具","tribe":"","stats":"","cost":"0","condition":"山山","effect":"《唯一》 起動（戦場）：<ムーブ>、あなたの戦場の動物1体に1点ダメージを与えてターン終了時まで《駿足》を得る。起動（手札）：①を支払いこれを捨てて、デッキからコスト2以下の《駿足》を持つ動物カード1枚を探して手札に加える。","route_search":[],"general_effect":["サーチ","火力"],"reading":"しゃくねつのかぜ","image":"https://acgtcg.com/img/ACG-098"},
-{"code":"パン田-ACG-099","name":"襲撃","type":"場面","tribe":"","stats":"","cost":"1","condition":"山","effect":"プレイ：あなたの手札のコストX以下で条件の数の最小値がX以下の山岳動物カード1枚をあなたの戦場に出す。ターン終了時まで、その動物は《駿足》を得る。Xはあなたの<山岳域>の数に等しい。","route_search":["狐ルート","赤狼ルート"],"general_effect":["登場"],"reading":"しゅうげき","image":"https://acgtcg.com/img/ACG-099"},
-{"code":"パン田-ACG-100","name":"呪われた勲章","type":"場面","tribe":"","stats":"","cost":"0","condition":"山","effect":"プレイ：任意の1つに1点ダメージを与える。誘発（墓地）：あなたの動物カードや動物トークン1体以上が相手に一度に4点以上のダメージを与えた時、これを手札に加える。","route_search":["赤猫ルート","フェニックスルート"],"general_effect":["火力"],"reading":"のろわれたくんしょう","image":"https://acgtcg.com/img/ACG-100"},
-{"code":"パン田-ACG-101","name":"昇格勲章","type":"場面","tribe":"","stats":"","cost":"1","condition":"山山","effect":"プレイ：あなたの戦場の動物1体を生贄に捧げる。生贄に捧げたなら、デッキからその動物と異なる名前で同じ種属と同じATK/DEFを持つ動物カード1枚を探して戦場に出す。誘発（墓地）：これがデッキから墓地に置かれた時、デッキの上からカード1枚を除外する。ターン終了時まで、あなたはそのカードを除外領域からプレイしてもよい。","route_search":["モグラルート"],"general_effect":["登場"],"reading":"しょうかくくんしょう","image":"https://acgtcg.com/img/ACG-101"},
-{"code":"パン田-ACG-102","name":"武勇勲章","type":"特技","tribe":"","stats":"","cost":"1","condition":"山","effect":"プレイ：デッキから山岳条件のみを持つ動物カード1枚を探して手札に加える。誘発（墓地）：これがデッキから墓地に置かれた時、デッキから「武勇勲章」以外の「勲章」カード1枚を探して手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"ぶゆうくんしょう","image":"https://acgtcg.com/img/ACG-102"},
-{"code":"パン田-ACG-103","name":"わななき","type":"特技","tribe":"","stats":"","cost":"1","condition":"山山","effect":"プレイ：ターン終了時まで、戦場のすべての動物は攻撃ができない。","route_search":[],"general_effect":["遅延"],"reading":"わななき","image":"https://acgtcg.com/img/ACG-103"},
-{"code":"パン田-ACG-104","name":"噴火の余波","type":"特技","tribe":"","stats":"","cost":"1","condition":"山","effect":"プレイ：戦場のコスト1以下の縄張りや道具1つを破壊する。","route_search":[],"general_effect":["除去"],"reading":"ふんかのよは","image":"https://acgtcg.com/img/ACG-104"},
+{"code":"パン田-ACG-091","name":"少将バッファロー","type":"動物","tribe":"バッファロー","stats":"ATK 2／DEF 2","cost":"3","condition":"山山","effect":"《バッファロー軍》《唯一》《突破》
+【常時（戦場）】このゲーム中、これが最初に1点以上の戦闘ダメージを受けるなら、これはその戦闘ではダメージを受けない。
+【誘発（戦場）】これが攻撃した時、あなたのデッキから「勲章」を含むカード1枚を探して墓地に置く。墓地に置いたなら、ターン終了時まで、これはATK+2/DEF+2を得る。
+【誘発（墓地）】これが戦場から墓地に置かれた時、あなたの墓地の「勲章」を含むカード2枚を除外して、あなたのデッキから《バッファロー軍》を持つカード1枚を探して手札に加える。","route_search":["バッファロールート"],"general_effect":["バフ","サーチ"],"reading":"しょうしょうばっふぁろー","image":"https://acgtcg.com/img/ACG-091"},
+{"code":"パン田-ACG-092","name":"隻腕の大将バッファロー","type":"動物","tribe":"バッファロー","stats":"ATK 6／DEF 6","cost":"6","condition":"山山山山","effect":"《バッファロー軍》《唯一》《突破》
+【常時（戦場）】これは戦闘ダメージを受けない。
+【誘発（戦場）】これが集団防御された時、ターン終了時まで、これのATKをX倍にする。Xはその防御している防御動物の数に等しい。
+【起動（戦場）】あなたの墓地の「勲章」を含むカード1枚を除外して、戦場の動物1体を対象に発動する。ターン終了時まで、それは必ず防御する常時を得る。","route_search":["バッファロールート"],"general_effect":["バフ"],"reading":"せきわんのたいしょうばっふぁろー","image":"https://acgtcg.com/img/ACG-092"},
+{"code":"パン田-ACG-093","name":"上官中将バッファロー","type":"動物","tribe":"バッファロー","stats":"ATK 1／DEF 4","cost":"2","condition":"山山","effect":"《バッファロー軍》《唯一》《対空》
+【誘発（戦場）】これが戦闘ダメージを受けた時に発動する。これをウェイクする。
+【起動（手札）】①を支払って、あなたの手札のこれを捨てて、戦場の《バッファロー軍》を持つ動物1体を対象に発動する。あなたのデッキから「勲章」を含むカード1枚を探して墓地に置く。置いたなら、ターン終了時まで、それは《鉄壁》を得る。","route_search":[],"general_effect":["バフ","サーチ"],"reading":"じょうかんちゅうじょうばっふぁろー","image":"https://acgtcg.com/img/ACG-093"},
+{"code":"パン田-ACG-094","name":"勲章持ちリカオン","type":"動物","tribe":"イヌ","stats":"ATK 4／DEF 1","cost":"0","condition":"山山","effect":"《バッファロー軍》《駿足》
+【常時】これはあなたの墓地に《バッファロー軍》を持つカードが4枚以上なければプレイできない。
+【誘発（墓地）】これが墓地に置かれた時、戦場の《バッファロー軍》を持つ動物1体を対象に発動してもよい。ターン終了時まで、それはATK+2/DEF+2を得る。","route_search":["バッファロールート"],"general_effect":["バフ"],"reading":"くんしょうもちりかおん","image":"https://acgtcg.com/img/ACG-094"},
+{"code":"パン田-ACG-095","name":"激情のダチョウ","type":"動物","tribe":"ダチョウ","stats":"ATK 1／DEF 1","cost":"1","condition":"山","effect":"《バッファロー軍》
+【誘発（戦場）】これが相手に戦闘ダメージを与えた時、あなたのデッキからあなたの墓地に同じカード名のカードがない「勲章」を含むカード1枚を探して墓地に置いてもよい。","route_search":[],"general_effect":["サーチ"],"reading":"げきじょうのだちょう","image":"https://acgtcg.com/img/ACG-095"},
+{"code":"パン田-ACG-096","name":"大隊のダチョウ","type":"動物","tribe":"ダチョウ","stats":"ATK 3／DEF 3","cost":"2","condition":"山山山","effect":"《バッファロー軍》《駿足》
+【誘発（戦場）】これが相手に戦闘ダメージを与えた時、あなたのデッキから「勲章」を含むカード1枚を探して手札に加えてもよい。
+【起動（手札）】あなたの手札のこれを捨てて、あなたの墓地の「勲章」を含むカード1枚を対象に発動する。それを手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"だいたいのだちょう","image":"https://acgtcg.com/img/ACG-096"},
+{"code":"パン田-ACG-097","name":"補給クマ","type":"動物","tribe":"クマ","stats":"ATK 1／DEF 1","cost":"1","condition":"山無","effect":"【誘発（戦場）】これが戦場に出た時、あなたのデッキからコスト1の山岳場面カード1枚を探して手札に加えてもよい。","route_search":[],"general_effect":["サーチ"],"reading":"ほきゅうくま","image":"https://acgtcg.com/img/ACG-097"},
+{"code":"パン田-ACG-098","name":"灼熱の風","type":"道具","tribe":"","stats":"","cost":"0","condition":"山山","effect":"《唯一》
+【起動（戦場）】ムーブ、あなたの戦場の動物1体を対象に発動する。それに1点ダメージを与える。ターン終了時まで、それは《駿足》を得る。
+【起動（手札）】①を支払って、あなたの手札のこれを捨てて発動する。あなたのデッキからコスト2以下の《駿足》を持つ動物カード1枚を探して手札に加える。","route_search":[],"general_effect":["サーチ","火力"],"reading":"しゃくねつのかぜ","image":"https://acgtcg.com/img/ACG-098"},
+{"code":"パン田-ACG-099","name":"襲撃","type":"場面","tribe":"","stats":"","cost":"1","condition":"山","effect":"【プレイ】あなたの手札のコストX以下で条件の数の最小値がX以下の山岳動物カード1枚をあなたの戦場に出す。ターン終了時まで、この効果で戦場に出した動物は《駿足》を得る。Xはあなたの<山岳域>の数に等しい。","route_search":["狐ルート","赤狼ルート"],"general_effect":["登場"],"reading":"しゅうげき","image":"https://acgtcg.com/img/ACG-099"},
+{"code":"パン田-ACG-100","name":"呪われた勲章","type":"場面","tribe":"","stats":"","cost":"0","condition":"山","effect":"【プレイ】任意の1つを対象に発動する。それに1点ダメージを与える。
+【誘発（墓地）】あなたの動物カードや動物トークン1体以上が、相手に一度に4点以上のダメージを与えた時に発動する。これを手札に加える。","route_search":["赤猫ルート","フェニックスルート"],"general_effect":["火力"],"reading":"のろわれたくんしょう","image":"https://acgtcg.com/img/ACG-100"},
+{"code":"パン田-ACG-101","name":"昇格勲章","type":"場面","tribe":"","stats":"","cost":"1","condition":"山山","effect":"【プレイ】あなたの戦場の動物1体を生贄に捧げる。生贄に捧げたなら、あなたのデッキからこの効果で生贄に捧げた動物と異なる名前で同じ種属と同じATK/DEFを持つ動物カード1枚を探して戦場に出す。
+【誘発（墓地）】これがデッキから墓地に置かれた時、あなたのデッキの上からカード1枚を除外する。ターン終了時まで、あなたはこの効果で除外したカードを除外領域からプレイしてもよい。","route_search":["モグラルート","バッファロールート"],"general_effect":["登場"],"reading":"しょうかくくんしょう","image":"https://acgtcg.com/img/ACG-101"},
+{"code":"パン田-ACG-102","name":"武勇勲章","type":"特技","tribe":"","stats":"","cost":"1","condition":"山","effect":"【プレイ】あなたのデッキから山岳条件のみを持つ動物カード1枚を探して手札に加える。
+【誘発（墓地）】これがデッキから墓地に置かれた時、あなたのデッキから「武勇勲章」カード以外の「勲章」を含むカード1枚を探して手札に加えてもよい。","route_search":[],"general_effect":["サーチ"],"reading":"ぶゆうくんしょう","image":"https://acgtcg.com/img/ACG-102"},
+{"code":"パン田-ACG-103","name":"わななき","type":"特技","tribe":"","stats":"","cost":"1","condition":"山山","effect":"【プレイ】ターン終了時まで、戦場のすべての動物は攻撃ができない常時を得る。","route_search":[],"general_effect":["遅延"],"reading":"わななき","image":"https://acgtcg.com/img/ACG-103"},
+{"code":"パン田-ACG-104","name":"噴火の余波","type":"特技","tribe":"","stats":"","cost":"1","condition":"山","effect":"【プレイ】戦場のコスト1以下の縄張りや道具の内1つを対象に発動する。それを破壊する。","route_search":[],"general_effect":["除去"],"reading":"ふんかのよは","image":"https://acgtcg.com/img/ACG-104"},
 {"code":"ヒョウ-ACG-105","name":"不敬な撒き餌","type":"場面","tribe":"","stats":"","cost":"1","condition":"夜","effect":"プレイ：戦場の存在1つを除外する。除外したなら、2/1の夜ハイエナ動物トークンX体を相手の戦場に出す。Xはこの効果で除外した存在のコストの値に等しい。","route_search":[],"general_effect":["除去"],"reading":"ふけいなまきえ","image":"https://acgtcg.com/img/ACG-105"},
 {"code":"ヒョウ-ACG-106","name":"黒豹","type":"動物","tribe":"ヒョウ","stats":"ATK 4／DEF 3","cost":"1","condition":"夜夜夜","effect":"常時（戦場）：あなたの<夜域>が5以上なら、これは《隠密》を得る。起動（戦場）：あなたの手札のカード1枚を捨ててこれを夜にする。","route_search":[],"general_effect":[],"reading":"くろひょう","image":"https://acgtcg.com/img/ACG-106"},
 {"code":"ヒョウ-ACG-107","name":"夜の外套の二匹","type":"動物","tribe":"サル","stats":"ATK 1／DEF 2","cost":"1","condition":"夜","effect":"起動（戦場）：あなたのターン中のみ起動できる。<ムーブ>、あなたの戦場の動物2体を夜にする。","route_search":[],"general_effect":[],"reading":"よるのがいとうのにひき","image":"https://acgtcg.com/img/ACG-107"},
@@ -764,6 +785,7 @@ const routeGuides = {
   "断崖ルート": "https://tayu02.github.io/acg-deckbuilder/route_dangai.html",
   "赤狼ルート": "https://tayu02.github.io/acg-deckbuilder/route_akaokami.html",
   "モグラルート": "https://tayu02.github.io/acg-deckbuilder/route_mogura.html",
+  "バッファロールート": "https://tayu02.github.io/acg-deckbuilder/route_buffalo.html",
 };
 
 function updateRouteGuideBtn(routeVal) {
