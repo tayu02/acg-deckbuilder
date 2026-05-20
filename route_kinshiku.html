@@ -29,19 +29,19 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
 
 .zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
 .zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
-.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); min-height: 68px; }
 .pile-zone {
   background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
   border-radius: 6px; padding: 5px; margin-bottom: 4px;
-  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+  min-height: 12px;
 }
 .exile-zone {
   background: rgba(80,20,80,0.2); border: 1px solid rgba(150,50,150,0.4);
   border-radius: 6px; padding: 5px; margin-bottom: 4px;
-  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap;
 }
-.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
-.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); min-height: 68px; }
 
 .card {
   width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
@@ -50,10 +50,10 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
   transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
 }
 .card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
 .card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
 .card.entering { animation: slideIn 0.35s ease; }
 .card.exiled { opacity: 0.5; filter: grayscale(0.5); border-color: #6a2a6a; }
-.card.returning { box-shadow: 0 0 12px 3px #44aaff; border-color: #44aaff; animation: slideIn 0.4s ease; }
 
 .hand-card {
   width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
@@ -63,29 +63,40 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
 
 .territory-card {
   width: 34px; height: 22px; border-radius: 4px;
-  background: #2a4a2a; border: 1px solid #4a8a4a;
   display: flex; align-items: center; justify-content: center;
-  font-size: 9px; color: #a8e0a8; font-weight: bold;
+  font-size: 9px; font-weight: bold;
   transition: transform 0.4s, opacity 0.3s;
 }
+.territory-card.forest { background: #1a3a1a; border: 1px solid #4a8a4a; color: #aaffaa; }
+.territory-card.mountain { background: #4a2a2a; border: 1px solid #8a4a4a; color: #ffaaaa; }
+.territory-card.plain { background: #2a2a3a; border: 1px solid #6a6a9a; color: #aaaaff; }
 .territory-card.used { transform: rotate(90deg); opacity: 0.4; }
-.territory-card.mountain { background: #4a2a2a; border-color: #8a4a4a; color: #ffaaaa; }
+
+.deck-bar-wrap { margin-bottom: 6px; }
+.deck-bar { height: 10px; background: #333; border-radius: 5px; overflow: hidden; }
+.deck-bar-fill { height: 100%; background: #c85a5a; border-radius: 5px; transition: width 0.6s; }
 
 .damage-float {
   position: fixed; font-size: 22px; font-weight: bold;
   pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
-  white-space: nowrap;
 }
 .damage-float.enemy-dmg { color: #ff4444; text-shadow: 0 0 12px #ff0000; }
+.damage-float.heal { color: #44ff88; text-shadow: 0 0 12px #00ff66; }
+.damage-float.deck-dmg { color: #ff8844; text-shadow: 0 0 10px #ff4400; }
 
 @keyframes floatUp {
-  0% { opacity: 1; transform: translateY(0) scale(1.3); }
-  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+  0% { opacity:1; transform:translateY(0) scale(1.3); }
+  100% { opacity:0; transform:translateY(-60px) scale(0.8); }
 }
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(-14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity:0; transform:translateY(-14px); }
+  to { opacity:1; transform:translateY(0); }
 }
+
+/* ナビボタン */
+#nav-buttons { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-bottom:8px; }
+.nav-btn { padding:5px 10px; border:1px solid #4a8a4a; border-radius:8px; background:#1a2a1a; color:#a8e0a8; font-size:12px; cursor:pointer; }
+.nav-btn.active { background:#3a6a3a; border-color:#88cc88; color:#ffffff; font-weight:bold; }
 
 #description {
   background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
@@ -95,12 +106,9 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
 #step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
 #step-text { color: #d0e8d0; }
 
-#loop-badge {
-  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
-  border-radius: 20px; margin-top: 8px; text-align: center;
-}
+#loop-badge { display:none; font-size:13px; font-weight:bold; padding:5px 14px; border-radius:20px; margin-top:8px; text-align:center; }
 
-#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; }
 .ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
 .ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
 .ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
@@ -114,7 +122,6 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
 </head>
 <body>
 <div id="stage">
-
   <div id="life-area">
     <div class="life-bar-wrap">
       <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
@@ -127,17 +134,32 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
     </div>
   </div>
 
+  <div id="nav-buttons">
+    <button class="nav-btn" onclick="jumpTo(0)">基本ループ</button>
+    <button class="nav-btn" onclick="jumpTo(7)">✨鉄鴉コンボ</button>
+    <button class="nav-btn" onclick="jumpTo(15)">🐄乳牛ループ</button>
+    <button class="nav-btn" onclick="jumpTo(21)">🦔子モグラLO</button>
+  </div>
+
   <div id="field">
-    <div id="loop-counter">🔁 ループ：<span id="loop-count">0</span>回 / <span id="total-dmg">0</span>点</div>
+    <div id="loop-counter">🔁 <span id="loop-label">ループ：0回</span></div>
 
     <div class="zone-label">自分の戦場</div>
     <div class="zone player-zone" id="player-field"></div>
 
+    <div class="zone-label">パイル（効果スタック）</div>
+    <div class="pile-zone" id="pile-area"></div>
+
     <div class="zone-label">除外</div>
     <div class="exile-zone" id="exile-area"></div>
 
-    <div class="zone-label">領土（森×3・山×1）</div>
+    <div class="zone-label" id="terr-label">領土</div>
     <div class="territory-zone" id="territory-area"></div>
+
+    <div id="deck-bar-wrap" style="display:none; margin-bottom:4px;">
+      <div class="zone-label">相手デッキ 🃏 <span id="deck-num">40</span>枚</div>
+      <div class="deck-bar"><div class="deck-bar-fill" id="deck-bar-fill" style="width:100%"></div></div>
+    </div>
 
     <div class="zone-label">手札</div>
     <div class="zone hand-zone" id="hand-area"></div>
@@ -153,9 +175,7 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
     <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
     <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
   </div>
-
   <div id="loop-badge"></div>
-
   <div id="description">
     <div id="step-title"></div>
     <div id="step-text"></div>
@@ -170,424 +190,474 @@ const IMAGES = {
   鉄洗いグマ:     "https://acgtcg.com/img/ACG-159",
   鉄クズ:         "https://acgtcg.com/img/ACG-160",
   鉄鴉:           "https://acgtcg.com/img/ACG-161",
+  乳牛:           "https://acgtcg.com/img/BP2-009",
+  子モグラ:       "https://acgtcg.com/img/BP1-033",
 };
+
+// セクション開始インデックス
+const SECTION_STARTS = { basic: 0, tekki: 8, milkcow: 17, mogura: 24 };
 
 function initState() {
   return {
-    enemyLife: 20,
-    playerField: ["不法侵入禁止区", "足跡の発火"],
+    enemyLife: 20, playerLife: 20,
+    enemyDeck: 40,
+    field: ["不法侵入禁止区", "足跡の発火"],
     hand: ["救助する森狼"],
-    exile: [],
-    loopCount: 0,
-    totalDmg: 0,
-    wolfState: "hand", // hand / exile / field / returning
-    trash: [],
-    tekkiAtk: 0,
+    exile: [], pile: [],
     territories: ["森","森","森","山"],
-    usedTerritories: 0,
+    usedTerr: 0,
+    loopCount: 0, totalDmg: 0,
+    tekkiAtk: 0,
+    showDeck: false,
+    loopLabel: "ループ：0回",
   };
 }
 
+// =============== ステップ定義 ===============
 const steps = [
+  // ===== 基本ループ (0〜7) =====
   {
-    title: "初期状態",
-    text: "盤面：不法侵入禁止区・足跡の発火<br>手札：救助する森狼<br>領土：森×3・山×1",
-    action: s => s,
+    title: "【基本】初期状態",
+    text: "盤面：不法侵入禁止区・足跡の発火<br>手札：救助する森狼<br>領土：森×3・山×1<br><br>救助する森狼を手札起動してループを開始します！",
+    action: s => ({...initState()}),
+    section: "basic",
   },
   {
-    title: "① 救助する森狼の手札効果を起動",
-    text: "救助する森狼の手札効果：<br>森林域が3以上ある時、手札のこれを除外する。<br>→ 救助する森狼が手札から除外領域へ！",
-    action: s => {
-      s.hand = [];
-      s.exile = ["救助する森狼"];
-      s.wolfState = "exile";
-      return s;
-    },
-    highlight: ["救助する森狼"],
+    title: "① 救助する森狼の手札起動",
+    text: "救助する森狼の手札起動：森林域3以上なら手札のこれを除外して発動。<br>除外したこれをムーブ状態で戦場に出す。<br>この時『戦場に出た時にこれを生贄に捧げる』を得る。<br>→ 救助する森狼が除外へ！",
+    action: s => { s.hand=[]; s.exile=["救助する森狼"]; return s; },
+    highlight: ["救助する森狼"], section: "basic",
   },
   {
-    title: "② 除外した救助する森狼が戦場へ（登場時生贄付き）",
-    text: "除外した救助する森狼が「登場時に自身を生贄に捧げる」効果付きで戦場に登場！<br>プレイではなく除外から出てきました。",
-    action: s => {
-      s.exile = [];
-      s.playerField.push("救助する森狼");
-      s.wolfState = "field";
-      return s;
-    },
-    highlight: ["救助する森狼"],
-    entering: true,
+    title: "② 救助する森狼が戦場へ（生贄付き）",
+    text: "除外から救助する森狼がムーブ状態で戦場に登場！<br>プレイではなく効果による登場です。",
+    action: s => { s.exile=[]; s.field.push("救助する森狼"); return s; },
+    highlight: ["救助する森狼"], entering: true, section: "basic",
   },
   {
-    title: "③ 足跡の発火が反応：相手に1点ダメージ！",
-    text: "動物が戦場に出たので足跡の発火の効果が発動。<br>→ 相手に1点ダメージ！",
-    action: s => {
-      s.enemyLife -= 1;
-      s.totalDmg += 1;
-      return s;
-    },
-    damage: true,
-    highlight: ["足跡の発火"],
+    title: "③ 足跡の発火が反応→相手に1点！",
+    text: "動物が戦場に出たので足跡の発火の誘発が発動！<br>→ 相手に1点ダメージ！",
+    action: s => { s.enemyLife-=1; s.totalDmg+=1; return s; },
+    damage: 1, highlight: ["足跡の発火"], section: "basic",
   },
   {
-    title: "④ 不法侵入禁止区の効果：救助する森狼を手札に戻す！",
-    text: "不法侵入禁止区の効果：プレイ以外で出た動物は手札に戻ります。<br>→ 救助する森狼が生贄に捧げられる前に手札へ！<br>→ 再び手札効果が使えます。ループ！",
+    title: "④ 不法侵入禁止区の誘発→森狼を手札へ！",
+    text: "不法侵入禁止区の誘発：プレイ以外で出た動物を手札に戻す！<br>→ 救助する森狼が手札に戻る。ループ！",
     action: s => {
-      s.playerField = s.playerField.filter(c => c !== "救助する森狼");
-      s.hand = ["救助する森狼"];
-      s.wolfState = "hand";
-      s.loopCount += 1;
+      s.field = s.field.filter(c => c !== "救助する森狼");
+      s.hand = ["救助する森狼"]; s.loopCount += 1;
+      s.loopLabel = `ループ：${s.loopCount}回 / ${s.totalDmg}点`;
       return s;
     },
-    highlight: ["不法侵入禁止区", "救助する森狼"],
-    isLoop: true,
+    highlight: ["不法侵入禁止区"], isLoop: true, section: "basic",
   },
   {
-    title: "🔁 ループ！相手のライフがなくなるまで繰り返す",
-    text: "①〜④を繰り返すだけで1ループ1点ダメージ。<br>相手のライフ20点に達するまで20回繰り返します。<br><br>妨害がなければほぼ確実に決まる無限ループです！",
+    title: "🔁 ループ継続中…",
+    text: "①〜④を繰り返します。1ループで1点ダメージ。<br>20回繰り返せば相手ライフを0に！",
     action: s => {
-      s.loopCount = 10;
-      s.totalDmg = 10;
-      s.enemyLife = 10;
+      s.loopCount=10; s.totalDmg=10; s.enemyLife=10;
+      s.loopLabel = `ループ：10回 / 10点`;
       return s;
     },
-    isLoop: true,
+    isLoop: true, section: "basic",
   },
   {
     title: "20ループで相手ライフ0！",
-    text: "20回繰り返すと相手ライフが0に！<br><br>【まとめ】<br>・救助する森狼：手札→除外→戦場（生贄付き）<br>・足跡の発火：登場で1点<br>・不法侵入禁止区：生贄前に手札へ戻す<br><br>この3枚が揃えば無限に1点ずつ刻めます！",
-    action: s => {
-      s.loopCount = 20;
-      s.totalDmg = 20;
-      s.enemyLife = 0;
-      return s;
-    },
+    text: "20回ループして相手ライフが0に！<br><br>【必要カード】<br>・不法侵入禁止区：プレイ以外で出た動物を手札へ<br>・足跡の発火：動物が出るたびに1点<br>・救助する森狼：手札起動で除外→戦場<br>・森林域3以上の領土",
+    action: s => { s.loopCount=20; s.totalDmg=20; s.enemyLife=0; s.loopLabel="20回ループ！"; return s; },
+    section: "basic",
   },
 
-  // ===== 発展編：鉄鴉コンボ =====
+  // ===== 鉄鴉コンボ (7〜16) =====
   {
-    title: "━━ 発展編：鉄鴉を加えたダメージ増加 ━━",
-    text: "盤面：鉄洗いグマ・鉄クズ×4・不法侵入禁止区<br>手札：救助する森狼<br>領土：森×3・平地×1・山×2<br>鉄鴉を絡めることでループ1回のダメージを4点に！",
+    title: "【✨鉄鴉コンボ】初期状態",
+    text: "盤面：不法侵入禁止区・鉄洗いグマ・鉄クズ×4<br>手札：救助する森狼<br>領土：森×3・平×1・山×2<br><br>鉄鴉を絡めて1ループ4点ダメージに！",
+    action: s => ({
+      ...initState(),
+      field: ["不法侵入禁止区","鉄洗いグマ","鉄クズ","鉄クズ","鉄クズ","鉄クズ"],
+      hand: ["救助する森狼"],
+      territories: ["森","森","森","平","山","山"],
+      tekkiAtk: 0,
+    }),
+    section: "tekki",
+  },
+  {
+    title: "【鉄鴉①】鉄洗いグマ起動→鉄クズ×4を墓地へ",
+    text: "鉄洗いグマをムーブして起動！<br>戦場の鉄クズをすべて生贄にして道具カードX枚を墓地へ。<br>→ 鉄クズ4枚が墓地へ。鉄鴉プレイ時のATKが4に！",
     action: s => {
-      s.enemyLife = 20;
-      s.playerField = ["不法侵入禁止区", "鉄洗いグマ", "鉄クズ1", "鉄クズ2", "鉄クズ3", "鉄クズ4"];
-      s.hand = ["救助する森狼"];
+      s.field = s.field.filter(c => c !== "鉄クズ");
+      s.field = s.field.map(c => c==="鉄洗いグマ" ? "鉄洗いグマ_muted" : c);
+      s.tekkiAtk = 4; return s;
+    },
+    highlight: ["鉄洗いグマ"], section: "tekki",
+  },
+  {
+    title: "【鉄鴉②】鉄クズの墓地起動→鉄鴉を手札へ",
+    text: "墓地の鉄クズを除外して道具カードを手札に加える。<br>→ 鉄鴉（コスト0）が手札へ！",
+    action: s => { s.exile=["鉄クズ","鉄クズ","鉄クズ","鉄クズ"]; s.hand.push("鉄鴉"); return s; },
+    highlight: ["鉄鴉"], section: "tekki",
+  },
+  {
+    title: "【鉄鴉③】鉄鴉をプレイ（平山）→早業でムーブ→4点！",
+    text: "鉄鴉をプレイ（条件：平×1・山×2）。《早業》でそのままムーブ！<br>起動効果：ATK点（=このターン墓地に置いた道具の数）だけ相手に直接ダメージ！<br>→ 4点ダメージ！",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "鉄鴉");
+      s.field.push("鉄鴉_muted");
+      s.usedTerr = 3; // 平1・山2
+      s.enemyLife -= 4; s.totalDmg += 4; return s;
+    },
+    damage: 4, highlight: ["鉄鴉"], section: "tekki",
+  },
+  {
+    title: "【鉄鴉④】救助する森狼の手札起動→除外→戦場へ",
+    text: "救助する森狼を手札から起動→除外→ムーブ状態で戦場へ。<br>『生贄付き』で登場。",
+    action: s => {
+      s.hand = []; s.exile = [...s.exile, "救助する森狼"];
+      s.field.push("救助する森狼"); return s;
+    },
+    highlight: ["救助する森狼"], entering: true, section: "tekki",
+  },
+  {
+    title: "【鉄鴉⑤】不法侵入禁止区→森狼と鉄鴉が手札へ！",
+    text: "不法侵入禁止区の誘発：このターンにプレイ以外で戦場に出た動物（森狼）を手札へ。<br>鉄鴉もプレイで出ているので手札に戻る！<br>→ 救助する森狼・鉄鴉が両方手札へ。ループ！",
+    action: s => {
+      s.field = s.field.filter(c => c!=="救助する森狼" && c!=="鉄鴉_muted");
+      s.exile = s.exile.filter(c => c!=="救助する森狼");
+      s.hand = ["救助する森狼","鉄鴉"];
+      s.usedTerr = 0; s.loopCount += 1;
+      s.loopLabel = `ループ：${s.loopCount}回 / ${s.totalDmg}点`;
+      return s;
+    },
+    highlight: ["不法侵入禁止区","救助する森狼","鉄鴉"], isLoop: true, section: "tekki",
+  },
+  {
+    title: "【鉄鴉⑥】鉄鴉を再プレイ→4点！以下ループ",
+    text: "鉄鴉を再びプレイ（コスト：平1・山2）→早業でムーブ→4点！<br>その後また森狼を起動→戦場→禁止区で手札へ→鉄鴉も手札へ。<br>1ループ4点、5ループで20点フィニッシュ！",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "鉄鴉");
+      s.field.push("鉄鴉_muted");
+      s.usedTerr = 3;
+      s.enemyLife -= 4; s.totalDmg += 4;
+      s.loopLabel = `ループ：${s.loopCount}回 / ${s.totalDmg}点`;
+      return s;
+    },
+    damage: 4, highlight: ["鉄鴉"], isLoop: true, section: "tekki",
+  },
+  {
+    title: "✅ まとめ：鉄鴉コンボ",
+    text: "【基本ループとの比較】<br>・基本：1ループ1点（足跡の発火）→20回必要<br>・鉄鴉コンボ：1ループ4点（鉄鴉ATK）→5回で決着！<br><br>【鍵となる動き】<br>鉄洗いグマで鉄クズを墓地に送りATKを上げてから鉄鴉を打つ。<br>禁止区が鉄鴉も手札に戻してくれるのがポイント！",
+    action: s => s, section: "tekki",
+  },
+
+  // ===== 乳牛ループ (16〜22) =====
+  {
+    title: "【🐄乳牛ループ】初期状態",
+    text: "盤面：不法侵入禁止区<br>手札：救助する森狼・乳牛<br>領土：白×1・緑×3<br><br>乳牛を繰り返しプレイして無限にライフを回復！<br>これは勝つためではなく戦いを長引かせるためのコンボです。",
+    action: s => ({
+      ...initState(),
+      field: ["不法侵入禁止区"],
+      hand: ["救助する森狼","乳牛"],
+      territories: ["白","緑","緑","緑"],
+      loopLabel: "回復：0回",
+    }),
+    section: "milkcow",
+  },
+  {
+    title: "【乳牛①】乳牛をプレイ→《早業》で即起動→1点回復！",
+    text: "乳牛をプレイ（コスト0・条件：平）。<br>《早業》を持つので即ムーブして起動できます。<br>起動効果：ムーブ→ライフ1点回復！",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "乳牛");
+      s.field.push("乳牛_muted");
+      s.playerLife = Math.min(20, s.playerLife + 1);
+      return s;
+    },
+    heal: 1, highlight: ["乳牛"], section: "milkcow",
+  },
+  {
+    title: "【乳牛②】救助する森狼の手札起動→除外→戦場へ",
+    text: "救助する森狼を手札から起動（森林域3以上）→除外→ムーブ状態で戦場へ。<br>『生贄付き』で登場。",
+    action: s => {
+      s.hand = [];
+      s.exile = ["救助する森狼"];
+      s.field.push("救助する森狼");
+      return s;
+    },
+    highlight: ["救助する森狼"], entering: true, section: "milkcow",
+  },
+  {
+    title: "【乳牛③】森狼の着地誘発→乳牛を手札へ",
+    text: "救助する森狼の着地誘発：コスト1以下の動物1体を手札に戻す。<br>→ 乳牛が手札へ！",
+    action: s => {
+      s.field = s.field.filter(c => c !== "乳牛_muted");
+      s.hand = ["乳牛"];
+      return s;
+    },
+    highlight: ["救助する森狼","乳牛"], section: "milkcow",
+  },
+  {
+    title: "【乳牛④】不法侵入禁止区の誘発→森狼を手札へ！",
+    text: "不法侵入禁止区の誘発：プレイ以外で出た動物を手札に戻す。<br>→ 救助する森狼が手札へ！<br>（森狼の生贄効果はこの後解決されるが、既に戦場を離れているので何も起きない）",
+    action: s => {
+      s.field = s.field.filter(c => c !== "救助する森狼");
       s.exile = [];
-      s.loopCount = 0;
-      s.totalDmg = 0;
-      s.tekkiAtk = 0;
-      s.territories = ["森","森","森","平","山","山"];
-      s.usedTerritories = 0;
-      return s;
-    },
-    isExtra: true,
-  },
-  {
-    title: "【発展①】鉄洗いグマの効果：鉄クズ×4を墓地へ",
-    text: "鉄洗いグマをムーブして起動効果を発動。<br>戦場の鉄クズをすべて墓地へ送ります。<br>→ 鉄クズ4枚が墓地へ（道具破棄4枚）",
-    action: s => {
-      s.playerField = s.playerField.filter(c => !c.startsWith("鉄クズ"));
-      s.playerField = s.playerField.map(c => c === "鉄洗いグマ" ? "鉄洗いグマ_muted" : c);
-      s.trash = ["鉄クズ1","鉄クズ2","鉄クズ3","鉄クズ4"];
-      s.tekkiAtk = 4;
-      return s;
-    },
-    highlight: ["鉄洗いグマ"],
-    isExtra: true,
-  },
-  {
-    title: "【発展②】鉄クズの墓地起動：鉄鴉をデッキから回収",
-    text: "鉄クズの墓地起動効果：<br>墓地の鉄クズ4枚を除外して、墓地のコスト4以下の道具カード1枚を手札に加える。<br>→ 鉄鴉（コスト0）をデッキから手札へ！",
-    action: s => {
-      s.trash = [];
-      s.exile = ["鉄クズ1","鉄クズ2","鉄クズ3","鉄クズ4"];
-      s.hand.push("鉄鴉");
-      return s;
-    },
-    highlight: ["鉄鴉"],
-    isExtra: true,
-  },
-  {
-    title: "【発展③】鉄鴉をプレイ（コスト0）→早業でムーブ→4点！",
-    text: "鉄鴉をプレイして戦場へ。コスト0なので領土消費なし。<br>《早業》を持つのでそのままムーブして起動効果を発動。<br>→ このターン道具4枚破棄 = ATK4 = 相手に4点ダメージ！",
-    action: s => {
-      s.hand = s.hand.filter(h => h !== "鉄鴉");
-      s.playerField.push("鉄鴉_muted");
-      s.enemyLife -= 4;
-      s.totalDmg += 4;
-      return s;
-    },
-    damage: true,
-    dmgAmount: 4,
-    highlight: ["鉄鴉"],
-    isExtra: true,
-  },
-  {
-    title: "【発展④】救助する森狼の手札効果→除外→戦場へ",
-    text: "救助する森狼を手札から除外。<br>「登場時生贄」付きで戦場に登場します。<br>プレイ以外での登場なので不法侵入禁止区が反応…",
-    action: s => {
-      s.hand = s.hand.filter(h => h !== "救助する森狼");
-      s.exile = [...s.exile, "救助する森狼"];
-      s.playerField.push("救助する森狼");
-      return s;
-    },
-    highlight: ["救助する森狼"],
-    isExtra: true,
-  },
-  {
-    title: "【発展⑤】不法侵入禁止区：戦場のカードを全て手札へ！",
-    text: "不法侵入禁止区の効果：<br>プレイ以外で出た動物がいる場合、このターンに戦場に出た全カードを手札に戻します。<br>→ 救助する森狼も鉄鴉も両方手札へ！",
-    action: s => {
-      s.playerField = s.playerField.filter(c => c !== "救助する森狼" && c !== "鉄鴉_muted");
-      s.exile = s.exile.filter(c => c !== "救助する森狼");
-      s.hand = ["救助する森狼", "鉄鴉"];
+      s.hand = ["乳牛","救助する森狼"];
       s.loopCount += 1;
+      s.loopLabel = `回復：${s.loopCount}回`;
       return s;
     },
-    highlight: ["不法侵入禁止区", "救助する森狼", "鉄鴉"],
-    isLoop: true,
-    isExtra: true,
+    highlight: ["不法侵入禁止区","救助する森狼"], isLoop: true, section: "milkcow",
   },
   {
-    title: "【発展⑥】鉄鴉を再プレイ→ムーブ→4点！以下ループ",
-    text: "鉄鴉はコスト0なので再びプレイ可能。<br>早業でムーブして4点ダメージ！<br>その後また救助する森狼を除外→戦場→手札に戻す→鉄鴉も戻るループ！<br><br>1ループで4点、5ループで20点フィニッシュ！",
-    action: s => {
-      s.hand = s.hand.filter(h => h !== "鉄鴉");
-      s.playerField.push("鉄鴉_muted");
-      s.enemyLife -= 4;
-      s.totalDmg += 4;
-      return s;
-    },
-    damage: true,
-    dmgAmount: 4,
-    highlight: ["鉄鴉"],
-    isLoop: true,
-    isExtra: true,
-  },
-  {
-    title: "✅ まとめ：鉄鴉コンボのポイント",
-    text: "【基本ループとの違い】<br>・基本：1ループ1点（足跡の発火）<br>・鉄鴉コンボ：1ループ4点（鉄鴉ATK）<br><br>【必要なカード】<br>・鉄洗いグマ＋鉄クズ×4：鉄鴉を準備<br>・不法侵入禁止区：鉄鴉を手札に戻す<br>・救助する森狼：ループのトリガー<br><br>5ループで20点！一気に決まります！",
+    title: "🔁 最初と同じ状態に！ループ継続",
+    text: "手札：乳牛＋救助する森狼、戦場：禁止区のみ。<br><b>最初と全く同じ状態に戻りました！</b><br>乳牛を再プレイして1点回復を繰り返し、ライフを保ち続けます。<br>妨害がなければ無限に回復できます。",
     action: s => s,
-    isExtra: true,
+    isLoop: true, section: "milkcow",
+  },
+
+  // ===== 子モグラLO (23〜30) =====
+  {
+    title: "【🦔子モグラLO】初期状態",
+    text: "盤面：不法侵入禁止区<br>手札：救助する森狼・子モグラ<br>領土：白×1・緑×3<br><br>乳牛の代わりに子モグラを使うと、プレイのたびに相手デッキ上1枚を墓地へ！<br>繰り返すことでライブラリーアウト（LO）勝利を狙います。",
+    action: s => ({
+      ...initState(),
+      field: ["不法侵入禁止区"],
+      hand: ["救助する森狼","子モグラ"],
+      territories: ["白","緑","緑","緑"],
+      enemyDeck: 40,
+      showDeck: true,
+      loopLabel: "LO：0枚削り",
+    }),
+    section: "mogura",
+  },
+  {
+    title: "【子モグラ①】子モグラをプレイ→相手デッキ1枚削る！",
+    text: "子モグラをプレイ（コスト0・条件：平）。<br>着地誘発：あなたの戦場の動物1体を生贄にしてデッキ上X枚を墓地へ。<br>→ 相手デッキを1枚削る！",
+    action: s => {
+      s.hand = s.hand.filter(h => h !== "子モグラ");
+      s.field.push("子モグラ");
+      s.enemyDeck -= 1;
+      return s;
+    },
+    deckDmg: 1, highlight: ["子モグラ"], section: "mogura",
+  },
+  {
+    title: "【子モグラ②】救助する森狼の手札起動→除外→戦場へ",
+    text: "救助する森狼を手札から起動（森林域3以上）→除外→ムーブ状態で戦場へ。<br>『生贄付き』で登場。",
+    action: s => {
+      s.hand = [];
+      s.exile = ["救助する森狼"];
+      s.field.push("救助する森狼");
+      return s;
+    },
+    highlight: ["救助する森狼"], entering: true, section: "mogura",
+  },
+  {
+    title: "【子モグラ③】森狼の着地誘発→子モグラを手札へ",
+    text: "救助する森狼の着地誘発：コスト1以下の動物1体を手札に戻す。<br>→ 子モグラが手札へ！",
+    action: s => {
+      s.field = s.field.filter(c => c !== "子モグラ");
+      s.hand = ["子モグラ"];
+      return s;
+    },
+    highlight: ["救助する森狼","子モグラ"], section: "mogura",
+  },
+  {
+    title: "【子モグラ④】不法侵入禁止区の誘発→森狼を手札へ！",
+    text: "不法侵入禁止区の誘発：プレイ以外で出た動物を手札に戻す。<br>→ 救助する森狼が手札へ！",
+    action: s => {
+      s.field = s.field.filter(c => c !== "救助する森狼");
+      s.exile = [];
+      s.hand = ["子モグラ","救助する森狼"];
+      s.loopCount += 1;
+      s.loopLabel = `LO：${s.loopCount}枚削り`;
+      return s;
+    },
+    highlight: ["不法侵入禁止区","救助する森狼"], isLoop: true, section: "mogura",
+  },
+  {
+    title: "🔁 最初と同じ状態に！ループ継続",
+    text: "手札：子モグラ＋救助する森狼、戦場：禁止区のみ。<br><b>最初と全く同じ状態に戻りました！</b><br>子モグラを再プレイして毎回1枚削り続けます。<br>相手デッキが0枚になったらLO勝利！",
+    action: s => s,
+    isLoop: true, section: "mogura",
+  },
+  {
+    title: "相手デッキが0枚に！LO勝利！",
+    text: "子モグラを40回プレイして相手デッキが0枚に！<br>ライブラリーアウト勝利！<br><br>【まとめ】<br>・乳牛版：無限回復で持久戦<br>・子モグラ版：デッキを削ってLO勝利<br><br>どちらも不法侵入禁止区＋救助する森狼のループが核心です。",
+    action: s => {
+      s.loopCount = 40; s.enemyDeck = 0;
+      s.loopLabel = "LO達成！40枚削り";
+      return s;
+    },
+    section: "mogura",
   },
 ];
 
-let state = {};
-let currentStep = 0;
+let state={}, currentStep=0;
 
-function makeCard(name, opts = {}) {
+function getImg(name) {
+  const base = name.replace("_muted","").replace(/\d+$/,"");
+  return IMAGES[base] || null;
+}
+
+function makeCard(name, opts={}) {
+  const isMuted = name.includes("_muted") || opts.muted;
+  const base = name.replace("_muted","").replace(/\d+$/,"");
   const div = document.createElement("div");
-  div.className = "card" + (opts.entering ? " entering" : "");
-  if (opts.highlighted) div.classList.add("highlighted");
-  if (opts.exiled) div.classList.add("exiled");
-  if (opts.returning) div.classList.add("returning");
-  if (opts.muted) div.classList.add("muted");
-
-  const img = document.createElement("img");
-  img.src = IMAGES[name] || "";
-  img.onerror = () => {
-    div.style.background = "#2a3a4a";
-    div.style.display = "flex";
-    div.style.alignItems = "center";
-    div.style.justifyContent = "center";
-    div.style.fontSize = "7px";
-    div.style.color = "#aaa";
-    div.style.textAlign = "center";
-    div.style.padding = "2px";
-    div.textContent = name;
-  };
-  div.appendChild(img);
+  div.className = "card" + (isMuted?" muted":"") + (opts.highlighted?" highlighted":"") + (opts.entering?" entering":"") + (opts.exiled?" exiled":"");
+  const url = getImg(name);
+  if (url) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.onerror = () => { div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;"; div.textContent=base; };
+    div.appendChild(img);
+  } else {
+    div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;background:#2a3a4a;";
+    div.textContent=base;
+  }
+  if (base==="鉄鴉" && state.tekkiAtk > 0) {
+    const b=document.createElement("div");
+    b.style.cssText="position:absolute;top:2px;left:0;right:0;background:rgba(180,0,50,0.9);color:white;font-size:7px;font-weight:bold;padding:1px;text-align:center;z-index:10;";
+    b.textContent=`ATK${state.tekkiAtk}`;
+    div.style.position="relative"; div.appendChild(b);
+  }
   return div;
 }
 
-function makeHandCard(name) {
-  const div = document.createElement("div");
-  div.className = "hand-card";
-  const img = document.createElement("img");
-  img.src = IMAGES[name] || "";
-  img.onerror = () => {
-    div.style.background = "#2a3a4a";
-    div.style.display = "flex";
-    div.style.alignItems = "center";
-    div.style.justifyContent = "center";
-    div.style.fontSize = "7px";
-    div.style.color = "#aaa";
-    div.style.textAlign = "center";
-    div.style.padding = "2px";
-    div.textContent = name;
-  };
-  div.appendChild(img);
-  return div;
-}
-
-function showDamage(delay = 0, amount = 1) {
+function showFloat(type, amount) {
   setTimeout(() => {
     const el = document.createElement("div");
-    el.className = "damage-float enemy-dmg";
-    el.textContent = `-${amount}点`;
-    const rect = document.getElementById("enemy-life-bar").getBoundingClientRect();
-    el.style.left = (rect.left + rect.width / 2 - 20) + "px";
-    el.style.top = (window.scrollY + rect.top - 10) + "px";
+    el.className = "damage-float " + type;
+    if (type==="enemy-dmg") el.textContent=`-${amount}点`;
+    else if (type==="heal") el.textContent=`+${amount}点`;
+    else el.textContent=`-${amount}枚`;
+    const bar = document.getElementById(type==="deck-dmg"?"deck-bar-fill":"enemy-life-bar");
+    const rect = bar.getBoundingClientRect();
+    el.style.left=(rect.left+rect.width/2-25)+"px";
+    el.style.top=(window.scrollY+rect.top-10)+"px";
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 1200);
-  }, delay);
+    setTimeout(()=>el.remove(),1200);
+  },400);
 }
 
 function render() {
-  const s = state;
-  const step = steps[currentStep];
-  const highlights = step.highlight || [];
+  const s=state, step=steps[currentStep], hl=step.highlight||[];
 
-  const eLife = Math.max(0, s.enemyLife);
-  document.getElementById("enemy-life-num").textContent = eLife;
-  document.getElementById("enemy-life-bar").style.width = (eLife / 20 * 100) + "%";
-  document.getElementById("loop-count").textContent = s.loopCount;
-  document.getElementById("total-dmg").textContent = s.totalDmg;
+  document.getElementById("player-life-num").textContent=s.playerLife;
+  document.getElementById("player-life-bar").style.width=(s.playerLife/20*100)+"%";
+  document.getElementById("enemy-life-num").textContent=Math.max(0,s.enemyLife);
+  document.getElementById("enemy-life-bar").style.width=(Math.max(0,s.enemyLife)/20*100)+"%";
+  document.getElementById("loop-label").textContent=s.loopLabel||"";
+
+  // デッキバー
+  const deckWrap=document.getElementById("deck-bar-wrap");
+  deckWrap.style.display = s.showDeck?"block":"none";
+  if (s.showDeck) {
+    document.getElementById("deck-num").textContent=Math.max(0,s.enemyDeck);
+    document.getElementById("deck-bar-fill").style.width=(Math.max(0,s.enemyDeck)/40*100)+"%";
+  }
 
   // 戦場
-  const pf = document.getElementById("player-field");
-  pf.innerHTML = "";
-  s.playerField.forEach(name => {
-    const baseName = name.replace("_muted","").replace(/\d+$/,"");
-    const isMuted = name.includes("_muted");
-    const el = makeCard(baseName, {
-      highlighted: highlights.includes(baseName) || highlights.includes(name),
-      entering: name === "救助する森狼" && step.entering,
-      muted: isMuted,
-    });
-    if (baseName === "鉄鴉" && s.tekkiAtk > 0) {
-      const b = document.createElement("div");
-      b.style.cssText = "position:absolute;top:2px;left:0;right:0;background:rgba(180,0,50,0.88);color:white;font-size:7px;font-weight:bold;padding:1px 2px;text-align:center;z-index:10;";
-      b.textContent = `ATK${s.tekkiAtk}`;
-      el.style.position = "relative";
-      el.appendChild(b);
-    }
-    pf.appendChild(el);
+  const pf=document.getElementById("player-field"); pf.innerHTML="";
+  s.field.forEach(name=>{
+    const base=name.replace("_muted","").replace(/\d+$/,"");
+    const isHl=hl.some(h=>base.includes(h)||h.includes(base));
+    const isEntering=name==="救助する森狼"&&step.entering;
+    pf.appendChild(makeCard(name,{highlighted:isHl,entering:isEntering}));
+  });
+
+  // パイル
+  const pa=document.getElementById("pile-area"); pa.innerHTML="";
+  (s.pile||[]).forEach(e=>{
+    const el=document.createElement("div");
+    el.style.cssText="background:rgba(80,70,0,0.7);border:1px solid #aa9900;border-radius:6px;padding:3px 6px;font-size:10px;color:#ffee88;margin:2px 0;";
+    el.textContent="▶ "+e; pa.appendChild(el);
   });
 
   // 除外
-  const ea = document.getElementById("exile-area");
-  ea.innerHTML = "";
-  s.exile.forEach(name => {
-    ea.appendChild(makeCard(name, { exiled: true, highlighted: highlights.includes(name) }));
+  const ea=document.getElementById("exile-area"); ea.innerHTML="";
+  s.exile.forEach(name=>{
+    ea.appendChild(makeCard(name,{exiled:true}));
   });
 
   // 領土
-  const ta = document.getElementById("territory-area");
-  ta.innerHTML = "";
-  s.territories.forEach((t, i) => {
-    const card = document.createElement("div");
-    card.className = "territory-card" + (i < s.usedTerritories ? " used" : "") + (t === "山" ? " mountain" : "");
-    card.textContent = t;
-    ta.appendChild(card);
+  const ta=document.getElementById("territory-area"); ta.innerHTML="";
+  const terrLabel = s.territories.join("・");
+  document.getElementById("terr-label").textContent=`領土（${terrLabel}）`;
+  const terrMap={"森":"forest","山":"mountain","平":"plain","白":"plain","緑":"forest"};
+  s.territories.forEach((t,i)=>{
+    const card=document.createElement("div");
+    card.className="territory-card "+(terrMap[t]||"forest")+(i<s.usedTerr?" used":"");
+    card.textContent=t; ta.appendChild(card);
   });
 
   // 手札
-  const ha = document.getElementById("hand-area");
-  ha.innerHTML = "";
-  s.hand.forEach(name => ha.appendChild(makeHandCard(name)));
+  const ha=document.getElementById("hand-area"); ha.innerHTML="";
+  s.hand.forEach(name=>{
+    const div=document.createElement("div"); div.className="hand-card";
+    const url=getImg(name);
+    if(url){const img=document.createElement("img");img.src=url;img.onerror=()=>{div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";div.textContent=name;};div.appendChild(img);}
+    ha.appendChild(div);
+  });
 
-  // 説明
-  document.getElementById("step-title").textContent = step.title;
-  document.getElementById("step-text").innerHTML = step.text;
-  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+  document.getElementById("step-title").textContent=step.title;
+  document.getElementById("step-text").innerHTML=step.text;
+  document.getElementById("step-counter").textContent=`${currentStep+1} / ${steps.length}`;
 
   // バッジ
-  const badge = document.getElementById("loop-badge");
-  if (step.isLoop && step.isExtra) {
-    badge.style.cssText = "display:block;background:#4a1a3a;color:#ffaadd;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #aa44aa;";
-    badge.textContent = "🔁 ループ！1回4点！";
-  } else if (step.isLoop) {
-    badge.style.cssText = "display:block;background:#1a4a1a;color:#88ff88;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #44aa44;";
-    badge.textContent = "🔁 ここからループ！";
-  } else if (step.isExtra) {
-    badge.style.cssText = "display:block;background:#1a3a5a;color:#88ccff;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #4a8aaa;";
-    badge.textContent = "✨ 発展編";
-  } else {
-    badge.style.display = "none";
-  }
+  const badge=document.getElementById("loop-badge");
+  if(step.isLoop){
+    badge.style.cssText="display:block;background:#1a4a1a;color:#88ff88;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #44aa44;";
+    badge.textContent="🔁 ループ！";
+  } else { badge.style.display="none"; }
+
+  // ナビボタンのactive状態
+  const sections=["basic","tekki","milkcow","mogura"];
+  const navBtns=document.querySelectorAll(".nav-btn");
+  navBtns.forEach((btn,i)=>{
+    btn.classList.toggle("active", step.section===sections[i]);
+  });
+}
+
+function deepCopy(s) {
+  return {...s, field:[...s.field], hand:[...s.hand], exile:[...s.exile], pile:[...(s.pile||[])], territories:[...s.territories]};
 }
 
 function applyStep(idx) {
-  const step = steps[idx];
-  state = step.action({
-    ...state,
-    exile: [...state.exile],
-    hand: [...state.hand],
-    playerField: [...state.playerField],
-    territories: [...state.territories],
-    trash: [...(state.trash||[])],
-  });
-  if (step.damage) showDamage(300, step.dmgAmount || 1);
+  state=steps[idx].action(deepCopy(state));
+  if(steps[idx].damage) showFloat("enemy-dmg",steps[idx].damage);
+  if(steps[idx].heal) showFloat("heal",steps[idx].heal);
+  if(steps[idx].deckDmg) showFloat("deck-dmg",steps[idx].deckDmg);
   render();
 }
 
-function nextStep() {
+function nextStep(){stopPlay();if(currentStep<steps.length-1){currentStep++;applyStep(currentStep);}}
+function prevStep(){
   stopPlay();
-  if (currentStep < steps.length - 1) {
-    currentStep++;
-    applyStep(currentStep);
-  }
-}
-
-function prevStep() {
-  stopPlay();
-  if (currentStep > 0) {
+  if(currentStep>0){
     currentStep--;
-    replayTo(currentStep);
+    let s=initState();
+    for(let i=0;i<=currentStep;i++) s=steps[i].action(deepCopy(s));
+    state=s; render();
   }
 }
+function resetAll(){stopPlay();currentStep=0;state=initState();render();}
+function jumpTo(idx){stopPlay();currentStep=idx;let s=initState();for(let i=0;i<=idx;i++)s=steps[i].action(deepCopy(s));state=s;render();}
 
-function replayTo(target) {
-  let s = initState();
-  for (let i = 0; i <= target; i++) {
-    s = steps[i].action({
-      ...s,
-      exile: [...s.exile],
-      hand: [...s.hand],
-      playerField: [...s.playerField],
-      territories: [...s.territories],
-      trash: [...(s.trash||[])],
-    });
-  }
-  state = s;
-  render();
+let playTimer=null;
+const PLAY_INTERVAL=2500;
+function togglePlay(){if(playTimer){stopPlay();}else{startPlay();}}
+function startPlay(){
+  const btn=document.getElementById("playBtn");
+  btn.textContent="⏸ 停止";btn.classList.add("playing");
+  playTimer=setInterval(()=>{if(currentStep<steps.length-1){currentStep++;applyStep(currentStep);}else{stopPlay();}},PLAY_INTERVAL);
+}
+function stopPlay(){
+  if(playTimer){clearInterval(playTimer);playTimer=null;}
+  const btn=document.getElementById("playBtn");
+  if(btn){btn.textContent="▶ 再生";btn.classList.remove("playing");}
 }
 
-function resetAll() {
-  stopPlay();
-  currentStep = 0;
-  state = initState();
-  render();
-}
-
-let playTimer = null;
-const PLAY_INTERVAL = 2500;
-
-function togglePlay() {
-  if (playTimer) { stopPlay(); } else { startPlay(); }
-}
-
-function startPlay() {
-  const btn = document.getElementById("playBtn");
-  btn.textContent = "⏸ 停止";
-  btn.classList.add("playing");
-  playTimer = setInterval(() => {
-    if (currentStep < steps.length - 1) {
-      currentStep++;
-      applyStep(currentStep);
-    } else {
-      stopPlay();
-    }
-  }, PLAY_INTERVAL);
-}
-
-function stopPlay() {
-  if (playTimer) { clearInterval(playTimer); playTimer = null; }
-  const btn = document.getElementById("playBtn");
-  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
-}
-
-state = initState();
+state=initState();
 render();
 </script>
 </body>
