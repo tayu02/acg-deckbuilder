@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>繁殖ルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #a8e0a8; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+#dmg-counter {
+  position: absolute; top: 6px; right: 8px;
+  background: rgba(150,40,0,0.9); color: #ffddaa;
+  font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #ff6600; z-index: 20;
+}
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; min-height: 70px; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+  .token.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+
+.token {
+  width: 40px; height: 56px; border-radius: 4px;
+  background: #1a3a2a; border: 2px solid #4aaa6a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #aaffaa; font-weight: bold;
+  text-align: center; flex-shrink: 0;
+  transition: box-shadow 0.3s, border-color 0.3s;
+  position: relative;
+}
+.token.powered { border-color: #ff8800; box-shadow: 0 0 10px 2px rgba(255,140,0,0.5); }
+.token.speedy { border-color: #44ddff; box-shadow: 0 0 10px 2px rgba(50,200,255,0.5); }
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: bold;
+  transition: transform 0.4s, opacity 0.3s;
+}
+.territory-card.used { transform: rotate(90deg); opacity: 0.4; }
+.territory-card.forest { background: #1a3a1a; border: 1px solid #4a8a4a; color: #aaffaa; }
+.territory-card.mountain { background: #4a2a2a; border: 1px solid #8a4a4a; color: #ffaaaa; }
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.damage-float {
+  position: fixed; font-size: 22px; font-weight: bold;
+  pointer-events: none; animation: floatUp 1s ease forwards; z-index: 200;
+}
+.damage-float.enemy-dmg { color: #ff4444; text-shadow: 0 0 12px #ff0000; }
+
+@keyframes floatUp {
+  0% { opacity:1; transform:translateY(0) scale(1.3); }
+  100% { opacity:0; transform:translateY(-60px) scale(0.8); }
+}
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffdd88; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🐟 繁殖ルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div id="dmg-counter">🔥 累計：<span id="dmg-count">0</span>点</div>
+
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">領土（森×3・山×1）</div>
+    <div class="territory-zone" id="territory-area"></div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+const IMAGES = {
+  虚構の栄華:     "https://acgtcg.com/img/BP3-076",
+  養殖繁殖:       "https://acgtcg.com/img/BP3-056",
+  ガルダの神殿:   "https://acgtcg.com/img/BP4-007",
+  草の折籠:       "https://acgtcg.com/img/BP3-054",
+  道具の骨組み:   "https://acgtcg.com/img/BP4-079",
+  鉄クズ:         "https://acgtcg.com/img/ACG-160",
+  鉄洗いグマ:     "https://acgtcg.com/img/ACG-159",
+  ガルダの信者:   "https://acgtcg.com/img/BP4-008",
+  養殖繁殖手札:   "https://acgtcg.com/img/BP3-056",
+};
+
+function initState() {
+  return {
+    enemyLife: 19,
+    playerLife: 20,
+    dmg: 0,
+    // 戦場：虚栄×2、ガルダ神殿、草の折籠、骨組み、鉄クズ×2、鉄洗いグマ、ガルダ信者
+    field: [
+      {name:"虚構の栄華", num:"①"},
+      {name:"虚構の栄華", num:"②"},
+      {name:"ガルダの神殿"},
+      {name:"草の折籠"},
+      {name:"道具の骨組み"},
+      {name:"鉄クズ", num:"①"},
+      {name:"鉄クズ", num:"②"},
+      {name:"鉄洗いグマ"},
+      {name:"ガルダの信者"},
+    ],
+    tokens: [],  // サカナトークン {powered, speedy}
+    hand: [{name:"養殖繁殖手札"}],
+    territories: ["森","森","森","山"],
+    usedTerr: 0,
+    // どの道具がムーブしているか
+    mutedField: [],
+  };
+}
+
+const steps = [
+  {
+    title: "初期状態（ほぼ完成の盤面）",
+    text: "戦場：虚構の栄華×2・ガルダの神殿・草の折籠・道具の骨組み・鉄クズ×2・鉄洗いグマ・ガルダの信者<br>手札：養殖繁殖<br>領土：森×3・山×1（計4枚）<br>※ガルダの信者が既に1点与えているため相手ライフは19点",
+    action: s => s,
+  },
+  {
+    title: "① 養殖繁殖をプレイ（コスト1・森）",
+    text: "養殖繁殖をプレイ！<br>虚構の栄華①・ガルダの神殿・草の折籠・道具の骨組み・鉄クズ①②の<b>6つの道具をムーブ</b>。<br>（虚構の栄華②・鉄洗いグマ・ガルダの信者は温存）<br>→ 1/1のサカナ動物トークン<b>6体</b>が戦場に！",
+    action: s => {
+      s.hand = [];
+      s.usedTerr = 1;
+      s.mutedField = ["虚構の栄華①", "ガルダの神殿", "草の折籠", "道具の骨組み", "鉄クズ①", "鉄クズ②"];
+      s.tokens = Array(6).fill(null).map(() => ({powered:false, speedy:false}));
+      return s;
+    },
+    highlight: ["養殖繁殖", "虚構の栄華①"],
+  },
+  {
+    title: "② 戦場に残っている虚構の栄華②の効果でトークンが3/3に！",
+    text: "虚構の栄華②が戦場にある限り、あなたの戦場の動物トークンはATK+1/DEF+1を得る。<br>1/1サカナトークン6体が<b>2/2</b>に！<br>（さらに①もムーブしていないが戦場にあるため合計ATK+2/DEF+2で<b>3/3</b>）",
+    action: s => {
+      s.tokens = s.tokens.map(() => ({powered:true, speedy:false}));
+      return s;
+    },
+    highlight: ["虚構の栄華②"],
+  },
+  {
+    title: "③ 虚構の栄華②の起動（③払ってムーブ）→全トークンに《駿足》付与！",
+    text: "虚構の栄華②をムーブして③を支払い、起動効果発動！<br>ターン終了時まで、あなたの戦場のすべての動物トークンは《駿足》を得る。<br>→ 3/3のサカナトークン6体が<b>即アタック可能</b>に！",
+    action: s => {
+      s.usedTerr = 4;
+      s.mutedField = [...s.mutedField, "虚構の栄華②"];
+      s.tokens = s.tokens.map(() => ({powered:true, speedy:true}));
+      return s;
+    },
+    highlight: ["虚構の栄華②"],
+  },
+  {
+    title: "④ サカナトークン6体でアタック→18点！",
+    text: "3/3の《駿足》サカナトークン6体で一斉攻撃！<br>→ 18点ダメージ（相手ライフ19→1点）",
+    action: s => {
+      s.tokens = s.tokens.map(() => ({powered:true, speedy:true, muted:true}));
+      s.enemyLife -= 18;
+      s.dmg += 18;
+      return s;
+    },
+    damage: 18,
+    highlight: [],
+  },
+  {
+    title: "⑤ ガルダの信者でアタック→1点！フィニッシュ！",
+    text: "温存していたガルダの信者でアタック！<br>→ 1点ダメージで相手ライフ0！<br>🏆 <b>合計19点でワンショット勝利！</b>",
+    action: s => {
+      s.mutedField = [...s.mutedField, "ガルダの信者"];
+      s.enemyLife = 0;
+      s.dmg += 1;
+      return s;
+    },
+    damage: 1,
+    highlight: ["ガルダの信者"],
+  },
+  {
+    title: "✅ まとめ：繁殖ルートのポイント",
+    text: "【準備】鉄洗いグマで鉄クズを集め、ガルダの信者・設計図・テングザルなどで虚構の栄華と養殖繁殖を揃える<br><br>【フィニッシュ】<br>①養殖繁殖で道具6枚をムーブ→サカナトークン6体<br>②虚構の栄華×2でトークンが3/3に<br>③栄華の起動（③払う）で全員《駿足》付与<br>④6体で18点＋残った動物で残りを削る<br><br>【核心】道具を大量に並べてから養殖繁殖で一気に展開！虚構の栄華を先出ししておくのがポイント。",
+    action: s => s,
+  },
+];
+
+let state={}, currentStep=0;
+
+function getImg(name) {
+  const base = name.replace("①","").replace("②","").replace("手札","");
+  return IMAGES[base] || null;
+}
+
+function makeCard(name, muted, highlighted) {
+  const div = document.createElement("div");
+  div.className = "card" + (muted?" muted":"") + (highlighted?" highlighted":"");
+  const url = getImg(name);
+  if (url) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.onerror = () => {
+      div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;";
+      div.textContent = name;
+    };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;background:#2a3a4a;";
+    div.textContent = name;
+  }
+  if (name.includes("①") || name.includes("②")) {
+    const b = document.createElement("div");
+    b.style.cssText = "position:absolute;top:2px;right:2px;background:rgba(0,80,150,0.9);color:#aaddff;font-size:8px;font-weight:bold;padding:1px 3px;border-radius:3px;z-index:10;";
+    b.textContent = name.includes("①") ? "①" : "②";
+    div.appendChild(b);
+  }
+  return div;
+}
+
+function makeToken(powered, speedy, muted) {
+  const div = document.createElement("div");
+  div.className = "token" + (speedy?" speedy":powered?" powered":"") + (muted?" muted":"");
+  const stats = powered ? "3/3" : "1/1";
+  const icon = speedy ? "⚡" : "";
+  div.innerHTML = `${icon}<br>🐟<br>${stats}`;
+  return div;
+}
+
+function showDamage(amount) {
+  setTimeout(() => {
+    const el = document.createElement("div");
+    el.className = "damage-float enemy-dmg";
+    el.textContent = `-${amount}点`;
+    const rect = document.getElementById("enemy-life-bar").getBoundingClientRect();
+    el.style.left = (rect.left+rect.width/2-25)+"px";
+    el.style.top = (window.scrollY+rect.top-10)+"px";
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 1200);
+  }, 400);
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const hl = step.highlight || [];
+
+  document.getElementById("player-life-num").textContent = s.playerLife;
+  document.getElementById("player-life-bar").style.width = (s.playerLife/20*100)+"%";
+  document.getElementById("enemy-life-num").textContent = Math.max(0,s.enemyLife);
+  document.getElementById("enemy-life-bar").style.width = (Math.max(0,s.enemyLife)/20*100)+"%";
+  document.getElementById("dmg-count").textContent = s.dmg;
+
+  // 戦場
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  s.field.forEach(card => {
+    const key = card.name + (card.num||"");
+    const isMuted = s.mutedField.includes(key) || s.mutedField.includes(card.name + (card.num||""));
+    const isHl = hl.some(h => key.includes(h) || card.name.includes(h));
+    pf.appendChild(makeCard(key, isMuted, isHl));
+  });
+  // トークン
+  s.tokens.forEach(t => pf.appendChild(makeToken(t.powered, t.speedy, t.muted)));
+
+  // 領土
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  s.territories.forEach((t,i) => {
+    const card = document.createElement("div");
+    card.className = "territory-card " + (t==="森"?"forest":"mountain") + (i < s.usedTerr ? " used" : "");
+    card.textContent = t;
+    ta.appendChild(card);
+  });
+
+  // 手札
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  s.hand.forEach(card => {
+    const div = document.createElement("div");
+    div.className = "hand-card";
+    const url = getImg(card.name);
+    if (url) {
+      const img = document.createElement("img");
+      img.src = url;
+      img.onerror = () => { div.style.cssText+=";display:flex;align-items:center;justify-content:center;font-size:6px;color:#aaa;text-align:center;padding:2px;"; div.textContent=card.name; };
+      div.appendChild(img);
+    }
+    ha.appendChild(div);
+  });
+
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep+1} / ${steps.length}`;
+}
+
+function deepCopy(s) {
+  return {
+    ...s,
+    field: s.field.map(c=>({...c})),
+    tokens: s.tokens.map(t=>({...t})),
+    hand: s.hand.map(c=>({...c})),
+    territories: [...s.territories],
+    mutedField: [...s.mutedField],
+  };
+}
+
+function applyStep(idx) {
+  state = steps[idx].action(deepCopy(state));
+  if (steps[idx].damage) showDamage(steps[idx].damage);
+  render();
+}
+
+function nextStep() { stopPlay(); if(currentStep<steps.length-1){currentStep++;applyStep(currentStep);} }
+function prevStep() {
+  stopPlay();
+  if(currentStep>0){
+    currentStep--;
+    let s=initState();
+    for(let i=0;i<=currentStep;i++) s=steps[i].action(deepCopy(s));
+    state=s; render();
+  }
+}
+function resetAll() { stopPlay(); currentStep=0; state=initState(); render(); }
+
+let playTimer=null;
+const PLAY_INTERVAL=2500;
+function togglePlay(){ if(playTimer){stopPlay();}else{startPlay();} }
+function startPlay(){
+  const btn=document.getElementById("playBtn");
+  btn.textContent="⏸ 停止"; btn.classList.add("playing");
+  playTimer=setInterval(()=>{ if(currentStep<steps.length-1){currentStep++;applyStep(currentStep);}else{stopPlay();} },PLAY_INTERVAL);
+}
+function stopPlay(){
+  if(playTimer){clearInterval(playTimer);playTimer=null;}
+  const btn=document.getElementById("playBtn");
+  if(btn){btn.textContent="▶ 再生";btn.classList.remove("playing");}
+}
+
+state=initState();
+render();
+</script>
+</body>
+</html>
