@@ -131,6 +131,7 @@
       <option value="崩落ルート">崩落ルート</option>
       <option value="禁止区狼ルート">禁止区狼ルート</option>
       <option value="赤狼ルート">赤狼ルート</option>
+      <option value="繁殖ルート">繁殖ルート</option>
       <option value="モグラルート">モグラルート</option>
       <option value="アルマジロルート">アルマジロルート</option>
       <option value="フェニックスルート">フェニックスルート</option>
@@ -349,7 +350,7 @@ const cards = [
 {"code":"BP3-053","name":"王鷲","type":"動物","tribe":"ワシ","stats":"ATK 4／DEF 5","cost":"4","condition":"森森","effect":"《唯一》《駿足》《有翼》\n【常時（戦場）】あなたの戦場の《有翼》を持つ動物はATK+1/DEF+1を得る。\n【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキからコスト2以下で条件を達成している《有翼》を持つ動物カード1枚を探して、《駿足》をターン終了時まで得た状態であなたの戦場に出す。\n【誘発（戦場）】これが攻撃した時、あなたの領地の領土1つを対象に発動してもよい。それをウェイクする。","route_search":["鷲ルート"],"general_effect":["バフ","登場"],"reading":"おうわし","image":"https://acgtcg.com/img/BP3-053"},
 {"code":"BP3-054","name":"草の折籠","type":"道具","tribe":"","stats":"","cost":"0","condition":"森森","effect":"《唯一》\n【起動（戦場）】ムーブして発動する。あなたはカード1枚を引いて、手札のカード1枚をデッキの下に置く。\n【起動（戦場）】②を支払って、これを生贄に捧げて発動する。あなたはカード1枚を引く。","route_search":[],"general_effect":["ドロー"],"reading":"くさのおりかご","image":"https://acgtcg.com/img/BP3-054"},
 {"code":"BP3-055","name":"不動の岩亀","type":"道具","tribe":"カメ","stats":"","cost":"1","condition":"森","effect":"【常時（戦場）】これにATK+1/DEF+1カウンター4個以上が置かれているなら、これは動物タイプを得る。\n【誘発（戦場）】あなたが効果でカード1枚以上を引いた時に発動してもよい。これにATK+1/DEF+1カウンター1個を置く。\n【誘発（墓地）】ATK+1/DEF+1カウンター4個以上が置かれているこれが戦場から墓地に置かれた時に発動してもよい。あなたはカード1枚を引く。","route_search":[],"general_effect":["ドロー"],"reading":"ふどうのいわがめ","image":"https://acgtcg.com/img/BP3-055"},
-{"code":"BP3-056","name":"養殖繁殖","type":"場面","tribe":"","stats":"","cost":"1","condition":"森","effect":"【プレイ】あなたの戦場の道具とあなたの領地の領土を任意の数ムーブして発動する。1/1の水生サカナ動物トークンX体をあなたの戦場に出す。Xはこの効果でムーブした道具と領土の数を合計した数に等しい。","route_search":[],"general_effect":["登場"],"reading":"ようしょくはんしょく","image":"https://acgtcg.com/img/BP3-056"},
+{"code":"BP3-056","name":"養殖繁殖","type":"場面","tribe":"","stats":"","cost":"1","condition":"森","effect":"【プレイ】あなたの戦場の道具とあなたの領地の領土を任意の数ムーブして発動する。1/1の水生サカナ動物トークンX体をあなたの戦場に出す。Xはこの効果でムーブした道具と領土の数を合計した数に等しい。","route_search":["繁殖ルート"],"general_effect":["登場"],"reading":"ようしょくはんしょく","image":"https://acgtcg.com/img/BP3-056"},
 {"code":"BP3-057","name":"不条理への抵抗","type":"特技","tribe":"","stats":"","cost":"1","condition":"森","effect":"【常時】あなたは「不条理への抵抗」カードを1ターンに1度しかプレイできない。\n【プレイ】あなたはカード1枚を引く。このターン中にあなたのプレイ効果1つ以上が妨害されているなら、代わりにあなたはカード2枚を引く。","route_search":[],"general_effect":["ドロー"],"reading":"ふじょうりへのていこう","image":"https://acgtcg.com/img/BP3-057"},
 {"code":"BP3-058","name":"狡猾な一撃","type":"特技","tribe":"","stats":"","cost":"2","condition":"森","effect":"【プレイ】戦場のコスト4以下の動物1体を対象に発動する。それを破壊する。","route_search":[],"general_effect":["除去"],"reading":"こうかつないちげき","image":"https://acgtcg.com/img/BP3-058"},
 {"code":"BP3-059","name":"密林の記憶","type":"特技","tribe":"","stats":"","cost":"4","condition":"森森","effect":"【固有】これをプレイする時、あなたの領地の領土が1つ以下なら、あなたはライフ2点を支払って、これ以外のあなたの手札の森林カード1枚を公開して適用してもよい。これをプレイするコストを④軽減して、森林条件を2軽減する。あなたの領地の領土が1つ以上なら、この効果で公開したあなたの手札のカード1枚を捨てる。\n【プレイ】戦場のコスト5以下の動物1体を対象に発動する。それを破壊する。","route_search":[],"general_effect":["除去"],"reading":"みつりんのきおく","image":"https://acgtcg.com/img/BP3-059"},
@@ -369,7 +370,7 @@ const cards = [
 {"code":"BP3-073","name":"恋狐","type":"動物","tribe":"キツネ","stats":"ATK 4／DEF 4","cost":"3","condition":"平夜","effect":"《唯一》《駿足》《突破》\n【常時（戦場）】あなたの戦場に「恋兎」動物がいないなら、これを生贄に捧げる。\n【誘発（戦場）】これが戦場に出た時、あなたの戦場に「恋兎」動物1体以上がいるなら、相手1人を対象に発動してもよい。それは自身の戦場の動物1体を生贄に捧げる。\n【起動（墓地）】③を支払って、あなたの手札のカード1枚を捨てて発動する。あなたの墓地の「恋狐」カード1枚と「恋兎」カード1枚をあなたの戦場に出す。","route_search":[],"general_effect":["除去","登場"],"reading":"こいきつね","image":"https://acgtcg.com/img/BP3-073"},
 {"code":"BP3-074","name":"恋兎","type":"動物","tribe":"ウサギ","stats":"ATK 2／DEF 6","cost":"3","condition":"平夜","effect":"《唯一》《早業》《対空》\n【常時（戦場）】あなたの戦場に「恋狐」動物がいないなら、これを生贄に捧げる。\n【起動（戦場）】あなたの戦場に「恋狐」動物1体以上がいるなら、ムーブ、戦場の縄張りや道具の内1つを対象に発動する。それを夜にする。\n【起動（戦場）】あなたの戦場に「恋狐」動物1体以上がいるなら、あなたの墓地の「悲恋哀々松崎心中」カード1枚を除外して発動する。あなたの戦場の「恋狐」動物1体と「恋兎」動物1体を生贄に捧げる。","route_search":[],"general_effect":[],"reading":"こいうさぎ","image":"https://acgtcg.com/img/BP3-074"},
 {"code":"BP3-075","name":"奔放な小狐","type":"動物","tribe":"キツネ","stats":"ATK 3／DEF 2","cost":"3","condition":"","effect":"《唯一》《敏捷》\n【固有】このターン中、相手の効果でカードが合計2枚以上除外されているなら、これをプレイする時、これをプレイするコストを③軽減する。\n【誘発（戦場）】これが戦場に出た時、除外領域の動物カード合計2枚を対象に発動してもよい。それらを持ち主の墓地に置く。\n【起動（戦場）】ムーブ、①を支払って、これを生贄に捧げて、このターン中に相手の効果で除外されたあなたの除外領域のカード1枚を対象に発動する。それを手札に加える。","route_search":[],"general_effect":[],"reading":"ほんぽうなこぎつね","image":"https://acgtcg.com/img/BP3-075"},
-{"code":"BP3-076","name":"虚構の栄華","type":"道具","tribe":"","stats":"","cost":"1","condition":"無","effect":"【常時（戦場）】あなたの戦場の動物トークンはATK+1/DEF+1を得る。\n【起動（戦場）】ムーブ、③を支払って発動する。ターン終了時まで、あなたの戦場のすべての動物トークンは《駿足》を得る。","route_search":[],"general_effect":["バフ"],"reading":"きょこうのえいか","image":"https://acgtcg.com/img/BP3-076"},
+{"code":"BP3-076","name":"虚構の栄華","type":"道具","tribe":"","stats":"","cost":"1","condition":"無","effect":"【常時（戦場）】あなたの戦場の動物トークンはATK+1/DEF+1を得る。\n【起動（戦場）】ムーブ、③を支払って発動する。ターン終了時まで、あなたの戦場のすべての動物トークンは《駿足》を得る。","route_search":["繁殖ルート"],"general_effect":["バフ"],"reading":"きょこうのえいか","image":"https://acgtcg.com/img/BP3-076"},
 {"code":"BP3-077","name":"磔台","type":"道具","tribe":"","stats":"","cost":"1","condition":"無無","effect":"【常時（戦場）】これの起動能力の効果で磔台カウンター1個以上が置かれている戦場の動物は攻撃や防御ができない。\n【起動（戦場）】ムーブ、②を支払って、相手の戦場の動物1体を対象に発動する。これの起動能力の効果で置いた戦場のすべての磔台カウンターを取り除く。それに磔台カウンター1個を置く。","route_search":[],"general_effect":["遅延"],"reading":"はりつけだい","image":"https://acgtcg.com/img/BP3-077"},
 {"code":"BP3-078","name":"謀叛の血判状","type":"道具","tribe":"","stats":"","cost":"4","condition":"無無無","effect":"【誘発（戦場）】これが戦場に出た時に発動する。相手の戦場のATKの値が一番高い動物1体を選び、これが戦場にある限り、選んだ動物をあなたの戦場に移す。この効果で移した動物は、これが戦場を離れると同時にこの効果で移す前の戦場に移す。","route_search":[],"general_effect":["遅延"],"reading":"むほんのけっぱんじょう","image":"https://acgtcg.com/img/BP3-078"},
 {"code":"BP3-079","name":"仮初の領土","type":"場面","tribe":"","stats":"","cost":"1","condition":"無無無","effect":"【プレイ】『ムーブした時にこれを生贄に捧げる』を持つ領土トークン1つをあなたの領地に出す。","route_search":["域サポート"],"general_effect":[],"reading":"かりそめのりょうど","image":"https://acgtcg.com/img/BP3-079"},
@@ -764,6 +765,7 @@ const routeGuides = {
   "崩落ルート": "https://tayu02.github.io/acg-deckbuilder/route_houraku.html",
   "断崖ルート": "https://tayu02.github.io/acg-deckbuilder/route_dangai.html",
   "赤狼ルート": "https://tayu02.github.io/acg-deckbuilder/route_akaokami.html",
+  "繁殖ルート": "https://tayu02.github.io/acg-deckbuilder/route_hanshoku.html",
   "モグラルート": "https://tayu02.github.io/acg-deckbuilder/route_mogura.html",
   "バッファロールート": "https://tayu02.github.io/acg-deckbuilder/route_buffalo.html",
 };
