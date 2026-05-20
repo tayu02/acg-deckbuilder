@@ -1273,7 +1273,7 @@ function renderDeckView() {
 
     return `
       <div style="display:flex; align-items:center; gap:10px; padding:4px 0; border-bottom:1px solid #2a4a3a;">
-        <img src="${img}" onerror="this.src='https://via.placeholder.com/48x68/112233/88cc88?text=?'" style="width:48px; height:68px; object-fit:cover; border-radius:6px; background:#112233;">
+        <img src="${img}" onerror="this.src='https://via.placeholder.com/48x68/112233/88cc88?text=?'" style="width:48px; height:68px; object-fit:cover; border-radius:6px; background:#112233; cursor:pointer;" data-code="${code}" onclick="showDetail(cards.find(function(c){return c.code===this.getAttribute('data-code');}.bind(this)))">
         <div style="flex:1; min-width:0;">
           <div style="font-size:12px; color:#e0e8d0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div>
           <div style="font-size:10px; color:#aaa; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${code}</div>
