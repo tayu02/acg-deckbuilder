@@ -286,12 +286,22 @@ function makeCard(name, muted, highlighted) {
   return div;
 }
 
+const FISH_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA1NiIgd2lkdGg9IjQwIiBoZWlnaHQ9IjU2Ij4KICA8cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNTYiIHJ4PSI0IiBmaWxsPSIjMGEyYTNhIi8+CiAgPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjU2IiByeD0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGFhYTZhIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8IS0tIOmtmuOBruS9kyAtLT4KICA8ZWxsaXBzZSBjeD0iMjAiIGN5PSIzMCIgcng9IjExIiByeT0iNyIgZmlsbD0iIzRhYzhhYSIvPgogIDwhLS0g5bC+44Gy44KMIC0tPgogIDxwb2x5Z29uIHBvaW50cz0iMzEsMzAgMzgsMjMgMzgsMzciIGZpbGw9IiMzYWFhODgiLz4KICA8IS0tIOiDuOOBsuOCjCAtLT4KICA8ZWxsaXBzZSBjeD0iMTgiIGN5PSIzNSIgcng9IjUiIHJ5PSIzIiBmaWxsPSIjM2FhYTg4IiB0cmFuc2Zvcm09InJvdGF0ZSgtMjAsMTgsMzUpIi8+CiAgPCEtLSDnm64gLS0+CiAgPGNpcmNsZSBjeD0iMTMiIGN5PSIyOCIgcj0iMi4yIiBmaWxsPSJ3aGl0ZSIvPgogIDxjaXJjbGUgY3g9IjEyLjUiIGN5PSIyNy41IiByPSIxLjEiIGZpbGw9IiMxMTEiLz4KICA8IS0tIOWPoyAtLT4KICA8cGF0aCBkPSJNOSwzMSBRMTEsMzMgOSwzNSIgc3Ryb2tlPSIjMmE4ODY2IiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiLz4KICA8IS0tIOOCueODhuODvOOCv+OCuSAtLT4KICA8dGV4dCB4PSIyMCIgeT0iNTAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNyIgZmlsbD0iI2FhZmZjYyIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSJib2xkIj4xLzE8L3RleHQ+Cjwvc3ZnPgo=";
 function makeToken(powered, speedy, muted) {
   const div = document.createElement("div");
   div.className = "token" + (speedy?" speedy":powered?" powered":"") + (muted?" muted":"");
+  const img = document.createElement("img");
+  img.src = FISH_IMG;
+  img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+  div.appendChild(img);
+  // ステータスバッジ
+  const badge = document.createElement("div");
   const stats = powered ? "3/3" : "1/1";
   const icon = speedy ? "⚡" : "";
-  div.innerHTML = `${icon}<br>🐟<br>${stats}`;
+  badge.style.cssText = "position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:7px;font-weight:bold;color:#aaffcc;background:rgba(0,0,0,0.6);";
+  badge.textContent = icon + stats;
+  div.style.position = "relative";
+  div.appendChild(badge);
   return div;
 }
 
