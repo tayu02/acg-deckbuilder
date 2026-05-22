@@ -16,7 +16,9 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
 .section {
   background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a;
   border-radius: 12px; padding: 14px; margin-bottom: 12px;
+  display: none;
 }
+.section.active { display: block; }
 .section h2 { color: #ffdd88; font-size: 15px; margin-bottom: 10px; border-bottom: 1px solid #3a6a4a; padding-bottom: 6px; }
 .section h3 { color: #88ddff; font-size: 13px; margin: 10px 0 4px; }
 
@@ -31,8 +33,12 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
 .tag.transform { background: #4a1a1a; color: #ff8888; border: 1px solid #aa4444; }
 .tag.main { background: #1a1a4a; color: #8888ff; border: 1px solid #4444aa; }
 
-.back-btn { display: block; text-align: center; margin-top: 8px; }
-.back-btn button { padding: 10px 30px; background: #3a3a3a; color: #ccc; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#step-counter { text-align: center; color: #888; font-size: 13px; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -42,24 +48,25 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
     <p>デッキ上を裏向き除外して様々な能力を得るフィニッシャー</p>
   </div>
 
-  <!-- メインカード -->
-  <div class="section">
+  <div id="controls">
+    <button class="ctrl-btn prev" id="prevBtn" onclick="changePage(-1)" style="display:none;">◀ サポート</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" id="nextBtn" onclick="changePage(1)">変化先 ▶</button>
+  </div>
+
+  <!-- ページ0：メイン＋サポート -->
+  <div class="section active" id="page-0">
     <h2>🌟 メインカード</h2>
     <div class="card-row">
       <div class="card-img"><img src="https://acgtcg.com/img/BP1-029" onerror="this.parentNode.style.background='#2a3a4a'"></div>
       <div class="card-info">
         <div class="card-name">九尾 <span class="tag main">核心</span></div>
         <div class="card-code">BP1-029</div>
-        登場時にデッキ上9枚を裏向き除外し、妖狐カウンター9個を得る。<br>
-        起動効果でカウンター1個を取り除くたびに裏向き除外カードを表向きにしてその能力を得る。<br>
-        幅広い能力を得ることで様々なルートのフィニッシャーになれる最強カード。
+        登場時にデッキ上9枚を裏向き除外し、妖狐カウンター9個を得る。起動効果でカウンター1個を取り除くたびに裏向き除外カードを表向きにしてその能力を得る。幅広い能力を得ることであらゆるルートのフィニッシャーになれる最強カード。
       </div>
     </div>
-  </div>
 
-  <!-- サポートカード -->
-  <div class="section">
-    <h2>🔧 サポートカード</h2>
+    <h2 style="margin-top:14px;">🔧 サポートカード</h2>
 
     <h3>展開サポート（踏み倒し）</h3>
     <div class="card-row">
@@ -134,8 +141,8 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
     </div>
   </div>
 
-  <!-- 変化先 -->
-  <div class="section">
+  <!-- ページ1：変化先 -->
+  <div class="section" id="page-1">
     <h2>🔥 変化先カード（九尾が得る能力）</h2>
 
     <div class="card-row">
@@ -146,7 +153,6 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
         《突破》持ち。効果による破壊耐性と盤面除去。英雄の参戦で直接出してもよい。堅実なフィニッシャー。
       </div>
     </div>
-
     <div class="card-row">
       <div class="card-img"><img src="https://acgtcg.com/img/BP4-003" onerror="this.parentNode.style.background='#2a3a4a'"></div>
       <div class="card-info">
@@ -155,7 +161,6 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
         戦闘ダメージを与えると特殊勝利。九尾が動物を持った状態でこの能力を得ることで特殊勝利が狙える。他の変化先と組み合わせて突破不可能な状況を作り出す。
       </div>
     </div>
-
     <div class="card-row">
       <div class="card-img"><img src="https://acgtcg.com/img/BP4-006" onerror="this.parentNode.style.background='#2a3a4a'"></div>
       <div class="card-info">
@@ -164,7 +169,6 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
         《有翼》により防御されにくくなる。着地時に盤面バーンまたはドローを選択。トドメというよりアドバンテージ獲得や追撃として使う。
       </div>
     </div>
-
     <div class="card-row">
       <div class="card-img"><img src="https://acgtcg.com/img/ACG-161" onerror="this.parentNode.style.background='#2a3a4a'"></div>
       <div class="card-info">
@@ -173,16 +177,14 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
         妨害されないバーンを打ち出せる。九尾のATKが高ければ高いほど火力が上がる。彼岸色のカメレオンと組み合わせると特に強力。
       </div>
     </div>
-
     <div class="card-row">
       <div class="card-img"><img src="https://acgtcg.com/img/BP1-065" onerror="this.parentNode.style.background='#2a3a4a'"></div>
       <div class="card-info">
         <div class="card-name">赤猫 <span class="tag transform">変化伍</span></div>
         <div class="card-code">BP1-065</div>
-        ダメージを反射しつつ高ATKで殴るスタイル。墓地に送られる効果は発揮できないが、対象にしてダメージを与えてくる相手に対して有効。
+        自ら対象にとって相手にダメージを反射しつつ、自身のATKも上げることで鉄鴉やライノの火力補佐にもなる。
       </div>
     </div>
-
     <div class="card-row">
       <div class="card-img"><img src="https://acgtcg.com/img/ACG-164" onerror="this.parentNode.style.background='#2a3a4a'"></div>
       <div class="card-info">
@@ -191,7 +193,6 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
         九尾が山山山森森森（条件6つ）を持つのでATK+6。鉄鴉や無欠ライノとの組み合わせで火力・突破力が大幅強化。
       </div>
     </div>
-
     <div class="card-row">
       <div class="card-img"><img src="https://acgtcg.com/img/ACG-092" onerror="this.parentNode.style.background='#2a3a4a'"></div>
       <div class="card-info">
@@ -200,7 +201,6 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
         戦闘ダメージを受けなくなる堅牢な壁。赤猫も化けていれば防御せざるを得ない状況を作り出せる。崩落や突破持ちと組み合わせれば詰みに追い込める。
       </div>
     </div>
-
     <div class="card-row">
       <div class="card-img"><img src="https://acgtcg.com/img/BP2-046" onerror="this.parentNode.style.background='#2a3a4a'"></div>
       <div class="card-info">
@@ -209,7 +209,6 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
         相手の妨害に対して妨害を返せるようになる。手札のカードを捨てて相手のプレイをコストで妨害できるため、九尾を守りながら戦える。
       </div>
     </div>
-
     <div class="card-row">
       <div class="card-img"><img src="https://acgtcg.com/img/ACG-081" onerror="this.parentNode.style.background='#2a3a4a'"></div>
       <div class="card-info">
@@ -218,7 +217,6 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
         着地時にデッキの縄張りを墓地に置いてその能力をコピー。《有翼》と《駿足》を得つつ他の狐がいればその恩恵も全体に波及。
       </div>
     </div>
-
     <div class="card-row">
       <div class="card-img"><img src="https://acgtcg.com/img/BP2-040" onerror="this.parentNode.style.background='#2a3a4a'"></div>
       <div class="card-info">
@@ -229,9 +227,29 @@ body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-s
     </div>
   </div>
 
-  <div class="back-btn">
-    <button onclick="history.back()">✕ 閉じる</button>
-  </div>
 </div>
+
+<script>
+const pages = document.querySelectorAll('.section');
+const labels = ['サポート', '変化先'];
+let current = 0;
+
+function updateCounter() {
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  prevBtn.style.display = current === 0 ? 'none' : '';
+  nextBtn.style.display = current === pages.length - 1 ? 'none' : '';
+  window.scrollTo(0, 0);
+}
+
+function changePage(dir) {
+  pages[current].classList.remove('active');
+  current = Math.max(0, Math.min(pages.length - 1, current + dir));
+  pages[current].classList.add('active');
+  updateCounter();
+}
+
+updateCounter();
+</script>
 </body>
 </html>
