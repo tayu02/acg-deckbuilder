@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>九尾ルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#title-area { text-align: center; margin-bottom: 12px; }
+#title-area h1 { color: #ffdd88; font-size: 20px; }
+#title-area p { color: #a8e0a8; font-size: 13px; margin-top: 4px; }
+
+.section {
+  background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a;
+  border-radius: 12px; padding: 14px; margin-bottom: 12px;
+}
+.section h2 { color: #ffdd88; font-size: 15px; margin-bottom: 10px; border-bottom: 1px solid #3a6a4a; padding-bottom: 6px; }
+.section h3 { color: #88ddff; font-size: 13px; margin: 10px 0 4px; }
+
+.card-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+.card-img { width: 48px; height: 68px; border-radius: 6px; overflow: hidden; border: 2px solid #4a8a4a; background: #1a2a3a; flex-shrink: 0; }
+.card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-info { flex: 1; font-size: 12px; line-height: 1.7; color: #d0e8d0; }
+.card-name { font-weight: bold; color: #ffdd88; font-size: 13px; margin-bottom: 2px; }
+.card-code { color: #888; font-size: 10px; }
+.tag { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; margin-right: 4px; }
+.tag.support { background: #1a4a1a; color: #88ff88; border: 1px solid #44aa44; }
+.tag.transform { background: #4a1a1a; color: #ff8888; border: 1px solid #aa4444; }
+.tag.main { background: #1a1a4a; color: #8888ff; border: 1px solid #4444aa; }
+
+.back-btn { display: block; text-align: center; margin-top: 8px; }
+.back-btn button { padding: 10px 30px; background: #3a3a3a; color: #ccc; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="title-area">
+    <h1>🦊 九尾ルート解説</h1>
+    <p>デッキ上を裏向き除外して様々な能力を得るフィニッシャー</p>
+  </div>
+
+  <!-- メインカード -->
+  <div class="section">
+    <h2>🌟 メインカード</h2>
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP1-029" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">九尾 <span class="tag main">核心</span></div>
+        <div class="card-code">BP1-029</div>
+        登場時にデッキ上9枚を裏向き除外し、妖狐カウンター9個を得る。<br>
+        起動効果でカウンター1個を取り除くたびに裏向き除外カードを表向きにしてその能力を得る。<br>
+        幅広い能力を得ることで様々なルートのフィニッシャーになれる最強カード。
+      </div>
+    </div>
+  </div>
+
+  <!-- サポートカード -->
+  <div class="section">
+    <h2>🔧 サポートカード</h2>
+
+    <h3>展開サポート（踏み倒し）</h3>
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/ACG-099" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">襲撃 <span class="tag support">サポート</span></div>
+        <div class="card-code">パン田-ACG-099</div>
+        山岳域の数だけコスト軽減して手札の山岳動物を展開。九尾の6コストを軽減して出しやすくする。《駿足》も付与できる。
+      </div>
+    </div>
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP1-050" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">英雄の参戦 <span class="tag support">サポート</span></div>
+        <div class="card-code">BP1-050</div>
+        九尾のコストを踏み倒して展開できる。さらにデッキ上15枚を裏向き除外するため、九尾の9枚と合わせて最大24枚を裏向き除外できる。変化先の選択肢が大幅に広がる。
+      </div>
+    </div>
+
+    <h3>除外調整（使いたいカードをデッキに戻す）</h3>
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP3-054" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">草の折籠 <span class="tag support">サポート</span></div>
+        <div class="card-code">BP3-054</div>
+        ムーブで手札のカードをデッキ下に送る。裏向き除外したくないカードを事前にデッキから抜いておける。
+      </div>
+    </div>
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP4-054" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">自然の循環 <span class="tag support">サポート</span></div>
+        <div class="card-code">BP4-054</div>
+        墓地や除外領域のカードをデッキ下に戻す。誤って除外してしまった縄張りや重要カードを戻せる。
+      </div>
+    </div>
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/ACG-148" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">暗がりの保管庫 <span class="tag support">サポート</span></div>
+        <div class="card-code">キメサイ-ACG-148</div>
+        手札に来てしまった除外したいカードをデッキに戻せる。デッキトップ操作との組み合わせで九尾の除外先を調整できる。
+      </div>
+    </div>
+
+    <h3>再展開・能力コピー</h3>
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP3-028" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">子猫の三叉路 <span class="tag support">サポート</span></div>
+        <div class="card-code">BP3-028</div>
+        効果の1つに戦場の山岳動物を除外して再登場させるものがある。九尾を再登場させることで着地誘発が再発動→さらに9枚裏向き除外。合計18枚で変化先の選択肢が大幅増加。
+      </div>
+    </div>
+
+    <h3>域サポート</h3>
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP1-030" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">狐の隠里 <span class="tag support">サポート</span></div>
+        <div class="card-code">BP1-030</div>
+        キツネ動物がいれば山岳と森林の両域をカバー。九尾を出す条件（山山山森森森）を満たすために山岳域・森林域を確保する。
+      </div>
+    </div>
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/ACG-020" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">妖狐の巻物 <span class="tag support">サポート</span></div>
+        <div class="card-code">うさクズ-ACG-020</div>
+        起動で山岳・森林などの条件キーワード能力を得られる道具。襲撃を使う場合に山岳域の数が重要なため、域の補佐として機能する。
+      </div>
+    </div>
+  </div>
+
+  <!-- 変化先 -->
+  <div class="section">
+    <h2>🔥 変化先カード（九尾が得る能力）</h2>
+
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP1-049" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">無欠の大将ライノ <span class="tag transform">変化壱</span></div>
+        <div class="card-code">BP1-049</div>
+        《突破》持ち。効果による破壊耐性と盤面除去。英雄の参戦で直接出してもよい。堅実なフィニッシャー。
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP4-003" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">崩落 <span class="tag transform">変化弍</span></div>
+        <div class="card-code">BP4-003</div>
+        戦闘ダメージを与えると特殊勝利。九尾が動物を持った状態でこの能力を得ることで特殊勝利が狙える。他の変化先と組み合わせて突破不可能な状況を作り出す。
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP4-006" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">神鳥ガルダ <span class="tag transform">変化参</span></div>
+        <div class="card-code">BP4-006</div>
+        《有翼》により防御されにくくなる。着地時に盤面バーンまたはドローを選択。トドメというよりアドバンテージ獲得や追撃として使う。
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/ACG-161" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">鉄鴉 <span class="tag transform">変化肆</span></div>
+        <div class="card-code">キメサイ-ACG-161</div>
+        妨害されないバーンを打ち出せる。九尾のATKが高ければ高いほど火力が上がる。彼岸色のカメレオンと組み合わせると特に強力。
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP1-065" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">赤猫 <span class="tag transform">変化伍</span></div>
+        <div class="card-code">BP1-065</div>
+        ダメージを反射しつつ高ATKで殴るスタイル。墓地に送られる効果は発揮できないが、対象にしてダメージを与えてくる相手に対して有効。
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/ACG-164" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">彼岸色のカメレオン <span class="tag transform">変化陸</span></div>
+        <div class="card-code">キメサイ-ACG-164</div>
+        九尾が山山山森森森（条件6つ）を持つのでATK+6。鉄鴉や無欠ライノとの組み合わせで火力・突破力が大幅強化。
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/ACG-092" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">隻腕の大将バッファロー <span class="tag transform">変化漆</span></div>
+        <div class="card-code">パン田-ACG-092</div>
+        戦闘ダメージを受けなくなる堅牢な壁。赤猫も化けていれば防御せざるを得ない状況を作り出せる。崩落や突破持ちと組み合わせれば詰みに追い込める。
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP2-046" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">ギガ・クロコ <span class="tag transform">変化捌</span></div>
+        <div class="card-code">BP2-046</div>
+        相手の妨害に対して妨害を返せるようになる。手札のカードを捨てて相手のプレイをコストで妨害できるため、九尾を守りながら戦える。
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/ACG-081" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">深淵の化け鷲 <span class="tag transform">変化玖</span></div>
+        <div class="card-code">剣士-ACG-081</div>
+        着地時にデッキの縄張りを墓地に置いてその能力をコピー。《有翼》と《駿足》を得つつ他の狐がいればその恩恵も全体に波及。
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-img"><img src="https://acgtcg.com/img/BP2-040" onerror="this.parentNode.style.background='#2a3a4a'"></div>
+      <div class="card-info">
+        <div class="card-name">不壊の相棒 <span class="tag transform">変化拾</span></div>
+        <div class="card-code">BP2-040</div>
+        《不壊》による耐性と裏向きカードの追加除外。装備させて裏向き除外されてしまった使いたいカードを再利用する手段としても機能する。
+      </div>
+    </div>
+  </div>
+
+  <div class="back-btn">
+    <button onclick="history.back()">✕ 閉じる</button>
+  </div>
+</div>
+</body>
+</html>
