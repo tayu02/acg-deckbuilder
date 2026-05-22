@@ -121,6 +121,7 @@
     </select>
     <select id="searchRoute" class="stat-select">
       <option value="">キメサイ系ルート</option>
+      <option value="九尾ルート">九尾ルート</option>
       <option value="咆哮ルート">咆哮ルート</option>
       <option value="獅子舞ルート">獅子舞ルート</option>
       <option value="カジキルート">カジキルート</option>
@@ -131,7 +132,6 @@
       <option value="狐ルート">狐ルート</option>
       <option value="崩落ルート">崩落ルート</option>
       <option value="禁止区狼ルート">禁止区狼ルート</option>
-      <option value="九尾ルート">九尾ルート</option>
       <option value="赤狼ルート">赤狼ルート</option>
       <option value="繁殖ルート">繁殖ルート</option>
       <option value="モグラルート">モグラルート</option>
@@ -435,7 +435,7 @@ const cards = [
 {"code":"BP2-056","name":"再会","type":"場面","tribe":"","stats":"","cost":"2","condition":"平平平","effect":"【固有】これをプレイする時、あなたの手札のカード1枚を捨てて適用してもよい。これをプレイするコストを①軽減する。\n【プレイ】あなたの墓地の動物カード2枚を対象に発動する。それらを手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"さいかい","image":"https://acgtcg.com/img/BP2-056"},
 {"code":"BP2-057","name":"孔雀の魅了","type":"特技","tribe":"クジャク","stats":"","cost":"3","condition":"平","effect":"【固有】相手のターン中、これをプレイする時、これをプレイするコストをⓧ軽減する。Xはこのターン中に相手が発動した誘発能力や起動能力の数に等しい。\n【プレイ】発動した効果がパイルに置かれている、戦場のコスト2以下の存在1つを対象に発動する。それを破壊する。ターン終了時まで、あなたが「孔雀の魅了」カードをプレイするコストは③増加する。","route_search":[],"general_effect":["除去"],"reading":"くじゃくのみりょう","image":"https://acgtcg.com/img/BP2-057"},
 {"code":"BP2-058","name":"先駆けの白馬","type":"動物","tribe":"ウマ","stats":"ATK 1／DEF 1","cost":"1","condition":"山","effect":"《バッファロー軍》\n【誘発（戦場）】これが相手に戦闘ダメージを与えた時、あなたの手札のカード1枚を捨てて発動してもよい。あなたのデッキから《唯一》と《バッファロー軍》を持つ動物カード1枚を探して除外する。ターン終了時まで、あなたはこの効果で除外したカードをコストをⓧ軽減してプレイしてもよい。Xは戦場のこの動物のATKの値に等しい。\n【起動（墓地）】あなたの墓地のこれを除外して、あなたの戦場の《唯一》と《バッファロー軍》を持つ動物1体を対象に発動する。ターン終了時まで、それは《駿足》を得る。","route_search":["バッファロールート"],"general_effect":[],"reading":"さきがけのはくば","image":"https://acgtcg.com/img/BP2-058"},
-{"code":"BP2-059","name":"統治する猟犬","type":"動物","tribe":"イヌ","stats":"ATK 1／DEF 2","cost":"1","condition":"山山","effect":"【常時】あなたは「統治する猟犬」カードを1ターンに1度しかプレイできない。\n【常時（戦場）】これは防御ができない。\n【誘発（戦場）】あなたのカードやトークンが、相手に1点以上の効果ダメージを与えた時に発動する。あなたに1点ダメージを与える。\n【誘発（戦場）】プレイヤー1人が1点以上の効果ダメージを受けた時に発動する。ターン終了時まで、これはATK+1/DEF+1を得る。","route_search":[],"general_effect":["ビートバーン"],"reading":"とうちするりょうけん","image":"https://acgtcg.com/img/BP2-059"},
+{"code":"BP2-059","name":"統治する猟犬","type":"動物","tribe":"イヌ","stats":"ATK 1／DEF 2","cost":"1","condition":"山山","effect":"【常時】あなたは「統治する猟犬」カードを1ターンに1度しかプレイできない。\n【常時（戦場）】これは防御ができない。\n【誘発（戦場）】あなたのカードやトークンが、相手に1点以上の効果ダメージを与えた時に発動する。あなたに1点ダメージを与える。\n【誘発（戦場）】プレイヤー1人が1点以上の効果ダメージを受けた時に発動する。ターン終了時まで、これはATK+1/DEF+1を得る。","route_search":["繁殖ルート","ビードバーン"],"general_effect":["ビートバーン"],"reading":"とうちするりょうけん","image":"https://acgtcg.com/img/BP2-059"},
 {"code":"BP2-060","name":"燃え山羊","type":"動物","tribe":"ヤギ","stats":"ATK 3／DEF 2","cost":"2","condition":"山山","effect":"【誘発（戦場）】これが攻撃した時、任意の1つを対象に発動してもよい。それに1点ダメージを与える。","route_search":[],"general_effect":["ビートバーン"],"reading":"もえやぎ","image":"https://acgtcg.com/img/BP2-060"},
 {"code":"BP2-061","name":"灼熱の石像","type":"道具","tribe":"","stats":"","cost":"2","condition":"山","effect":"【起動（手札）】相手の準備フェイズ中のみ起動できる。あなたの手札のこれを除外して、あなたの手札の山岳カード1枚を公開して発動する。あなたの戦場と領地に存在も領土もないなら、この効果で除外したこれをムーブ状態であなたの戦場に出す。\n【起動（戦場）】狩りフェイズ中のみ起動できる。ムーブして発動する。ターン終了時まで、これは《山岳》と『日没フェイズ開始時にこれを生贄に捧げる』を得る。\n【起動（戦場）】ムーブ、これを生贄に捧げて、戦場のコスト1以下の縄張りや道具の内1つを対象に発動する。それを破壊する。","route_search":[],"general_effect":["除去"],"reading":"しゃくねつのせきぞう","image":"https://acgtcg.com/img/BP2-061"},
 {"code":"BP2-062","name":"連単炎","type":"場面","tribe":"","stats":"","cost":"2","condition":"山山／夜夜","effect":"【固有】これをプレイする時、あなたの戦場の動物2体を生贄に捧げて適用してもよい。これをプレイするコストを②軽減する。\n【プレイ】任意の1つか2つか3つを対象にして、それらに合計3点を割り振って発動する。それらにこの効果で割り振った点数のダメージを与える。","route_search":[],"general_effect":["火力"],"reading":"れんたんえん","image":"https://acgtcg.com/img/BP2-062"},
