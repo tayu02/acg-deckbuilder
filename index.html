@@ -37,7 +37,7 @@
   .modal-scroll { flex: 1; overflow-y: auto; }
   .modal-scroll img { width: 100%; height: auto; display: block; }
   .modal-body { padding: 20px; line-height: 1.7; }
-  #clearBtn { width: auto; padding: 6px 12px; background: #3a3a1a; border: 1px solid #8a8a3a; border-radius: 10px; color: #ffee88; font-size: 14px; font-weight: bold; cursor: pointer; }
+  #clearBtn { flex: 0 0 auto; padding: 8px 10px; background: #3a3a1a; border: 1px solid #8a8a3a; border-radius: 10px; color: #ffee88; font-size: 13px; font-weight: bold; cursor: pointer; }
   #deckView { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: none; }
   #searchView { overflow-y: auto; -webkit-overflow-scrolling: touch; }
   @media (min-width: 768px) {
@@ -75,35 +75,23 @@
 <div class="search-area">
   <!-- 1段目 -->
   <div class="stat-row">
-    <input type="text" id="searchName" class="search-input" placeholder="カード名・タイプ・種族">
-    <select id="searchIllustrator" class="stat-select" style="flex:1;">
-      <option value="">絵師</option>
-      <option value="Aru-rutan">Aru-rutan</option>
-      <option value="Asa">Asa</option>
-      <option value="IKUSA">IKUSA</option>
-      <option value="KOKI">KOKI</option>
-      <option value="Manami Yoshikawa">Manami Yoshikawa</option>
-      <option value="Takita040">Takita040</option>
-      <option value="kacoha">kacoha</option>
-      <option value="mana＊">mana＊</option>
-      <option value="sai">sai</option>
-      <option value="あるみらん">あるみらん</option>
-      <option value="かざすずゆらぎ">かざすずゆらぎ</option>
-      <option value="ぬん">ぬん</option>
-      <option value="ぼへ">ぼへ</option>
-      <option value="まつ">まつ</option>
-      <option value="ゆかわ">ゆかわ</option>
-      <option value="トネコ">トネコ</option>
-      <option value="ヨシヤ">ヨシヤ</option>
-      <option value="一旦">一旦</option>
-      <option value="別府さい">別府さい</option>
-      <option value="宇井">宇井</option>
-      <option value="巴啓祐">巴啓祐</option>
-      <option value="廣井うみ">廣井うみ</option>
-      <option value="森島つき">森島つき</option>
-      <option value="眞白しろ助">眞白しろ助</option>
-      <option value="虎ック">虎ック</option>
-      <option value="陸豊">陸豊</option>
+    <input type="text" id="searchName" class="search-input" placeholder="カード名・タイプ・種族" style="flex:1; min-width:0;">
+    <select id="searchGeneral" class="stat-select" style="flex:0 0 auto; width:80px; font-size:13px; padding:8px 4px;">
+      <option value="">役割</option>
+      <option value="ドロー">ドロー</option>
+      <option value="サーチ">サーチ</option>
+      <option value="バフ">バフ</option>
+      <option value="バウンス">バウンス</option>
+      <option value="コピー">コピー</option>
+      <option value="ハンデス">ハンデス</option>
+      <option value="ビートバーン">ビートバーン</option>
+      <option value="火力">火力</option>
+      <option value="除去">除去</option>
+      <option value="登場">登場</option>
+      <option value="遅延">遅延</option>
+      <option value="妨害">妨害</option>
+      <option value="域サポート">域サポート</option>
+      <option value="禁止">禁止</option>
     </select>
     <button id="clearBtn">🗑 クリア</button>
   </div>
@@ -131,23 +119,6 @@
   </div>
   <!-- 3段目 -->
   <div class="stat-row">
-    <select id="searchGeneral" class="stat-select">
-      <option value="">役割</option>
-      <option value="ドロー">ドロー</option>
-      <option value="サーチ">サーチ</option>
-      <option value="バフ">バフ</option>
-      <option value="バウンス">バウンス</option>
-      <option value="コピー">コピー</option>
-      <option value="ハンデス">ハンデス</option>
-      <option value="ビートバーン">ビートバーン</option>
-      <option value="火力">火力</option>
-      <option value="除去">除去</option>
-      <option value="登場">登場</option>
-      <option value="遅延">遅延</option>
-      <option value="妨害">妨害</option>
-      <option value="域サポート">域サポート</option>
-      <option value="禁止">禁止</option>
-    </select>
     <select id="searchRoute" class="stat-select">
       <option value="">キメサイ系ルート</option>
       <option value="九尾ルート">九尾ルート</option>
@@ -187,6 +158,35 @@
       <option value="ヒョウ">ヒョウ</option>
       <option value="蔵馬">蔵馬</option>
       <option value="キメサイ">キメサイ</option>
+    </select>
+    <select id="searchIllustrator" class="stat-select" style="flex:0 0 auto; width:80px; font-size:13px; padding:8px 4px;">
+      <option value="">絵師</option>
+      <option value="Aru-rutan">Aru-rutan</option>
+      <option value="Asa">Asa</option>
+      <option value="IKUSA">IKUSA</option>
+      <option value="KOKI">KOKI</option>
+      <option value="Manami Yoshikawa">Manami Yoshikawa</option>
+      <option value="Takita040">Takita040</option>
+      <option value="kacoha">kacoha</option>
+      <option value="mana＊">mana＊</option>
+      <option value="sai">sai</option>
+      <option value="あるみらん">あるみらん</option>
+      <option value="かざすずゆらぎ">かざすずゆらぎ</option>
+      <option value="ぬん">ぬん</option>
+      <option value="ぼへ">ぼへ</option>
+      <option value="まつ">まつ</option>
+      <option value="ゆかわ">ゆかわ</option>
+      <option value="トネコ">トネコ</option>
+      <option value="ヨシヤ">ヨシヤ</option>
+      <option value="一旦">一旦</option>
+      <option value="別府さい">別府さい</option>
+      <option value="宇井">宇井</option>
+      <option value="巴啓祐">巴啓祐</option>
+      <option value="廣井うみ">廣井うみ</option>
+      <option value="森島つき">森島つき</option>
+      <option value="眞白しろ助">眞白しろ助</option>
+      <option value="虎ック">虎ック</option>
+      <option value="陸豊">陸豊</option>
     </select>
   </div>
 </div>
