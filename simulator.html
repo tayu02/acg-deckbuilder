@@ -1378,19 +1378,33 @@ function countTerrain() {
   const count = { 山: 0, 水: 0, 森: 0, 平: 0, 夜: 0, 合計: 0 };
   G.territory.forEach(obj => {
     count.合計++;
-    const t = getTerritoryType(obj.code);
-    if(t.includes("山岳")) count.山++;
-    if(t.includes("水生")) count.水++;
-    if(t.includes("森林")) count.森++;
-    if(t.includes("平野")) count.平++;
-    if(t.includes("夜"))   count.夜++;
+    // cards配列のterritory_typeを優先使用
+    const cardData = cards.find(c => c.code === obj.code);
+    if(cardData && cardData.territory_type) {
+      cardData.territory_type.forEach(t => {
+        if(t === "山岳") count.山++;
+        if(t === "水生") count.水++;
+        if(t === "森林") count.森++;
+        if(t === "平野") count.平++;
+        if(t === "夜")   count.夜++;
+      });
+    } else {
+      // フォールバック：getTerritoryTypeの文字列で判定
+      const t = getTerritoryType(obj.code);
+      if(t.includes("山岳")) count.山++;
+      if(t.includes("水生")) count.水++;
+      if(t.includes("森林")) count.森++;
+      if(t.includes("平野")) count.平++;
+      if(t.includes("夜"))   count.夜++;
+    }
   });
-  // 域ボーナス加算
+  // 域ボーナス加算（合計にも反映）
   count.山 += domainBonus.山;
   count.水 += domainBonus.水;
   count.森 += domainBonus.森;
   count.平 += domainBonus.平;
   count.夜 += domainBonus.夜;
+  count.合計 += domainBonus.山 + domainBonus.水 + domainBonus.森 + domainBonus.平 + domainBonus.夜;
   return count;
 }
 
