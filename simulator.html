@@ -1,4 +1,4 @@
-　<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1147,8 +1147,7 @@ function startGame() {
   G.playerLife=20; G.enemyLife=20; G.turn=1; G.phase=0; G.isFirstTurn=true;
 
   for(let i=0;i<7;i++) if(G.mainDeck.length) G.hand.push(G.mainDeck.shift());
-  // 先行のみ初期領土1枚（後攻は補充フェイズで初めて置く）
-  if(G.isFirst && G.territoryDeck.length) G.territory.push(G.territoryDeck.shift());
+  // 初期領土なし（先攻・後攻ともに補充フェイズで初めて置く）
 
   showScreen("mulligan");
   renderMulligan();
@@ -1341,20 +1340,16 @@ function openMoveModal(obj, from, idx) {
     btn.style.cssText = "font-size:12px;padding:7px 8px;min-width:82px;flex:none;";
     btn.textContent = d.l;
     btn.onclick = () => {
-      // 手札から戦場へ移動する場合のみコスト・条件チェック
-      if(d.to === "field" && from === "hand") {
+      // 手札から戦場・パイルへ移動する場合はコスト・条件チェック
+      if((d.to === "field" || d.to === "pile") && from === "hand") {
         const { ok, reason } = checkPlayable(card);
         if(!ok) {
-          // 警告表示するが強制プレイも可能（ボタンを再度押すと実行）
-          if(!btn.dataset.warned) {
-            btn.dataset.warned = "1";
-            btn.textContent = `⚠️ ${reason}`;
-            btn.style.background = "#5a2a2a";
-            btn.style.color = "#ffaaaa";
-            btn.style.minWidth = "100%";
-            btn.style.fontSize = "11px";
-            return;
-          }
+          const info = document.getElementById("card-info-effect");
+          info.style.display = "block";
+          info.style.color = "#ff8888";
+          info.style.background = "rgba(100,0,0,0.3)";
+          info.textContent = `⚠️ プレイ不可：${reason}`;
+          return;
         }
       }
       execMove(from, idx, d.to);
