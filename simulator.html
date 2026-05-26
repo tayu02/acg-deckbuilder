@@ -1147,7 +1147,8 @@ function startGame() {
   G.playerLife=20; G.enemyLife=20; G.turn=1; G.phase=0; G.isFirstTurn=true;
 
   for(let i=0;i<7;i++) if(G.mainDeck.length) G.hand.push(G.mainDeck.shift());
-  if(G.territoryDeck.length) G.territory.push(G.territoryDeck.shift());
+  // 先行のみ初期領土1枚（後攻は補充フェイズで初めて置く）
+  if(G.isFirst && G.territoryDeck.length) G.territory.push(G.territoryDeck.shift());
 
   showScreen("mulligan");
   renderMulligan();
@@ -1339,7 +1340,26 @@ function openMoveModal(obj, from, idx) {
     btn.className = "modal-btn confirm";
     btn.style.cssText = "font-size:12px;padding:7px 8px;min-width:82px;flex:none;";
     btn.textContent = d.l;
-    btn.onclick = () => { execMove(from,idx,d.to); closeModal("card-info-modal"); };
+    btn.onclick = () => {
+      // 手札から戦場へ移動する場合のみコスト・条件チェック
+      if(d.to === "field" && from === "hand") {
+        const { ok, reason } = checkPlayable(card);
+        if(!ok) {
+          // 警告表示するが強制プレイも可能（ボタンを再度押すと実行）
+          if(!btn.dataset.warned) {
+            btn.dataset.warned = "1";
+            btn.textContent = `⚠️ ${reason}`;
+            btn.style.background = "#5a2a2a";
+            btn.style.color = "#ffaaaa";
+            btn.style.minWidth = "100%";
+            btn.style.fontSize = "11px";
+            return;
+          }
+        }
+      }
+      execMove(from, idx, d.to);
+      closeModal("card-info-modal");
+    };
     actRow.appendChild(btn);
   });
   // カウンターボタン
