@@ -1783,8 +1783,13 @@ function nextPhase() {
   if(G.phase === 2) {
     let msg = "補充フェイズ：";
     if(G.isFirstTurn && G.isFirst) {
-      // 先行1ターン目はドローなし・領土なし
-      msg += "先行1ターン目のため補充はありません。";
+      // 先行1ターン目はドローなし・領土のみ補充
+      if(G.territoryDeck.length > 0) {
+        drawTerritory();
+        msg += "先行1ターン目のためドローはありません。領土を1枚置きました。";
+      } else {
+        msg += "先行1ターン目のためドローはありません。（領土デッキが空です）";
+      }
     } else {
       // ドロー
       if(G.mainDeck.length > 0) {
@@ -1840,7 +1845,10 @@ function endTurn() {
     // 補充フェイズを通る場合は自動処理
     if(G.phase + 1 === 2) {
       G.phase = 2;
-      if(!(G.isFirstTurn && G.isFirst)) {
+      if(G.isFirstTurn && G.isFirst) {
+        // 先行1ターン目はドローなし・領土のみ
+        if(G.territoryDeck.length > 0) drawTerritory();
+      } else {
         if(G.mainDeck.length > 0) G.hand.push(G.mainDeck.shift());
         if(G.territoryDeck.length > 0) {
           const t = G.territoryDeck.shift();
