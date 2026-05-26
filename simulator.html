@@ -295,6 +295,13 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
       <div class="zone-label">領土 <span class="zone-count" id="territory-count">0</span> <span style="font-size:10px;color:#88dd88;">タップでレスト/ウェイク</span></div>
       <div class="territory-zone-area" id="territory-zone"></div>
     </div>
+    <!-- 域ボーナスパネル -->
+    <div style="background:rgba(40,60,20,0.4);border:1px solid #4a6a2a;border-radius:8px;padding:6px 8px;">
+      <div style="font-size:10px;color:#88dd88;margin-bottom:5px;">⚡ 域ボーナス（効果による追加条件）</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="domain-bonus-row"></div>
+    </div>
+    <div style="display:none;"><!-- 領土ゾーン終わり -->
+    </div>
     <div class="grave-exile-row">
       <div style="flex:1;">
         <div class="zone-label">墓地 <span class="zone-count" id="grave-count">0</span></div>
@@ -997,6 +1004,9 @@ let G = {
   mainDeck: [], hand: [], field: [], grave: [], exile: [], pile: [], territory: [], territoryDeck: [],
   turn: 1, phase: 0, isFirstTurn: true, isFirst: true,
 };
+
+// 域ボーナス（効果による追加条件カウンター）
+let domainBonus = { 山: 0, 水: 0, 森: 0, 平: 0, 夜: 0 };
 let rawMain = {}, rawSide = {}, rawTerritory = {};
 let mulliganSelected = [];
 let discardSelected = [];
@@ -1282,6 +1292,7 @@ function renderGame() {
   document.getElementById("deck-count").textContent = G.mainDeck.length;
   document.getElementById("terr-deck-count").textContent = G.territoryDeck.length;
   document.getElementById("terr-deck-count-num").textContent = G.territoryDeck.length;
+  renderDomainBonus();
 }
 
 // カード情報モーダル（画像大表示＋効果＋アクション統合）
@@ -1360,35 +1371,170 @@ function execMove(from, idx, to) {
   renderGame();
 }
 
+// =============== コスト・条件チェック ===============
+
+// 領土ゾーンの地形カウント（全枚数＋域ボーナス加算）
+function countTerrain() {
+  const count = { 山: 0, 水: 0, 森: 0, 平: 0, 夜: 0, 合計: 0 };
+  G.territory.forEach(obj => {
+    count.合計++;
+    const t = getTerritoryType(obj.code);
+    if(t.includes("山岳")) count.山++;
+    if(t.includes("水生")) count.水++;
+    if(t.includes("森林")) count.森++;
+    if(t.includes("平野")) count.平++;
+    if(t.includes("夜"))   count.夜++;
+  });
+  // 域ボーナス加算
+  count.山 += domainBonus.山;
+  count.水 += domainBonus.水;
+  count.森 += domainBonus.森;
+  count.平 += domainBonus.平;
+  count.夜 += domainBonus.夜;
+  return count;
+}
+
+// 域ボーナスパネル描画
+const DOMAIN_INFO = [
+  { key: "山", label: "山岳", color: "#ff9988" },
+  { key: "水", label: "水生", color: "#88ccff" },
+  { key: "森", label: "森林", color: "#88ff88" },
+  { key: "平", label: "平野", color: "#ffee88" },
+  { key: "夜", label: "夜",   color: "#ccaaff" },
+];
+
+function renderDomainBonus() {
+  const row = document.getElementById("domain-bonus-row");
+  if(!row) return;
+  row.innerHTML = "";
+  DOMAIN_INFO.forEach(d => {
+    const val = domainBonus[d.key];
+    const cell = document.createElement("div");
+    cell.style.cssText = "display:flex;align-items:center;gap:3px;background:rgba(0,0,0,0.3);border-radius:8px;padding:3px 6px;";
+    cell.innerHTML = `
+      <span style="font-size:11px;color:${d.color};min-width:22px;">${d.label}</span>
+      <button onclick="changeDomainBonus('${d.key}',-1)" style="width:20px;height:20px;background:#3a1a1a;border:none;border-radius:4px;color:#ffaaaa;font-size:13px;cursor:pointer;line-height:1;">−</button>
+      <span style="min-width:18px;text-align:center;font-size:13px;font-weight:bold;color:${val>0?d.color:'#555'};">${val}</span>
+      <button onclick="changeDomainBonus('${d.key}',1)" style="width:20px;height:20px;background:#1a3a1a;border:none;border-radius:4px;color:#aaffaa;font-size:13px;cursor:pointer;line-height:1;">＋</button>
+    `;
+    row.appendChild(cell);
+  });
+}
+
+function changeDomainBonus(key, delta) {
+  domainBonus[key] = Math.max(0, (domainBonus[key] || 0) + delta);
+  renderDomainBonus();
+  setMsg(`域ボーナス更新：${DOMAIN_INFO.find(d=>d.key===key).label} ${domainBonus[key]}`);
+}
+
+// conditionと現在の領土でプレイ可能か判定
+// 戻り値: { ok: bool, reason: string }
+function checkPlayable(card) {
+  if(!card) return { ok: true, reason: "" };
+
+  const terrain = countTerrain();
+  const cost = parseInt(card.cost) || 0;
+  const condition = card.condition || "";
+
+  // コストチェック（領土合計枚数 >= コスト）
+  if(cost > 0 && terrain.合計 < cost) {
+    return { ok: false, reason: `コスト${cost}に対し領土が${terrain.合計}枚しかありません` };
+  }
+
+  // 条件チェック
+  if(condition) {
+    // "山山／森森" のような複数条件はスラッシュで区切って片方満たせばOK
+    const variants = condition.split("／");
+    const anyOk = variants.some(variant => {
+      // variantを1文字ずつカウント（例: "山森" → 山1, 森1）
+      const need = { 山: 0, 水: 0, 森: 0, 平: 0, 夜: 0, 無: 0 };
+      for(const ch of variant) {
+        if(need[ch] !== undefined) need[ch]++;
+      }
+      // 無は合計領土が1以上あればOK
+      if(need.無 > 0 && terrain.合計 < 1) return false;
+      // 各地形チェック
+      for(const ch of ["山","水","森","平","夜"]) {
+        if(need[ch] > terrain[ch]) return false;
+      }
+      return true;
+    });
+
+    if(!anyOk) {
+      // 不足内容をわかりやすく表示
+      const best = variants[0]; // とりあえず最初の条件で何が足りないか
+      const need = { 山: 0, 水: 0, 森: 0, 平: 0, 夜: 0, 無: 0 };
+      for(const ch of best) { if(need[ch] !== undefined) need[ch]++; }
+      const map = { 山:"山岳", 水:"水生", 森:"森林", 平:"平野", 夜:"夜", 無:"いずれかの領土" };
+      const lacking = ["山","水","森","平","夜","無"]
+        .filter(ch => need[ch] > 0 && (ch === "無" ? terrain.合計 < 1 : terrain[ch] < need[ch]))
+        .map(ch => `${map[ch]}${need[ch]}枚（現在${ch==="無"?terrain.合計:terrain[ch]}枚）`);
+      return { ok: false, reason: `条件不足：${lacking.join("、")}` };
+    }
+  }
+
+  return { ok: true, reason: "" };
+}
+
 // プレイ
 function openPlayModal() {
   selectedPlayIdx = null;
   const con = document.getElementById("play-modal-cards"); con.innerHTML = "";
-  document.getElementById("play-modal-info").textContent = "";
-  G.hand.forEach((obj,idx) => {
+  document.getElementById("play-modal-info").textContent = "カードを選んでください";
+
+  G.hand.forEach((obj, idx) => {
+    const card = cards.find(c => c.code === obj.code);
+    const { ok, reason } = checkPlayable(card);
+
     const div = document.createElement("div");
     div.className = "modal-select-card";
+    div.style.cssText = "position:relative;";
+
     const img = document.createElement("img");
     img.src = getImg(obj.code);
     img.onerror = () => { img.remove(); const s=document.createElement("span"); s.className="card-label"; s.textContent=obj.code; div.appendChild(s); };
     div.appendChild(img);
-    div.addEventListener("click",()=>{
-      con.querySelectorAll(".modal-select-card").forEach(el=>el.classList.remove("selected"));
+
+    // 条件不足はグレーアウト＋✗バッジ
+    if(!ok) {
+      div.style.opacity = "0.4";
+      const ng = document.createElement("div");
+      ng.style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(180,0,0,0.3);border-radius:5px;font-size:18px;color:#ff4444;font-weight:bold;pointer-events:none;";
+      ng.textContent = "✕";
+      div.appendChild(ng);
+    }
+
+    div.addEventListener("click", () => {
+      con.querySelectorAll(".modal-select-card").forEach(el => el.classList.remove("selected"));
       div.classList.add("selected");
       selectedPlayIdx = idx;
-      document.getElementById("play-modal-info").textContent = obj.code;
+      const infoText = card
+        ? `${card.name}｜コスト:${card.cost || "-"}｜条件:${card.condition || "なし"}`
+        : obj.code;
+      document.getElementById("play-modal-info").textContent = ok ? infoText : `⚠️ ${reason}`;
+      document.getElementById("play-modal-info").style.color = ok ? "#a0c0a0" : "#ff8888";
     });
     con.appendChild(div);
   });
+
   document.getElementById("play-modal").style.display = "flex";
 }
 
 function confirmPlay() {
-  if(selectedPlayIdx===null) return;
-  const obj = G.hand.splice(selectedPlayIdx,1)[0];
+  if(selectedPlayIdx === null) return;
+  const obj = G.hand[selectedPlayIdx];
+  const card = cards.find(c => c.code === obj.code);
+  const { ok, reason } = checkPlayable(card);
+  if(!ok) {
+    document.getElementById("play-modal-info").textContent = `⚠️ プレイ不可：${reason}`;
+    document.getElementById("play-modal-info").style.color = "#ff8888";
+    return;
+  }
+  G.hand.splice(selectedPlayIdx, 1);
   obj.rested = false;
   G.pile.push(obj);
-  setMsg(`「${obj.code}」をパイルに置きました。効果を処理してください。`);
+  const name = card ? card.name : obj.code;
+  setMsg(`「${name}」をパイルに置きました。効果を処理してください。`);
   closeModal("play-modal");
   renderGame();
 }
