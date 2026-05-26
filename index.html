@@ -67,6 +67,7 @@
   <div style="display:flex; gap:8px;">
     <button id="tabSearch" onclick="showTab('search')" style="padding:6px 14px; background:#3a6a3a; border:none; border-radius:8px; color:#a8e0a8; font-size:14px; cursor:pointer;">🔍 検索</button>
     <button id="tabDeck" onclick="showTab('deck')" style="padding:6px 14px; background:#1f2a35; border:1px solid #4a8a4a; border-radius:8px; color:#a8e0a8; font-size:14px; cursor:pointer;">📋 デッキ</button>
+    <button id="tabSim" onclick="goToSimulator()" style="padding:6px 14px; background:#1f2a35; border:1px solid #4a8a4a; border-radius:8px; color:#ffcc77; font-size:14px; cursor:pointer;">🎮 試遊</button>
   </div>
   <div id="deckTotal" style="font-size:16px; color:#ffcc77; font-weight:bold; cursor:pointer;">デッキ：0 枚</div>
 </div>
@@ -525,7 +526,7 @@ const cards = [
 {"code":"BP1-038","name":"深淵の盗掘モグラ","type":"動物","tribe":"モグラ","stats":"ATK 3／DEF 3","cost":"3","condition":"夜夜夜","effect":"【誘発（戦場）】これが戦場に出た時、あなたの墓地のコスト2以下の存在カード1枚を対象に発動してもよい。それをあなたの戦場に出す。\n【起動（墓地）】これ以外のあなたの墓地のモグラカード10枚を除外して発動する。これをあなたの戦場に出す。","route_search":[],"general_effect":[],"reading":"しんえんのとうくつもぐら","image":"https://acgtcg.com/img/BP1-038","illustrator":"かざすずゆらぎ"},
 {"code":"BP1-039","name":"簡易祭壇","type":"道具","tribe":"","stats":"","cost":"2","condition":"無無無","effect":"【誘発（戦場）】日没フェイズ開始時に発動する。これを生贄に捧げる。\n【起動（戦場）】あなたの戦場の動物1体を生贄に捧げて、あなたの墓地のカード2枚を対象に発動する。それらをデッキの上に任意の順で置く。","route_search":["ガラクタルート","モグラルート"],"general_effect":[],"reading":"かんいさいだん","image":"https://acgtcg.com/img/BP1-039","illustrator":"IKUSA"},
 {"code":"BP1-040","name":"不法侵入禁止区","type":"縄張り","tribe":"","stats":"","cost":"2","condition":"夜","effect":"【誘発（戦場）】プレイ効果以外の効果でトークン以外の動物1体以上が戦場に出た時に発動する。それらの戦場に出たすべての動物を手札に戻す。\n【起動（手札）】①を支払って、あなたの手札のこれを捨てて発動する。このターン中、次にプレイ効果以外の効果で動物1体のみがあなたの戦場に出るなら、それは『これが戦場に出た時にこれを手札に戻す』を得た状態で戦場に出る。","route_search":["禁止区狼ルート","フェニックスルート"],"general_effect":[],"reading":"ふほうしんにゅうきんしく","image":"https://acgtcg.com/img/BP1-040","illustrator":"ゆかわ"},
-{"code":"BP1-041","name":"救助する森狼","type":"動物","tribe":"オオカミ","stats":"ATK 4／DEF 2","cost":"3","condition":"森森森","effect":"《敏捷》\n【誘発（戦場）】これが戦場に出た時、あなたの戦場のコスト1以下の動物1体を対象に発動してもよい。それを手札に戻す。\n【起動（手札）】狩りフェイズ中のみ起動できる。あなたの<森林域>が3以上なら、あなたの手札のこれを除外して発動する。この効果で除外したこれをムーブ状態であなたの戦場に出す。出たこれは戦場を離れるまで『これが戦場に出た時にこれを生贄に捧げる』を得る。","route_search":["禁止区狼ルート"],"general_effect":[],"reading":"きゅうじょするもりおおかみ","image":"https://acgtcg.com/img/BP1-041","illustrator":"Aru-rutan"},
+{"code":"BP1-041","name":"救助する森狼","type":"動物","tribe":"オオカミ","stats":"ATK 4／DEF 2","cost":"3","condition":"森森森","effect":"《敏捷》\n【誘発（戦場）】これが戦場に出た時、あなたの戦場のコスト1以下の動物1体を対象に発動してもよい。それを手札に戻す。\n【起動（手札）】狩りフェイズ中のみ起動できる。あなたの<森林域>が3以上なら、あなたの手札のこれを除外して発動する。この効果で除外したこれをムーブ状態であなたの戦場に出す。出たこれは戦場を離れるまで『これが戦場に出た時にこれを生贄に捧げる』を得る。","route_search":["禁止区狼ルート"],"general_effect":[],"reading":"きゅうじょするもりおおかみ","image":"https://acgtcg.com/img/BP1-041","illustrator":"あるみらん"},
 {"code":"BP1-042","name":"軍医ヘビ","type":"動物","tribe":"ヘビ","stats":"ATK 1／DEF 1","cost":"1","condition":"平","effect":"《ライノ軍》\n【誘発（戦場）】これが集団攻撃した時に発動する。あなたはライフX点を回復する。Xはその攻撃している攻撃動物の数に等しい。\n【誘発（手札）】あなたの戦場の動物が集団攻撃した時、あなたの手札のこれを捨てて、あなたの墓地のコストX以下の動物カード1枚を対象に発動してもよい。それを手札に加える。Xはその集団攻撃した攻撃動物の数に等しい。","route_search":[],"general_effect":[],"reading":"ぐんいへび","image":"https://acgtcg.com/img/BP1-042","illustrator":"Asa"},
 {"code":"BP1-043","name":"守備隊長タートル","type":"動物","tribe":"カメ","stats":"ATK 0／DEF 1","cost":"0","condition":"平","effect":"《ライノ軍》\n【誘発（戦場）】これが集団攻撃した時、これ以外の集団攻撃している動物1体を対象に発動する。それに防護カウンター1個を置く。\n【起動（手札）】あなたの狩りフェイズ中のみ起動できる。あなたの手札のこれを捨てて、戦場の《ライノ軍》を持つ動物1体を対象に発動する。それに防護カウンター1個を置く。","route_search":[],"general_effect":[],"reading":"しゅびたいちょうたーとる","image":"https://acgtcg.com/img/BP1-043","illustrator":"かざすずゆらぎ"},
 {"code":"BP1-044","name":"補給兵ハムスター","type":"動物","tribe":"ネズミ","stats":"ATK 1／DEF 1","cost":"1","condition":"平","effect":"《ライノ軍》《駿足》\n【誘発（戦場）】これが集団攻撃した時、①を支払って発動してもよい。あなたのデッキの上からカード1枚までを公開して、動物カード1枚を手札に加えて、残りのカードをデッキの下に置く。","route_search":[],"general_effect":["ドロー"],"reading":"ほきゅうへいはむすたー","image":"https://acgtcg.com/img/BP1-044","illustrator":"森島つき"},
@@ -1340,6 +1341,7 @@ function renderDeckView() {
           onchange="deckName=this.value"
           style="flex:1; margin-right:8px; padding:6px 10px; background:#1f2a35; border:1px solid #4a8a4a; border-radius:8px; color:white; font-size:14px;">
         <button onclick="copyDeckURL()" style="padding:6px 12px; background:#1a3a5a; border:1px solid #4a8aaa; border-radius:8px; color:#88ccff; font-size:13px; cursor:pointer; margin-right:8px;">🔗 URL</button>
+        <button onclick="goToSimulator()" style="padding:6px 12px; background:#2a4a1a; border:1px solid #5a9a3a; border-radius:8px; color:#a8ff88; font-size:13px; cursor:pointer; margin-right:8px;">🎮 試遊</button>
         <button onclick="resetDeck()" style="padding:6px 12px; background:#5a1a1a; border:1px solid #aa4444; border-radius:8px; color:#ffaaaa; font-size:14px; cursor:pointer;">🗑</button>
       </div>
 
@@ -1465,20 +1467,19 @@ let deckName = "";
 // =============== Firebase URL ===============
 const FIREBASE_URL = "https://acg-original-default-rtdb.firebaseio.com";
 
-// =============== URL生成・読み込み（LZString使用） ===============
+// =============== デッキエンコード（simulator互換：code直接埋め込み） ===============
 function encodeDeck() {
-  const codeToIdx = {};
-  cards.forEach((card, i) => { codeToIdx[card.code] = i; });
   const data = {
     n: deckName || "",
-    m: getDeckMain().map(([code, cnt]) => [codeToIdx[code], cnt]),
-    s: getDeckSide().map(([code, cnt]) => [codeToIdx[code], cnt]),
-    t: getDeckTerritory().map(([code, cnt]) => [codeToIdx[code], cnt])
+    m: getDeckMain().map(([code, cnt]) => [code, cnt]),
+    s: getDeckSide().map(([code, cnt]) => [code, cnt]),
+    t: getDeckTerritory().map(([code, cnt]) => [code, cnt])
   };
   const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(data));
   return window.location.href.split("?")[0] + "?d=" + compressed;
 }
 
+// =============== URL読み込み（LZString使用）===============
 async function decodeDeck(url) {
   const params = new URLSearchParams(url.split("?")[1] || "");
   const idParam = params.get("id");
@@ -1496,10 +1497,17 @@ async function decodeDeck(url) {
     const data = JSON.parse(LZString.decompressFromEncodedURIComponent(compressed));
     const idxToCode = cards.map(c => c.code);
     if (data.n) deckName = data.n;
-    if (data.m) data.m.forEach(([idx, cnt]) => { if (idxToCode[idx]) deck[idxToCode[idx]] = cnt; });
-    if (data.s) data.s.forEach(([idx, cnt]) => { if (idxToCode[idx]) sideDeck[idxToCode[idx]] = cnt; });
-    if (data.t) data.t.forEach(([idx, cnt]) => {
-      if (idxToCode[idx]) { deck[idxToCode[idx]] = cnt; deckSide[idxToCode[idx]] = "territory"; }
+    // code直接形式（新形式）とインデックス形式（旧形式）の両方に対応
+    function resolveCode(entry) {
+      const [key, cnt] = entry;
+      if (typeof key === "string") return [key, cnt]; // 新形式：code直接
+      return [idxToCode[key], cnt]; // 旧形式：インデックス
+    }
+    if (data.m) data.m.forEach(e => { const [code, cnt] = resolveCode(e); if (code) deck[code] = cnt; });
+    if (data.s) data.s.forEach(e => { const [code, cnt] = resolveCode(e); if (code) sideDeck[code] = cnt; });
+    if (data.t) data.t.forEach(e => {
+      const [code, cnt] = resolveCode(e);
+      if (code) { deck[code] = cnt; deckSide[code] = "territory"; }
     });
     updateDeckTotal();
   } catch(e) { console.error("デッキ読み込み失敗", e); }
@@ -1529,6 +1537,26 @@ async function copyDeckURL() {
 function copyDeckURLAndClose() {
   copyDeckURL();
   document.getElementById("deckImageModal").style.display = "none";
+}
+
+// =============== シミュレーターへ遷移 ===============
+function goToSimulator() {
+  const mainTotal = getDeckMain().reduce((a, [, cnt]) => a + cnt, 0);
+  const terrTotal = getDeckTerritory().reduce((a, [, cnt]) => a + cnt, 0);
+  if (mainTotal < 40) {
+    alert(`メインデッキが${mainTotal}枚です。40枚以上必要です。`);
+    showTab("deck");
+    return;
+  }
+  if (terrTotal < 10) {
+    alert(`領土デッキが${terrTotal}枚です。10枚以上必要です。`);
+    showTab("deck");
+    return;
+  }
+  const url = encodeDeck();
+  const dParam = url.split("?d=")[1];
+  if (!dParam) { alert("デッキのエンコードに失敗しました"); return; }
+  window.location.href = "simulator.html?d=" + dParam;
 }
 
 // =============== 初期化処理 ===============
