@@ -293,7 +293,7 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
       <div class="zone field-zone" id="field-zone"></div>
     </div>
     <div>
-      <div class="zone-label">領土 <span class="zone-count" id="territory-count">0</span> <span style="font-size:10px;color:#88dd88;">タップでムーブ/アンムーブ</span></div>
+      <div class="zone-label">領土 <span class="zone-count" id="territory-count">0</span> <span style="font-size:10px;color:#88dd88;">タップでムーブ/ウェイク</span></div>
       <div class="territory-zone-area" id="territory-zone"></div>
     </div>
     <!-- 域ボーナスパネル -->
@@ -1643,7 +1643,7 @@ function drawTerritory() {
 
   const ryoNum = parseInt((obj.code.match(/RYO-(\d+)/) || [])[1] || 0);
 
-  // RYO-013〜018：領土が自分含め3枚以上ならムーブ状態で出る
+  // RYO-013〜018：自分が3枚目以降の領土ならムーブ状態で出る
   if(ryoNum >= 13 && ryoNum <= 18) {
     if(G.territory.length + 1 >= 3) {
       obj.rested = true;
