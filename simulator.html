@@ -119,7 +119,8 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 .territory-card.mountain { border-color: #8a4a4a; }
 .territory-card.water { border-color: #4a6a8a; }
 .territory-card.forest { border-color: #4a8a4a; }
-.territory-card.multi { border-color: #6a6a8a; }
+.territory-card.night-territory { border-color: #6644aa; box-shadow: 0 0 6px #6644aa88; }
+.territory-card.night-territory .terr-label { background: rgba(60,20,80,0.8); color: #ddaaff; }
 
 .deck-display {
   width: 44px; height: 62px; border-radius: 5px;
@@ -292,7 +293,7 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
       <div class="zone field-zone" id="field-zone"></div>
     </div>
     <div>
-      <div class="zone-label">領土 <span class="zone-count" id="territory-count">0</span> <span style="font-size:10px;color:#88dd88;">タップでレスト/ウェイク</span></div>
+      <div class="zone-label">領土 <span class="zone-count" id="territory-count">0</span> <span style="font-size:10px;color:#88dd88;">タップでムーブ/アンムーブ</span></div>
       <div class="territory-zone-area" id="territory-zone"></div>
     </div>
     <!-- 域ボーナスパネル -->
@@ -429,7 +430,7 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
     <h3>⚔️ 攻撃する動物を選ぶ（複数選択可）</h3>
     <div class="modal-card-list" id="attack-modal-cards"></div>
     <div class="modal-btn-row">
-      <button class="modal-btn confirm" onclick="confirmAttack()">攻撃！（レスト）</button>
+      <button class="modal-btn confirm" onclick="confirmAttack()">攻撃！（ムーブ）</button>
       <button class="modal-btn cancel" onclick="closeModal('attack-modal')">キャンセル</button>
     </div>
   </div>
@@ -448,12 +449,12 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 // =============== カードデータ（index.htmlから複製） ===============
 const cards = [
 {"code":"BP4-001","name":"贄狐","type":"動物","tribe":"キツネ","stats":"ATK 1／DEF 1","cost":"2","condition":"山森","effect":"【誘発（戦場）】これが戦場に出た時、あなたの戦場の「妖狐の巻物」道具1つを対象に発動してもよい。それに妖狐カウンター5個を置く。あなたの墓地の「九尾」カード1枚を選んで手札に加えてもよい。\n【起動（墓地）】あなたの墓地のこれを除外して、あなたの戦場の存在1つから妖狐カウンター5個を取り除いて発動する。あなたのデッキからカード1枚を探して、公開してから裏向きで除外する。","route_search":["狐ルート"],"general_effect":["サーチ"],"reading":"にえぎつね","image":"https://acgtcg.com/img/BP4-001","illustrator":"トネコ"},
-{"code":"BP4-002","name":"貧相な道具屋","type":"動物","tribe":"ネズミ","stats":"ATK 1／DEF 1","cost":"1","condition":"平森","effect":"《早業》\n【誘発（戦場）】これが戦場に出た時、あなたの手札のカード1枚を捨てて発動してもよい。あなたのデッキからコスト0で条件を達成している縄張りカードや道具カードの内1枚を探して、あなたの戦場に出す。\n【起動（戦場）】ムーブ、あなたの戦場のコスト0の縄張りや道具の内1つを対象に発動する。それをウェイクする。","route_search":["鉄鴉ルート","ガラクタルート","ガルダルート","崩落ルート"],"general_effect":["サーチ"],"reading":"びんぼうなどうぐや","image":"https://acgtcg.com/img/BP4-002","illustrator":"sai"},
+{"code":"BP4-002","name":"貧相な道具屋","type":"動物","tribe":"ネズミ","stats":"ATK 1／DEF 1","cost":"1","condition":"平森","effect":"《早業》\n【誘発（戦場）】これが戦場に出た時、あなたの手札のカード1枚を捨てて発動してもよい。あなたのデッキからコスト0で条件を達成している縄張りカードや道具カードの内1枚を探して、あなたの戦場に出す。\n【起動（戦場）】ムーブ、あなたの戦場のコスト0の縄張りや道具の内1つを対象に発動する。それをアンムーブする。","route_search":["鉄鴉ルート","ガラクタルート","ガルダルート","崩落ルート"],"general_effect":["サーチ"],"reading":"びんぼうなどうぐや","image":"https://acgtcg.com/img/BP4-002","illustrator":"sai"},
 {"code":"BP4-003","name":"崩落","type":"動物&縄張り","tribe":"","stats":"ATK 0／DEF 0","cost":"6","condition":"山水","effect":"《唯一》\n【固有】これをプレイする時、これをプレイするコストをⓧ軽減する。Xはすべての領地の領土の数を合計した数に等しい。\n【常時（戦場）】これが動物タイプ以外のタイプを持ち、これに高度カウンター6個以上が置かれていないなら、これは動物タイプを失う。これに高度カウンター6個以上が置かれているなら、これは《不壊》と《突破》とATK+12/DEF+12を得る。\n【誘発（戦場）】あなたの戦場にこれ以外の縄張り1つが出た時に発動してもよい。これに高度カウンター1個を置く。\n【誘発（戦場）】これが相手に戦闘ダメージを与えた時に発動してもよい。あなたはゲームに勝利する。","route_search":["崩落ルート","九尾ルート"],"general_effect":[],"reading":"ほうらく","image":"https://acgtcg.com/img/BP4-003","illustrator":"kacoha"},
 {"code":"BP4-004","name":"爆破場","type":"縄張り","tribe":"","stats":"ATK 0／DEF 0","cost":"0","condition":"山山","effect":"【誘発（戦場）】これが戦場に出た時に発動する。あなたに1点ダメージを与える。\n【誘発（墓地）】これが戦場から墓地に置かれた時に発動してもよい。相手に2点ダメージを与える。\n【起動（墓地）】③を支払って発動する。これをあなたの戦場に出す。","route_search":["火力","崩落ルート"],"general_effect":["火力"],"reading":"ばくはば","image":"https://acgtcg.com/img/BP4-004","illustrator":"KOKI"},
 {"code":"BP4-005","name":"波場の参謀","type":"動物","tribe":"カバ","stats":"ATK 1／DEF 2","cost":"2","condition":"平水","effect":"【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキからコスト6以上のカード1枚を探して、手札に加える。\n【誘発（戦場）】あなたが1点以上の効果ダメージを受けた時、あなたの戦場にコスト6以上の存在1つ以上があるなら発動する。これ以外のあなたの戦場のコストX以下の存在1つを選んで持ち主の手札に戻す。Xはあなたが受けたそのダメージの量に等しい。","route_search":["崩落ルート"],"general_effect":["サーチ","バウンス"],"reading":"なみばのさんぼう","image":"https://acgtcg.com/img/BP4-005","illustrator":"ぼへ"},
 {"code":"BP4-006","name":"神鳥ガルダ","type":"動物","tribe":"ガルダ","stats":"ATK 6／DEF 6","cost":"6","condition":"山山／森森","effect":"《唯一》《鉄壁（タイプ：動物）》《駿足》《有翼》\n【固有】これをプレイする時、これ以外のあなたの手札の山岳カードや森林カードの内1枚を捨てて適用してもよい。これをプレイするコストを⑤軽減する。この効果を適用してプレイしたカードのプレイ効果で戦場に出る存在は『これが戦場にあるなら、これを生贄に捧げる』を戦場を離れるまで得た状態であなたの戦場に出る。\n【誘発（戦場）】これが戦場に出た時、以下の●から1つを選んで発動してもよい。\n●あなたの<山岳域>が2以上なら発動する。これと「ガルダの信者」動物以外の、戦場のすべての動物と相手に2点ダメージを与える。\n●あなたの<森林域>が2以上なら発動する。あなたはカード2枚を引く。","route_search":["ガルダルート","九尾ルート"],"general_effect":["ドロー","ビートバーン"],"reading":"しんちょうがるだ","image":"https://acgtcg.com/img/BP4-006","illustrator":"あるみらん"},
-{"code":"BP4-007","name":"ガルダの神殿","type":"道具","tribe":"","stats":"","cost":"0","condition":"山／森","effect":"【起動（戦場）】あなたの戦場の「ガルダの信者」動物1体をムーブして発動する。これに補修カウンター1個を置く。\n【起動（戦場）】これに補修カウンター6個以上が置かれているなら、①を支払って、これからすべての補修カウンターを取り除いて発動する。あなたの手札やデッキや墓地や除外領域から「神鳥ガルダ」カード1枚を探して、あなたの戦場に出す。\n【起動（戦場）】ムーブ、あなたの戦場の「ガルダの信者」動物2体を生贄に捧げて、あなたの戦場の「神鳥ガルダ」動物1体を対象に発動する。それをウェイクする。","route_search":["ガルダルート"],"general_effect":["サーチ","登場"],"reading":"がるだのしんでん","image":"https://acgtcg.com/img/BP4-007","illustrator":"巴啓祐"},
+{"code":"BP4-007","name":"ガルダの神殿","type":"道具","tribe":"","stats":"","cost":"0","condition":"山／森","effect":"【起動（戦場）】あなたの戦場の「ガルダの信者」動物1体をムーブして発動する。これに補修カウンター1個を置く。\n【起動（戦場）】これに補修カウンター6個以上が置かれているなら、①を支払って、これからすべての補修カウンターを取り除いて発動する。あなたの手札やデッキや墓地や除外領域から「神鳥ガルダ」カード1枚を探して、あなたの戦場に出す。\n【起動（戦場）】ムーブ、あなたの戦場の「ガルダの信者」動物2体を生贄に捧げて、あなたの戦場の「神鳥ガルダ」動物1体を対象に発動する。それをアンムーブする。","route_search":["ガルダルート"],"general_effect":["サーチ","登場"],"reading":"がるだのしんでん","image":"https://acgtcg.com/img/BP4-007","illustrator":"巴啓祐"},
 {"code":"BP4-008","name":"ガルダの信者","type":"動物","tribe":"サル","stats":"ATK 1／DEF 1","cost":"1","condition":"山／森","effect":"【常時（戦場）】あなたの戦場のコスト1の山岳動物と森林動物は「ガルダの信者」という名前を得る。\n【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキからコスト0の山岳道具カードや森林道具カードの内1枚を探して、手札に加える。この効果で「ガルダの神殿」カード以外のカードを手札に加えたなら、あなたの手札のカード1枚を捨てる。","route_search":["ガルダルート"],"general_effect":["サーチ"],"reading":"がるだのしんじゃ","image":"https://acgtcg.com/img/BP4-008","illustrator":"ぼへ"},
 {"code":"BP4-009","name":"群れの舎弟","type":"動物","tribe":"ミーアキャット","stats":"ATK 1／DEF 1","cost":"1","condition":"平","effect":"【誘発（戦場）】これが攻撃した時、あなたの手札のカード1枚を捨てて発動してもよい。ターン終了時まで、これは《隠密》を得る。\n【誘発（戦場）】これが相手に戦闘ダメージを与えた時、①を支払って発動してもよい。これを持ち主のデッキの下に置く。置いたなら、あなたのデッキからコスト2のミーアキャット動物カード1枚を探して、あなたの戦場に出す。\n【起動（手札）】あなたの手札のこれをデッキの下に置いて発動する。あなたのデッキからコスト1のミーアキャット縄張りカード1枚を探して、手札に加える。","route_search":[],"general_effect":["サーチ","登場"],"reading":"むれのしゃてい","image":"https://acgtcg.com/img/BP4-009","illustrator":"ぬん"},
 {"code":"BP4-010","name":"傲慢な若頭","type":"動物","tribe":"ミーアキャット","stats":"ATK 3／DEF 2","cost":"2","condition":"平","effect":"【誘発（戦場）】これが戦場に出た時、あなたの手札のカード1枚を捨てて発動してもよい。あなたのデッキからコスト1以下で条件を達成している動物カード1枚を探して、ムーブ状態であなたの戦場に出す。\n【誘発（戦場）】これが相手に戦闘ダメージを与えた時、①を支払って発動してもよい。これを持ち主のデッキの下に置く。置いたなら、あなたのデッキからコスト3のミーアキャット動物カード1枚を探して、あなたの戦場に出す。","route_search":[],"general_effect":["サーチ","登場"],"reading":"ごうまんなわかとう","image":"https://acgtcg.com/img/BP4-010","illustrator":"トネコ"},
@@ -495,7 +496,7 @@ const cards = [
 {"code":"BP4-046","name":"森の播種者","type":"動物","tribe":"リス","stats":"ATK 3／DEF 2","cost":"2","condition":"森森","effect":"【常時（戦場）】あなたの戦場の「木の実」道具トークンは『ムーブ、これを生贄に捧げて発動する。このターン中、次にあなたが受けるダメージを2点軽減する。』を得る。\n【誘発（戦場）】これが戦場に出た時、以下の●から1つを選んで発動してもよい。\n●「木の実」道具トークン1つをあなたの戦場に出す。\n●あなたのデッキからコスト0のリス道具カード1枚を探して、手札に加える。","route_search":[],"general_effect":["サーチ","登場"],"reading":"もりのはしゅしゃ","image":"https://acgtcg.com/img/BP4-046","illustrator":"宇井"},
 {"code":"BP4-047","name":"森の貪食者","type":"動物","tribe":"リス","stats":"ATK 2／DEF 2","cost":"3","condition":"森森森","effect":"《唯一》《突破》\n【常時（戦場）】あなたの戦場のリス動物はATK+1/DEF+1を得る。このターン中にあなたが「木の実」道具トークン3つ以上を生贄に捧げているなら、あなたの戦場のリス動物はさらにATK+2/DEF+2を得る。このターン中にあなたが「木の実」道具トークン5つ以上を生贄に捧げているなら、あなたの戦場のリス動物はさらに《突破》を得る。\n【起動（戦場）】②を支払って、あなたの戦場の「木の実」道具トークンを任意の数生贄に捧げて、戦場のコストX以下の動物1体を対象に発動する。それを破壊する。Xはこの効果で生贄に捧げた道具トークンの数に等しい。","route_search":[],"general_effect":[],"reading":"もりのどんしょくしゃ","image":"https://acgtcg.com/img/BP4-047","illustrator":"sai"},
 {"code":"BP4-048","name":"リスの貯蔵庫","type":"道具","tribe":"リス","stats":"","cost":"0","condition":"森森","effect":"《唯一》\n【起動（戦場）】場面タイミング中、ムーブ、あなたの戦場の「木の実」道具1つとリス動物最大1体を生贄に捧げて発動する。あなたのデッキからコストXのリス動物カード1枚を探して、あなたの戦場に出す。Xは最小値が1で、この効果で生贄に捧げたリス動物のコストの値に1加算した数に等しい。\n【起動（手札）】①を支払って、あなたの手札のこれを捨てて発動する。「木の実」道具トークン1つをあなたの戦場に出す。","route_search":[],"general_effect":["サーチ","登場"],"reading":"りすのちょうぞうこ","image":"https://acgtcg.com/img/BP4-048","illustrator":"ゆかわ"},
-{"code":"BP4-049","name":"守護する剛腕","type":"動物","tribe":"ゴリラ","stats":"ATK 2／DEF 3","cost":"2","condition":"森森","effect":"【常時】これのプレイは妨害されない。\n【誘発（戦場）】これが防御した時に発動してもよい。これをウェイクする。","route_search":[],"general_effect":[],"reading":"しゅごするごうわん","image":"https://acgtcg.com/img/BP4-049","illustrator":"ぬん"},
+{"code":"BP4-049","name":"守護する剛腕","type":"動物","tribe":"ゴリラ","stats":"ATK 2／DEF 3","cost":"2","condition":"森森","effect":"【常時】これのプレイは妨害されない。\n【誘発（戦場）】これが防御した時に発動してもよい。これをアンムーブする。","route_search":[],"general_effect":[],"reading":"しゅごするごうわん","image":"https://acgtcg.com/img/BP4-049","illustrator":"ぬん"},
 {"code":"BP4-050","name":"愚鈍な者","type":"動物","tribe":"ナマケモノ","stats":"ATK 1／DEF 1","cost":"2","condition":"森森","effect":"【常時（戦場）】これは戦闘ダメージを受けない。\n【常時（戦場）】これは防御ができない。\n【誘発（戦場）】これが相手に戦闘ダメージを与えた時に発動してもよい。あなたはカード1枚を引く。","route_search":[],"general_effect":["ドロー"],"reading":"ぐどんなもの","image":"https://acgtcg.com/img/BP4-050","illustrator":"かざすずゆらぎ"},
 {"code":"BP4-051","name":"千本針","type":"動物","tribe":"ハリネズミ","stats":"ATK 0／DEF 2","cost":"1","condition":"森森","effect":"【誘発（戦場）】これが防御した時に発動してもよい。ATKが1以下でDEFが1以下のすべての攻撃動物を破壊する。","route_search":[],"general_effect":[],"reading":"せんぼんばり","image":"https://acgtcg.com/img/BP4-051","illustrator":"眞白しろ助"},
 {"code":"BP4-052","name":"孤独","type":"場面","tribe":"","stats":"","cost":"1","condition":"森森","effect":"【プレイ】戦場の動物1体を対象に発動する。ターン終了時まで、それと同じ名前の戦場のすべての動物は《唯一》を得る。","route_search":["遅延"],"general_effect":["遅延"],"reading":"こどく","image":"https://acgtcg.com/img/BP4-052","illustrator":"廣井うみ"},
@@ -522,7 +523,7 @@ const cards = [
 {"code":"BP4-073","name":"弔いの灯火","type":"特技","tribe":"","stats":"","cost":"0","condition":"山山／夜夜","effect":"【プレイ】任意の1つを対象に発動する。それに1点ダメージを与える。あなたの領地の《山岳》を持つ領土1つを選んで夜にする。\n【起動（墓地）】あなたの墓地のこれを除外して発動する。あなたの領地の《山岳》を持つ領土1つを選んで夜にする。","route_search":["火力"],"general_effect":["火力"],"reading":"とむらいのとうか","image":"https://acgtcg.com/img/BP4-073","illustrator":"眞白しろ助"},
 {"code":"BP4-074","name":"冥火","type":"特技","tribe":"","stats":"","cost":"1","condition":"山夜","effect":"【プレイ】任意の1つを対象に発動する。それに2点ダメージを与える。あなたのデッキから山岳夜カード1枚を探して、墓地に置く。\n【起動（墓地）】場面タイミング中、あなたの墓地のこれを除外して発動する。あなたの領地の「夜」領土1つを選んで夜を明ける。領土1つの夜を明けたなら、あなたのデッキの上からカード2枚を公開して、山岳夜カード1枚を墓地に置いて、残りのカードをデッキの下に任意の順で置く。","route_search":["火力"],"general_effect":["火力","サーチ"],"reading":"めいか","image":"https://acgtcg.com/img/BP4-074","illustrator":"まつ"},
 {"code":"BP4-075","name":"ガラクタの王","type":"動物&道具","tribe":"カラス","stats":"ATK 0／DEF 0","cost":"3","condition":"無無無","effect":"《唯一》《有翼》\n【常時（戦場）】これはATK+X/DEF+Xを得る。Xはあなたの戦場の道具の数に等しい。\n【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキの上からカード3枚を公開して、コストの合計が3以下になるように道具カード最大3枚をあなたの戦場に出して、残りのカードをデッキの下に任意の順で置く。\n【誘発（戦場）】これのみが効果の対象になった時、コストの合計が3以上になるようにあなたの戦場の道具を任意の数生贄に捧げて、これを対象にしているその効果1つを対象に発動してもよい。それを妨害する。","route_search":["鉄鴉ルート","ガラクタルート"],"general_effect":["登場","妨害"],"reading":"がらくたのおう","image":"https://acgtcg.com/img/BP4-075","illustrator":"IKUSA"},
-{"code":"BP4-076","name":"ガラクタの山","type":"道具","tribe":"","stats":"","cost":"2","condition":"無無","effect":"【常時（戦場）】あなたの戦場に「ガラクタの王」動物1体以上がいるなら、これと「ガラクタの王」道具と「ガラクタの山」道具以外の、あなたの戦場のムーブ状態のすべての道具はすべての能力を失う。\n【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキから0/0の動物&道具カード1枚を探して、手札に加える。\n【誘発（戦場）】相手の準備フェイズ開始時に発動してもよい。あなたの戦場のすべての道具をウェイクする。\n【起動（戦場）】ムーブ、これ以外のあなたの戦場の道具を任意の数対象に発動する。それらをムーブする。","route_search":["ガラクタルート"],"general_effect":["サーチ"],"reading":"がらくたのやま","image":"https://acgtcg.com/img/BP4-076","illustrator":"IKUSA"},
+{"code":"BP4-076","name":"ガラクタの山","type":"道具","tribe":"","stats":"","cost":"2","condition":"無無","effect":"【常時（戦場）】あなたの戦場に「ガラクタの王」動物1体以上がいるなら、これと「ガラクタの王」道具と「ガラクタの山」道具以外の、あなたの戦場のムーブ状態のすべての道具はすべての能力を失う。\n【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキから0/0の動物&道具カード1枚を探して、手札に加える。\n【誘発（戦場）】相手の準備フェイズ開始時に発動してもよい。あなたの戦場のすべての道具をアンムーブする。\n【起動（戦場）】ムーブ、これ以外のあなたの戦場の道具を任意の数対象に発動する。それらをムーブする。","route_search":["ガラクタルート"],"general_effect":["サーチ"],"reading":"がらくたのやま","image":"https://acgtcg.com/img/BP4-076","illustrator":"IKUSA"},
 {"code":"BP4-077","name":"首枷","type":"道具","tribe":"","stats":"","cost":"1","condition":"無無","effect":"【誘発（戦場）】動物カードや動物トークンが墓地や除外領域で誘発能力や起動能力を発動した時、その効果1つを対象に発動する。それのコントローラーは①を支払ってもよい。支払わないなら、それを妨害する。\n【誘発（戦場）】相手の日没フェイズ開始時に発動する。相手は自身の手札のカード1枚を捨ててもよい。捨てたなら、これを生贄に捧げる。","route_search":["遅延"],"general_effect":["妨害","遅延"],"reading":"くびかせ","image":"https://acgtcg.com/img/BP4-077","illustrator":"KOKI"},
 {"code":"BP4-078","name":"大斧","type":"道具","tribe":"","stats":"","cost":"1","condition":"無","effect":"《装備（動物）》\n【常時（戦場）】これを装備している動物は《突破》とATK+2/DEF+1を得る。\n【誘発（戦場）】これを装備している動物が効果の対象になった時に発動してもよい。これを持ち主の手札に戻す。","route_search":["バフ"],"general_effect":[],"reading":"おおおの","image":"https://acgtcg.com/img/BP4-078","illustrator":"KOKI"},
 {"code":"BP4-079","name":"道具の骨組み","type":"道具","tribe":"","stats":"","cost":"1","condition":"無","effect":"【起動（戦場）】ムーブして発動する。これに補修カウンター1個を置く。\n【起動（戦場）】これに補修カウンター1個以上が置かれているなら、ムーブ、これからすべての補修カウンターを取り除いて発動する。あなたの手札のコストX以下の道具カード1枚をあなたの戦場に出す。Xはこの効果で取り除いた補修カウンターの数に等しい。","route_search":["サーチ","鉄鴉ルート","ガラクタルート"],"general_effect":["サーチ","登場"],"reading":"どうぐのほねぐみ","image":"https://acgtcg.com/img/BP4-079","illustrator":"廣井うみ"},
@@ -550,14 +551,14 @@ const cards = [
 {"code":"BP3-021","name":"追憶の穿山甲","type":"動物","tribe":"センザンコウ","stats":"ATK 0／DEF 0","cost":"2","condition":"山無","effect":"《突破》\n【常時（戦場）】これはATK+X/DEF+Xを得る。Xは最大値が5で、あなたの領地の領土の数に等しい。","route_search":[],"general_effect":[],"reading":"ついおくのせんざんこう","image":"https://acgtcg.com/img/BP3-021","illustrator":"ヨシヤ"},
 {"code":"BP3-022","name":"芸達者なオウム","type":"動物","tribe":"オウム","stats":"ATK 2／DEF 2","cost":"2","condition":"山","effect":"《有翼》\n【誘発（戦場）】プレイヤーがこれ以外の、プレイヤー1人のみかカードやトークン1つのみを対象にしたコスト1以下の非存在カードをプレイした時、これを生贄に捧げて、そのプレイ1つを対象に発動してもよい。それを、対象を選択し直した状態で複製する。","route_search":[],"general_effect":["コピー"],"reading":"げいたっしゃなおうむ","image":"https://acgtcg.com/img/BP3-022","illustrator":"森島つき"},
 {"code":"BP3-023","name":"火吹きスカンク","type":"動物","tribe":"スカンク","stats":"ATK 3／DEF 2","cost":"2","condition":"山山","effect":"【誘発（戦場）】これが戦場に出た時、戦場の動物1体を対象に発動してもよい。それに2点ダメージを与える。","route_search":[],"general_effect":["ビートバーン"],"reading":"ひふきすかんく","image":"https://acgtcg.com/img/BP3-023","illustrator":"眞白しろ助"},
-{"code":"BP3-024","name":"執念深い追跡者","type":"動物","tribe":"オオカミ","stats":"ATK 4／DEF 4","cost":"3","condition":"山山","effect":"《対空》\n【誘発（戦場）】これが防御された時に発動してもよい。これをウェイクする。\n【起動（戦場）】あなたの領地の領土2つを生贄に捧げて発動する。これをウェイクする。ターン終了時まで、これはATK-1を得る。","route_search":["赤狼ルート"],"general_effect":["ビートバーン"],"reading":"しゅうねんぶかいついせきしゃ","image":"https://acgtcg.com/img/BP3-024","illustrator":"廣井うみ"},
+{"code":"BP3-024","name":"執念深い追跡者","type":"動物","tribe":"オオカミ","stats":"ATK 4／DEF 4","cost":"3","condition":"山山","effect":"《対空》\n【誘発（戦場）】これが防御された時に発動してもよい。これをアンムーブする。\n【起動（戦場）】あなたの領地の領土2つを生贄に捧げて発動する。これをアンムーブする。ターン終了時まで、これはATK-1を得る。","route_search":["赤狼ルート"],"general_effect":["ビートバーン"],"reading":"しゅうねんぶかいついせきしゃ","image":"https://acgtcg.com/img/BP3-024","illustrator":"廣井うみ"},
 {"code":"BP3-025","name":"ヘビ侯爵の裏屋敷","type":"縄張り","tribe":"ヘビ","stats":"","cost":"1","condition":"山","effect":"【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキからコスト1以下でATK 0のヘビ動物カード1枚を探して、手札に加える。\n【誘発（戦場）】相手の除外領域にカード1枚以上が置かれた時や相手の除外領域のカード1枚以上が除外領域を離れた時に発動してもよい。相手に1点ダメージを与える。\n【起動（手札）】準備フェイズ中のみ起動できる。すべての領地に領土がないなら、あなたの手札のこれを除外して発動する。あなたの戦場に「ヘビ侯爵の裏屋敷」縄張りがないなら、この効果で除外したこれをあなたの戦場に出す。","route_search":[],"general_effect":["火力"],"reading":"へびこうしゃくのうらやしき","image":"https://acgtcg.com/img/BP3-025","illustrator":"IKUSA"},
 {"code":"BP3-026","name":"加速度的熱風","type":"場面","tribe":"","stats":"","cost":"3","condition":"山山","effect":"【プレイ】戦場のすべての動物にX点ダメージを与える。Xはすべての戦場の動物の数に等しい。","route_search":[],"general_effect":["除去"],"reading":"かそくどてきねっぷう","image":"https://acgtcg.com/img/BP3-026","illustrator":"Asa"},
 {"code":"BP3-027","name":"延焼する外壁","type":"特技","tribe":"","stats":"","cost":"1","condition":"山山","effect":"【プレイ】任意の1つを対象に発動する。それに2点ダメージを与える。ターン終了時まで、相手はライフを回復できない。","route_search":[],"general_effect":["火力"],"reading":"えんしょうするがいへき","image":"https://acgtcg.com/img/BP3-027","illustrator":"IKUSA"},
 {"code":"BP3-028","name":"子猫の三叉路","type":"特技","tribe":"ネコ","stats":"","cost":"2","condition":"山山","effect":"【固有】あなたの戦場にコスト3以上のネコ動物1体以上がいるなら、これをプレイする時、これをプレイするコストを②軽減する。\n【プレイ】以下の●から1つを選んで発動する。\n●戦場の山岳動物1体を対象に発動する。それを除外する。この効果で除外した動物カードを持ち主の戦場に出す。\n●相手の戦場の動物1体を対象に発動する。それから任意のカウンター2個を取り除いて、それに2点ダメージを与える。\n●ターン終了時まで、あなたの戦場のすべてのネコ動物はATK+2/DEF+1を得る。","route_search":["九尾ルート"],"general_effect":["登場","火力","バフ"],"reading":"こねこのさんさろ","image":"https://acgtcg.com/img/BP3-028","illustrator":"Asa"},
 {"code":"BP3-029","name":"霊峰の記憶","type":"特技","tribe":"","stats":"","cost":"4","condition":"山山","effect":"【固有】これをプレイする時、あなたの領地の領土が1つ以下なら、あなたはライフ2点を支払って、これ以外のあなたの手札の山岳カード1枚を公開して適用してもよい。これをプレイするコストを④軽減して、山岳条件を2軽減する。あなたの領地の領土が1つ以上なら、この効果で公開したあなたの手札のカード1枚を捨てる。\n【プレイ】戦場のコスト5以下の縄張りや道具の内1つを対象に発動する。それを破壊する。","route_search":[],"general_effect":["除去"],"reading":"れいほうのきおく","image":"https://acgtcg.com/img/BP3-029","illustrator":"ゆかわ"},
 {"code":"BP3-030","name":"水辺の王子さま","type":"動物","tribe":"カエル","stats":"ATK 0／DEF 2","cost":"0","condition":"水水","effect":"《唯一》\n【誘発（戦場）】あなたがコスト0のカードをプレイした時に発動してもよい。これに成長カウンター1個を置く。\n【起動（戦場）】あなたのターン中のみ起動できる。成長カウンター3個以上が置かれているこれを生贄に捧げて発動する。あなたのデッキからコスト0で互いに異なるカード名のみを持つカード最大3枚を探して、墓地に置く。あなたのデッキから「水辺の王さま」カード1枚を探して、防護カウンター1個が置かれた状態であなたの戦場に出す。","route_search":[],"general_effect":[],"reading":"みずべのおうじさま","image":"https://acgtcg.com/img/BP3-030","illustrator":"眞白しろ助"},
-{"code":"BP3-031","name":"毒撒き","type":"動物","tribe":"エイ","stats":"ATK 0／DEF 1","cost":"1","condition":"水","effect":"《早業》《有毒》\n【起動（戦場）】ムーブ、あなたはライフ1点を支払って、戦場の睡眠カウンターが置かれていないウェイク状態の動物1体を対象に発動する。それに睡眠カウンター1個を置く。","route_search":[],"general_effect":["妨害"],"reading":"どくまき","image":"https://acgtcg.com/img/BP3-031","illustrator":"KOKI"},
+{"code":"BP3-031","name":"毒撒き","type":"動物","tribe":"エイ","stats":"ATK 0／DEF 1","cost":"1","condition":"水","effect":"《早業》《有毒》\n【起動（戦場）】ムーブ、あなたはライフ1点を支払って、戦場の睡眠カウンターが置かれていないアンムーブ状態の動物1体を対象に発動する。それに睡眠カウンター1個を置く。","route_search":[],"general_effect":["妨害"],"reading":"どくまき","image":"https://acgtcg.com/img/BP3-031","illustrator":"KOKI"},
 {"code":"BP3-032","name":"進化する硬鱗","type":"動物","tribe":"チョウザメ","stats":"ATK 4／DEF 4","cost":"1","condition":"水","effect":"【固有】これが戦場に出る時、これはATK-1/DEF-1カウンター3個が置かれた状態で戦場に出る。\n【常時（戦場）】これにATK-1/DEF-1カウンターが置かれていないなら、これは《鉄壁》を得る。\n【誘発（戦場）】あなたが非存在カードをプレイした時に発動してもよい。これからATK-1/DEF-1カウンター1個を取り除く。","route_search":[],"general_effect":[],"reading":"しんかするこうりん","image":"https://acgtcg.com/img/BP3-032","illustrator":"KOKI"},
 {"code":"BP3-033","name":"川の観測者","type":"動物","tribe":"カワウソ","stats":"ATK 2／DEF 3","cost":"2","condition":"水水","effect":"【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキからコスト2以下の場面カード1枚を探して、手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"かわのかんそくしゃ","image":"https://acgtcg.com/img/BP3-033","illustrator":"ヨシヤ"},
 {"code":"BP3-034","name":"雨山羊","type":"動物","tribe":"ヤギ","stats":"ATK 3／DEF 2","cost":"2","condition":"水水","effect":"【誘発（戦場）】これが戦場に出た時、戦場のコスト2以下の存在1つを対象に発動してもよい。それを持ち主の手札に戻す。","route_search":[],"general_effect":["バウンス"],"reading":"あめやぎ","image":"https://acgtcg.com/img/BP3-034","illustrator":"宇井"},
@@ -579,7 +580,7 @@ const cards = [
 {"code":"BP3-050","name":"先導蜂","type":"動物","tribe":"ハチ","stats":"ATK 1／DEF 1","cost":"3","condition":"森森","effect":"《有翼》《有毒》\n【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキからコスト1以下で互いに異なるカード名のみを持つハチ動物カード最大2枚を探して、『日没フェイズ開始時にこれを生贄に捧げる』をターン終了時まで得た状態であなたの戦場に出す。\n【起動（墓地）】場面タイミング中のみ起動できる。あなたの<森林域>が2以上なら、あなたの戦場の「蜂の巣」道具とあなたの領地の領土を任意の数ムーブして、あなたの墓地のこれをデッキの下に置いて発動する。あなたの手札のコストXのハチ動物カード1枚を、防護カウンター1個が置かれた状態であなたの戦場に出す。Xはこの効果でムーブした道具と領土の数を合計した数に等しい。","route_search":[],"general_effect":[],"reading":"せんどうばち","image":"https://acgtcg.com/img/BP3-050","illustrator":"眞白しろ助"},
 {"code":"BP3-051","name":"目眩ましの腹狸","type":"動物","tribe":"タヌキ","stats":"ATK 2／DEF 2","cost":"2","condition":"森森","effect":"【常時（手札）】相手があなたの手札を見てカードを選ぶなら、可能な限り手札のこれを選ばなければならない。\n【誘発（除外）】これが相手の効果で手札から除外された時に発動してもよい。これをあなたの戦場に出す。\n【誘発（戦場）】これが戦場に出た時、あなたの<森林域>が2以上なら発動してもよい。あなたはカード1枚を引く。","route_search":[],"general_effect":["ドロー"],"reading":"めくらましのはらだぬき","image":"https://acgtcg.com/img/BP3-051","illustrator":"かざすずゆらぎ"},
 {"code":"BP3-052","name":"繁栄の勇者","type":"動物","tribe":"ゾウ","stats":"ATK 7／DEF 3","cost":"3","condition":"森","effect":"【常時（戦場）】これはATK-Xを得る。Xはあなたの領地の領土の数に等しい。\n【誘発（戦場）】これが攻撃した時に発動してもよい。あなたの手札のコスト2以下のゾウ動物カード1枚をあなたの戦場に出す。出したなら、あなたはカード1枚を引く。\n【起動（手札）】①を支払って、あなたの手札のこれを捨てて発動する。あなたのデッキから「繁栄の勇者」カード以外の、ATK 7のゾウ動物カード1枚とDEF 7のゾウ動物カード1枚を探して、カード1枚を手札に加えて、カード1枚を墓地に置く。","route_search":[],"general_effect":[],"reading":"はんえいのゆうしゃ","image":"https://acgtcg.com/img/BP3-052","illustrator":"ぼへ"},
-{"code":"BP3-053","name":"王鷲","type":"動物","tribe":"ワシ","stats":"ATK 4／DEF 5","cost":"4","condition":"森森","effect":"《唯一》《駿足》《有翼》\n【常時（戦場）】あなたの戦場の《有翼》を持つ動物はATK+1/DEF+1を得る。\n【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキからコスト2以下で条件を達成している《有翼》を持つ動物カード1枚を探して、《駿足》をターン終了時まで得た状態であなたの戦場に出す。\n【誘発（戦場）】これが攻撃した時、あなたの領地の領土1つを対象に発動してもよい。それをウェイクする。","route_search":["鷲ルート"],"general_effect":["バフ","登場"],"reading":"おうわし","image":"https://acgtcg.com/img/BP3-053","illustrator":"sai"},
+{"code":"BP3-053","name":"王鷲","type":"動物","tribe":"ワシ","stats":"ATK 4／DEF 5","cost":"4","condition":"森森","effect":"《唯一》《駿足》《有翼》\n【常時（戦場）】あなたの戦場の《有翼》を持つ動物はATK+1/DEF+1を得る。\n【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキからコスト2以下で条件を達成している《有翼》を持つ動物カード1枚を探して、《駿足》をターン終了時まで得た状態であなたの戦場に出す。\n【誘発（戦場）】これが攻撃した時、あなたの領地の領土1つを対象に発動してもよい。それをアンムーブする。","route_search":["鷲ルート"],"general_effect":["バフ","登場"],"reading":"おうわし","image":"https://acgtcg.com/img/BP3-053","illustrator":"sai"},
 {"code":"BP3-054","name":"草の折籠","type":"道具","tribe":"","stats":"","cost":"0","condition":"森森","effect":"《唯一》\n【起動（戦場）】ムーブして発動する。あなたはカード1枚を引いて、手札のカード1枚をデッキの下に置く。\n【起動（戦場）】②を支払って、これを生贄に捧げて発動する。あなたはカード1枚を引く。","route_search":["九尾ルート"],"general_effect":["ドロー"],"reading":"くさのおりかご","image":"https://acgtcg.com/img/BP3-054","illustrator":"かざすずゆらぎ"},
 {"code":"BP3-055","name":"不動の岩亀","type":"道具","tribe":"カメ","stats":"","cost":"1","condition":"森","effect":"【常時（戦場）】これにATK+1/DEF+1カウンター4個以上が置かれているなら、これは動物タイプを得る。\n【誘発（戦場）】あなたが効果でカード1枚以上を引いた時に発動してもよい。これにATK+1/DEF+1カウンター1個を置く。\n【誘発（墓地）】ATK+1/DEF+1カウンター4個以上が置かれているこれが戦場から墓地に置かれた時に発動してもよい。あなたはカード1枚を引く。","route_search":[],"general_effect":["ドロー"],"reading":"ふどうのいわがめ","image":"https://acgtcg.com/img/BP3-055","illustrator":"KOKI"},
 {"code":"BP3-056","name":"養殖繁殖","type":"場面","tribe":"","stats":"","cost":"1","condition":"森","effect":"【プレイ】あなたの戦場の道具とあなたの領地の領土を任意の数ムーブして発動する。1/1の水生サカナ動物トークンX体をあなたの戦場に出す。Xはこの効果でムーブした道具と領土の数を合計した数に等しい。","route_search":["繁殖ルート"],"general_effect":["登場"],"reading":"ようしょくはんしょく","image":"https://acgtcg.com/img/BP3-056","illustrator":"KOKI"},
@@ -615,7 +616,7 @@ const cards = [
 {"code":"BP2-006","name":"闘志の放浪者","type":"動物","tribe":"クマ","stats":"ATK 2／DEF 4","cost":"2","condition":"森","effect":"《放浪者》《対空》\n【常時】あなたの領地に領土がないなら、これはすべての条件を失って、《森林》を得る。\n【常時（戦場）】あなたの領地に領土が1つ以上あるなら、これは1/1になる。\n【誘発（戦場）】プレイヤー1人やこれ以外の戦場の存在1つのみが相手の効果の対象になった時、これがその効果の対象として適正なら、これ以外のあなたの戦場の条件を持たない動物1体を生贄に捧げて発動してもよい。その効果の対象をこれに変更する。あなたの領地に領土がないなら、あなたの戦場のすべての動物にATK+1/DEF+1カウンター1個ずつを置く。","route_search":[],"general_effect":[],"reading":"とうしのほうろうしゃ","image":"https://acgtcg.com/img/BP2-006","illustrator":"廣井うみ"},
 {"code":"BP2-007","name":"無国籍国家","type":"縄張り","tribe":"","stats":"","cost":"0","condition":"","effect":"《放浪者》《不可侵》\n【プレイ】あなたの領地の4つ以上のすべての領土を生贄に捧げて発動する。これをあなたの戦場に出す。\n【固有（戦場）】あなたがカードをプレイする時、あなたの墓地の領土カードを任意の数除外して適用してもよい。そのカードをプレイするコストをⓧ軽減する。Xはこの効果で除外したカードの数に等しい。\n【常時（戦場）】あなたが領土デッキから領地にカード1枚を出すなら、代わりにあなたの領土デッキの上からカード2枚を墓地に置くか、あなたの除外領域から領土カード2枚を選んで墓地に置く。","route_search":[],"general_effect":[],"reading":"むこくせきこっか","image":"https://acgtcg.com/img/BP2-007","illustrator":"森島つき"},
 {"code":"BP2-008","name":"放浪者の礎","type":"道具","tribe":"","stats":"","cost":"1","condition":"","effect":"《唯一》《放浪者》\n【誘発（戦場）】これが戦場に出た時、あなたのデッキからコスト2の《放浪者》を持つ動物カード1枚を探して、手札に加えてもよい。あなたの領地に領土がないなら、代わりに探したカードをあなたの戦場に出してもよい。\n【起動（戦場）】あなたの準備フェイズ中のみ起動できる。あなたの領地に領土がないなら、ムーブして発動する。あなたのデッキの上からカード2枚を墓地に置いて、あなたの除外領域の領土カード最大X枚を選んで墓地に置く。Xはこの効果であなたのデッキから墓地に置かれた《放浪者》を持つカードの数に等しい。","route_search":[],"general_effect":[],"reading":"ほうろうしゃのいしずえ","image":"https://acgtcg.com/img/BP2-008","illustrator":"IKUSA"},
-{"code":"BP2-009","name":"乳牛","type":"動物","tribe":"ウシ","stats":"ATK 0／DEF 2","cost":"0","condition":"平","effect":"《唯一》《早業》\n【常時（戦場）】これは起床フェイズにウェイクできない。\n【常時（戦場）】これは攻撃と防御ができない。\n【誘発（戦場）】あなたの戦場にこれ以外のウシ動物1体が出た時、これをウェイクしてもよい。\n【起動（戦場）】ムーブして発動する。あなたはライフ1点を回復する。","route_search":["禁止区狼ルート"],"general_effect":[],"reading":"にゅうぎゅう","image":"https://acgtcg.com/img/BP2-009","illustrator":"トネコ"},
+{"code":"BP2-009","name":"乳牛","type":"動物","tribe":"ウシ","stats":"ATK 0／DEF 2","cost":"0","condition":"平","effect":"《唯一》《早業》\n【常時（戦場）】これは起床フェイズにアンムーブできない。\n【常時（戦場）】これは攻撃と防御ができない。\n【誘発（戦場）】あなたの戦場にこれ以外のウシ動物1体が出た時、これをアンムーブしてもよい。\n【起動（戦場）】ムーブして発動する。あなたはライフ1点を回復する。","route_search":["禁止区狼ルート"],"general_effect":[],"reading":"にゅうぎゅう","image":"https://acgtcg.com/img/BP2-009","illustrator":"トネコ"},
 {"code":"BP2-010","name":"牛の従者","type":"動物","tribe":"イヌ","stats":"ATK 1／DEF 1","cost":"1","condition":"平","effect":"【起動（戦場）】あなたの戦場のATK+1/DEF+1カウンター2個を取り除いて、墓地で発動した誘発効果や起動効果の内1つを対象に発動する。それを妨害する。\n【起動（手札）】あなたのターン中のみ起動できる。あなたの手札のこれを捨てて、あなたの戦場のウシ動物1体を対象に発動する。それにATK+1/DEF+1カウンター1個を置く。","route_search":[],"general_effect":[],"reading":"うしのじゅうしゃ","image":"https://acgtcg.com/img/BP2-010","illustrator":"かざすずゆらぎ"},
 {"code":"BP2-011","name":"蓄積する雄牛","type":"動物","tribe":"ウシ","stats":"ATK 1／DEF 1","cost":"1","condition":"平","effect":"【誘発（戦場）】あなたがライフ1点以上を回復した時、これにATK+1/DEF+1カウンター1個を置いてもよい。\n【起動（戦場）】これからATK+1/DEF+1カウンター4個を取り除いて発動する。これに防護カウンター1個を置く。","route_search":[],"general_effect":[],"reading":"ちくせきするおうし","image":"https://acgtcg.com/img/BP2-011","illustrator":"ぼへ"},
 {"code":"BP2-012","name":"慈愛の母牛","type":"動物","tribe":"ウシ","stats":"ATK 1／DEF 1","cost":"1","condition":"平","effect":"【誘発（戦場）】これが戦場に出た時、あなたのデッキからコスト0のウシカード1枚を探して、手札に加えてもよい。\n【誘発（戦場）】あなたがライフ1点以上を回復した時、これに治癒カウンター1個を置いてもよい。\n【起動（戦場）】ムーブ、治癒カウンターが置かれているこれを生贄に捧げて発動する。『あなたはライフ1点を回復する。』をX回繰り返す。Xはこれに置かれていた治癒カウンターの数を2で割った値に等しい（小数点以下切り捨て）。","route_search":[],"general_effect":[],"reading":"じあいのははうし","image":"https://acgtcg.com/img/BP2-012","illustrator":"KOKI"},
@@ -623,15 +624,15 @@ const cards = [
 {"code":"BP2-014","name":"牛舎の守衛","type":"動物","tribe":"ウシ","stats":"ATK 2／DEF 3","cost":"3","condition":"平平","effect":"【誘発（戦場）】これが戦場に出た時、あなたの墓地のコスト1以下のウシ動物2体を対象に発動してもよい。それらをあなたの戦場に出す。","route_search":[],"general_effect":[],"reading":"ぎゅうしゃのしゅえい","image":"https://acgtcg.com/img/BP2-014","illustrator":"宇井"},
 {"code":"BP2-015","name":"荒れ狂う猛牛","type":"動物","tribe":"ウシ","stats":"ATK 6／DEF 6","cost":"6","condition":"平平平","effect":"《駿足》《突破》\n【常時】あなたの戦場に「荒れ狂う猛牛」動物が1体以上いるなら、これをプレイするコストはⓧ増加する。Xはあなたの戦場の「荒れ狂う猛牛」動物の数を3倍にした数に等しい。\n【固有】これをプレイする時、これをプレイするコストをⓧ軽減する。Xはこのターン中にあなたがライフ1点以上を回復した回数に等しい。","route_search":[],"general_effect":[],"reading":"あれくるうもうぎゅう","image":"https://acgtcg.com/img/BP2-015","illustrator":"巴啓祐"},
 {"code":"BP2-016","name":"岩場の守備隊","type":"動物","tribe":"アルマジロ","stats":"ATK 0／DEF 1","cost":"0","condition":"山","effect":"【誘発（戦場）】これがムーブした時、相手1人を対象に発動する。それに1点ダメージを与える。\n【固有（戦場）】これ以外のあなたの戦場のアルマジロ動物が起動能力を発動する時、ムーブして適用してもよい。その発動コストで支払うコストを①軽減する。\n【起動（戦場）】ムーブ、「岩場の守備隊」動物以外の戦場のATK 0の動物1体を対象に発動する。ターン終了時まで、それはDEF+1を得る。","route_search":["アルマジロルート"],"general_effect":["ビートバーン"],"reading":"いわばのしゅびたい","image":"https://acgtcg.com/img/BP2-016","illustrator":"まつ"},
-{"code":"BP2-017","name":"岩場の斥候兵","type":"動物","tribe":"アルマジロ","stats":"ATK 0／DEF 2","cost":"1","condition":"山","effect":"【誘発（戦場）】これがムーブした時、相手1人を対象に発動する。それに1点ダメージを与える。\n【起動（戦場）】ムーブ、「岩場の斥候兵」動物以外の戦場のATK 0の動物1体を対象に発動する。それをウェイクするかムーブする。","route_search":["アルマジロルート"],"general_effect":["ビートバーン"],"reading":"いわばのせっこうへい","image":"https://acgtcg.com/img/BP2-017","illustrator":"巴啓祐"},
-{"code":"BP2-018","name":"崖下りの天才","type":"動物","tribe":"アルマジロ","stats":"ATK 0／DEF 2","cost":"1","condition":"山","effect":"【誘発（戦場）】これがムーブした時、相手1人を対象に発動する。それに1点ダメージを与える。\n【起動（戦場）】あなたの戦場のアルマジロ動物2体をムーブして、「崖下りの天才」動物以外の戦場のATK 0でDEF 3以上の動物1体を対象に発動する。それをウェイクする。","route_search":["アルマジロルート"],"general_effect":["ビートバーン"],"reading":"がけくだりのてんさい","image":"https://acgtcg.com/img/BP2-018","illustrator":"森島つき"},
-{"code":"BP2-019","name":"国境警備隊長","type":"動物","tribe":"アルマジロ","stats":"ATK 0／DEF 3","cost":"2","condition":"山","effect":"【誘発（戦場）】これがムーブした時、相手1人を対象に発動する。それに1点ダメージを与える。\n【誘発（戦場）】起床フェイズ以外で、「国境警備隊長」動物以外のあなたの戦場のアルマジロ動物1体以上がウェイクした時、これをウェイクしてもよい。","route_search":["アルマジロルート"],"general_effect":["ビートバーン"],"reading":"こっきょうけいびたいちょう","image":"https://acgtcg.com/img/BP2-019","illustrator":"森島つき"},
+{"code":"BP2-017","name":"岩場の斥候兵","type":"動物","tribe":"アルマジロ","stats":"ATK 0／DEF 2","cost":"1","condition":"山","effect":"【誘発（戦場）】これがムーブした時、相手1人を対象に発動する。それに1点ダメージを与える。\n【起動（戦場）】ムーブ、「岩場の斥候兵」動物以外の戦場のATK 0の動物1体を対象に発動する。それをアンムーブするかムーブする。","route_search":["アルマジロルート"],"general_effect":["ビートバーン"],"reading":"いわばのせっこうへい","image":"https://acgtcg.com/img/BP2-017","illustrator":"巴啓祐"},
+{"code":"BP2-018","name":"崖下りの天才","type":"動物","tribe":"アルマジロ","stats":"ATK 0／DEF 2","cost":"1","condition":"山","effect":"【誘発（戦場）】これがムーブした時、相手1人を対象に発動する。それに1点ダメージを与える。\n【起動（戦場）】あなたの戦場のアルマジロ動物2体をムーブして、「崖下りの天才」動物以外の戦場のATK 0でDEF 3以上の動物1体を対象に発動する。それをアンムーブする。","route_search":["アルマジロルート"],"general_effect":["ビートバーン"],"reading":"がけくだりのてんさい","image":"https://acgtcg.com/img/BP2-018","illustrator":"森島つき"},
+{"code":"BP2-019","name":"国境警備隊長","type":"動物","tribe":"アルマジロ","stats":"ATK 0／DEF 3","cost":"2","condition":"山","effect":"【誘発（戦場）】これがムーブした時、相手1人を対象に発動する。それに1点ダメージを与える。\n【誘発（戦場）】起床フェイズ以外で、「国境警備隊長」動物以外のあなたの戦場のアルマジロ動物1体以上がアンムーブした時、これをアンムーブしてもよい。","route_search":["アルマジロルート"],"general_effect":["ビートバーン"],"reading":"こっきょうけいびたいちょう","image":"https://acgtcg.com/img/BP2-019","illustrator":"森島つき"},
 {"code":"BP2-020","name":"アルマジロ王","type":"動物","tribe":"アルマジロ","stats":"ATK 0／DEF 4","cost":"3","condition":"山","effect":"【常時（戦場）】これ以外のあなたの戦場のアルマジロ動物は、これが持っていてその動物が持っていないすべてのキーワード能力を得る。\n【誘発（戦場）】これがムーブした時、任意の1つを対象に発動する。それに2点ダメージを与える。\n【起動（戦場）】場面タイミング中のみ起動できる。ムーブ、①を支払って発動する。あなたのデッキの上からカード3枚を見て、コスト2以下のアルマジロ動物カード1枚をあなたの戦場に出して、残りのカードをデッキの下に任意の順で置く。","route_search":["アルマジロルート"],"general_effect":["ビートバーン"],"reading":"あるまじろおう","image":"https://acgtcg.com/img/BP2-020","illustrator":"ぼへ"},
 {"code":"BP2-021","name":"初演の仔","type":"動物","tribe":"イルカ","stats":"ATK 1／DEF 1","cost":"1","condition":"水","effect":"【誘発（戦場）】相手のターン中、相手がカードをプレイした時に発動する。これに成長カウンター1個を置く。\n【誘発（戦場）】相手の日没フェイズ開始時、成長カウンター3個以上が置かれているこれを生贄に捧げて発動する。あなたのデッキからコスト3以下のイルカ動物カード1枚を探して、あなたの戦場に出す。\n【起動（戦場）】これを生贄に捧げて、コスト1以下の非存在プレイ1つを対象に発動する。それを持ち主の手札に戻す。","route_search":["イルカルート"],"general_effect":[],"reading":"しょえんのこ","image":"https://acgtcg.com/img/BP2-021","illustrator":"眞白しろ助"},
 {"code":"BP2-022","name":"熱演のドルフィン","type":"動物","tribe":"イルカ","stats":"ATK 2／DEF 3","cost":"2","condition":"水水","effect":"《唯一》《早業》\n【起動（戦場）】相手のターン中、このターン中に相手がカード3枚以上をプレイしているなら起動できる。ムーブ、あなたの墓地のイルカ特技カード1枚を対象に発動する。それをプレイする。この効果でプレイされたカードがパイルから取り除かれるなら、そのカードを除外する。\n【起動（手札）】①を支払って、あなたの手札のこれを捨てて発動する。あなたのデッキからコスト1のイルカ存在カード1枚を探して、手札に加える。","route_search":["イルカルート"],"general_effect":[],"reading":"ねつえんのどるふぃん","image":"https://acgtcg.com/img/BP2-022","illustrator":"眞白しろ助"},
 {"code":"BP2-023","name":"白き海精","type":"動物","tribe":"イルカ","stats":"ATK 3／DEF 2","cost":"3","condition":"水水","effect":"《敏捷》《早業》\n【固有】相手のターン中、これをプレイする時、これをプレイするコストをⓧ軽減する。Xはこのターン中に相手がプレイしたカードの数に等しい。\n【常時】あなたは「白き海精」カードを1ターンに1度しかプレイできない。\n【起動（戦場）】相手の狩りフェイズ中のみ起動できる。ムーブ、相手の戦場のコスト3以下の存在1つを対象に発動する。これを持ち主の手札に戻す。戻したなら、それを持ち主の手札に戻す。このターン中、相手は次にプレイするカードのコストを③軽減してもよい。","route_search":["イルカルート"],"general_effect":[],"reading":"しろきかいせい","image":"https://acgtcg.com/img/BP2-023","illustrator":"KOKI"},
 {"code":"BP2-024","name":"海洋の楽園","type":"縄張り","tribe":"イルカ","stats":"","cost":"1","condition":"水","effect":"《唯一》\n【プレイ】あなたのデッキからコスト1のイルカ動物カード1枚を探して、あなたの戦場に出す。これをあなたの戦場に出す。\n【誘発（戦場）】相手のターン中、相手がカードをプレイした時に発動する。これに成長カウンター1個を置く。\n【誘発（戦場）】相手の日没フェイズ開始時、これに成長カウンター14個以上が置かれているなら発動する。あなたはゲームに勝利する。","route_search":["イルカルート"],"general_effect":[],"reading":"かいようのらくえん","image":"https://acgtcg.com/img/BP2-024","illustrator":"廣井うみ"},
-{"code":"BP2-025","name":"熱烈な再演","type":"特技","tribe":"イルカ","stats":"","cost":"1","condition":"水","effect":"【プレイ】コスト1以下のプレイ1つを対象に発動する。それを妨害する。この効果で妨害したプレイがコスト0なら、あなたの領地の領土1つを選んでウェイクする。","route_search":["イルカルート"],"general_effect":[],"reading":"ねつれつなさいえん","image":"https://acgtcg.com/img/BP2-025","illustrator":"かざすずゆらぎ"},
+{"code":"BP2-025","name":"熱烈な再演","type":"特技","tribe":"イルカ","stats":"","cost":"1","condition":"水","effect":"【プレイ】コスト1以下のプレイ1つを対象に発動する。それを妨害する。この効果で妨害したプレイがコスト0なら、あなたの領地の領土1つを選んでアンムーブする。","route_search":["イルカルート"],"general_effect":[],"reading":"ねつれつなさいえん","image":"https://acgtcg.com/img/BP2-025","illustrator":"かざすずゆらぎ"},
 {"code":"BP2-026","name":"海中の見真似","type":"特技","tribe":"イルカ","stats":"","cost":"1","condition":"水","effect":"【常時】あなたは「海中の見真似」カードを1ターンに1度しかプレイできない。\n【プレイ】相手のコスト2以下のプレイ1つを対象に発動する。それを妨害する。相手は自身のデッキからコストXのカード1枚を探して、コストを無視してプレイしてもよい。あなたは自身のデッキからコストXの水生場面カード1枚を探して、コストを無視してプレイしてもよい。Xはこの効果で妨害したプレイのコストの値に等しい。","route_search":["イルカルート"],"general_effect":[],"reading":"かいちゅうのみまね","image":"https://acgtcg.com/img/BP2-026","illustrator":"KOKI"},
 {"code":"BP2-027","name":"海への誘い","type":"場面","tribe":"","stats":"","cost":"3","condition":"水水水","effect":"【常時】相手のターン中、このターン中に相手がカード3枚以上をプレイしているなら、これは《敏捷》を得る。\n【プレイ】あなたのデッキの上からカード4枚を見て、カード2枚を手札に加えて、残りのカードをデッキの下に任意の順で置く。","route_search":[],"general_effect":["ドロー"],"reading":"うみへのさそい","image":"https://acgtcg.com/img/BP2-027","illustrator":"KOKI"},
 {"code":"BP2-028","name":"死の兎","type":"動物","tribe":"ウサギ","stats":"ATK 0／DEF 1","cost":"1","condition":"夜","effect":"《唯一》\n【誘発（戦場）】これが戦場に出た時、相手1人を対象に発動してもよい。それの手札を見てカード1枚を選び、これが戦場にある限り、選んだカードを除外する。この効果で除外したカードは、これが戦場を離れると同時に持ち主の手札に戻る。\n【誘発（墓地）】これが戦場から墓地に置かれた時、「死の兎」カード以外のあなたの墓地のコスト1以下の夜カード1枚を対象に発動してもよい。それを持ち主のデッキの上に置く。","route_search":[],"general_effect":["ハンデス"],"reading":"しのうさぎ","image":"https://acgtcg.com/img/BP2-028","illustrator":"sai"},
@@ -709,14 +710,14 @@ const cards = [
 {"code":"BP1-020","name":"蟻道","type":"縄張り","tribe":"アリ","stats":"","cost":"1","condition":"平","effect":"【誘発（戦場）】これが戦場に出た時に発動する。あなたのデッキの上からカード3枚を公開して、アリ動物カード1枚を手札に加えて、残りのカードをデッキの上に任意の順で置く。あなたの手札のコスト1のアリ動物カード1枚をあなたの戦場に出してもよい。\n【誘発（墓地）】これが戦場から墓地に置かれた時、あなたのデッキから「兵隊蟻」カード1枚を探してあなたの戦場に出してもよい。","route_search":[],"general_effect":["サーチ"],"reading":"ありみち","image":"https://acgtcg.com/img/BP1-020","illustrator":"IKUSA"},
 {"code":"BP1-021","name":"蟻塚","type":"縄張り","tribe":"アリ","stats":"","cost":"2","condition":"平平","effect":"【誘発（戦場）】これが戦場に出た時に発動する。あなたのデッキの上からカード1枚を公開する。公開したカードがアリ動物カードなら、そのカードを手札に加える。あなたの手札のコスト1以上のアリ存在カードを、コストの合計が2以下になるように任意の数あなたの戦場に出してもよい。\n【誘発（墓地）】これが戦場から墓地に置かれた時、あなたのデッキから「兵隊蟻」カード1枚を探してあなたの戦場に出してもよい。","route_search":[],"general_effect":["サーチ"],"reading":"ありづか","image":"https://acgtcg.com/img/BP1-021","illustrator":"かざすずゆらぎ"},
 {"code":"BP1-022","name":"蟻壁","type":"縄張り","tribe":"アリ","stats":"","cost":"2","condition":"平平","effect":"【誘発（戦場）】これが戦場に出た時に発動する。あなたのデッキの上からカード1枚を公開する。公開したカードがアリ縄張りカードなら、そのカードを手札に加える。あなたの手札のコスト1以上のアリ存在カードを、コストの合計が2以下になるように任意の数あなたの戦場に出してもよい。\n【誘発（墓地）】これが戦場から墓地に置かれた時、あなたのデッキから「兵隊蟻」カード1枚を探してあなたの戦場に出してもよい。","route_search":[],"general_effect":["サーチ"],"reading":"ありかべ","image":"https://acgtcg.com/img/BP1-022","illustrator":"IKUSA"},
-{"code":"BP1-023","name":"見狐","type":"動物","tribe":"キツネ","stats":"ATK 1／DEF 1","cost":"1","condition":"山森","effect":"《唯一》\n【常時（戦場）】これにこれの効果以外で妖狐カウンターを置くことはできない。\n【誘発（戦場）】これ以外のあなたの戦場のキツネ存在から妖狐カウンター1個が取り除かれた時に発動する。これに妖狐カウンター1個を置く。\n【起動（戦場）】これから妖狐カウンター2個を取り除いて、戦場のキツネ存在1つを対象に発動する。それをウェイクする。\n【起動（手札）】あなたの手札のキツネカード1枚とこれを捨てて発動する。あなたのデッキから「狐の隠里」カード1枚を探して手札に加える。","route_search":["狐ルート","禁術ルート"],"general_effect":[],"reading":"みきつね","image":"https://acgtcg.com/img/BP1-023","illustrator":"Asa"},
+{"code":"BP1-023","name":"見狐","type":"動物","tribe":"キツネ","stats":"ATK 1／DEF 1","cost":"1","condition":"山森","effect":"《唯一》\n【常時（戦場）】これにこれの効果以外で妖狐カウンターを置くことはできない。\n【誘発（戦場）】これ以外のあなたの戦場のキツネ存在から妖狐カウンター1個が取り除かれた時に発動する。これに妖狐カウンター1個を置く。\n【起動（戦場）】これから妖狐カウンター2個を取り除いて、戦場のキツネ存在1つを対象に発動する。それをアンムーブする。\n【起動（手札）】あなたの手札のキツネカード1枚とこれを捨てて発動する。あなたのデッキから「狐の隠里」カード1枚を探して手札に加える。","route_search":["狐ルート","禁術ルート"],"general_effect":[],"reading":"みきつね","image":"https://acgtcg.com/img/BP1-023","illustrator":"Asa"},
 {"code":"BP1-024","name":"双子狐","type":"動物","tribe":"キツネ","stats":"ATK 1／DEF 1","cost":"1","condition":"山森","effect":"【ルール】「双子狐」カードはデッキに2枚までしか入れることができない。\n【固有】これが戦場に出る時に適用してもよい。あなたの手札やデッキや墓地や除外領域から「双子狐」カード1枚を探してあなたの戦場に出す。\n【誘発（戦場）】これのみが複製効果以外の効果の対象になった時に発動する。あなたの戦場にこれ以外の「双子狐」動物が1体以上いるなら、これを対象にしているその効果を、適正な対象となるこれ以外のあなたの戦場の「双子狐」動物1体を対象にしている状態で複製する。","route_search":["狐ルート"],"general_effect":[],"reading":"ふたごきつね","image":"https://acgtcg.com/img/BP1-024","illustrator":"Aru-rutan"},
 {"code":"BP1-025","name":"置狐","type":"動物","tribe":"キツネ","stats":"ATK 1／DEF 1","cost":"1","condition":"山","effect":"【誘発（戦場）】これが戦場に出た時、あなたの戦場のキツネ存在1つを対象に発動してもよい。それに妖狐カウンター2個を置く。\n【誘発（墓地）】これが戦場から墓地に置かれた時、あなたの戦場のキツネ存在1つを対象に発動してもよい。それに妖狐カウンター2個を置く。","route_search":["狐ルート"],"general_effect":[],"reading":"おきつね","image":"https://acgtcg.com/img/BP1-025","illustrator":"森島つき"},
 {"code":"BP1-026","name":"組狐","type":"動物","tribe":"キツネ","stats":"ATK 1／DEF 1","cost":"1","condition":"森","effect":"【起動（戦場）】ムーブ、あなたの戦場のキツネ存在1つを対象に発動する。それに妖狐カウンター2個を置く。\n【起動（戦場）】ムーブ、これから妖狐カウンター2個を取り除いて、カウンター名1つを宣言して発動する。このターン中、あなたの戦場の妖狐カウンターはこの効果で宣言したカウンターになる。","route_search":["狐ルート","禁術ルート"],"general_effect":[],"reading":"くみきつね","image":"https://acgtcg.com/img/BP1-026","illustrator":"宇井"},
 {"code":"BP1-027","name":"狐葉","type":"動物","tribe":"キツネ","stats":"ATK 1／DEF 1","cost":"1","condition":"森","effect":"【常時（戦場）】これは防御ができない。\n【誘発（戦場）】準備フェイズ開始時に発動する。ターンプレイヤーはカードX枚を引く。Xはこの動物のATKの値に等しい。","route_search":["狐ルート"],"general_effect":["ドロー"],"reading":"きつねは","image":"https://acgtcg.com/img/BP1-027","illustrator":"mana＊"},
 {"code":"BP1-028","name":"化狐","type":"動物","tribe":"キツネ","stats":"ATK 1／DEF 3","cost":"2","condition":"山森","effect":"【誘発（戦場）】これが戦場に出た時に発動してもよい。あなたのデッキからキツネカード1枚を探して墓地に置く。これに妖狐カウンター2個を置く。\n【起動（戦場）】これから妖狐カウンター1個を取り除いて、あなたの墓地のコスト1のキツネカード1枚を対象に発動する。それをデッキの上に置く。\n【起動（戦場）】ムーブして発動する。あなたのデッキの上からカード1枚を見て、キツネカード1枚までを除外する。この効果で除外したカードが除外領域にある限り、これはその除外したカードの能力を得る。","route_search":["狐ルート"],"general_effect":[],"reading":"ばけきつね","image":"https://acgtcg.com/img/BP1-028","illustrator":"宇井"},
 {"code":"BP1-029","name":"九尾","type":"動物","tribe":"キツネ","stats":"ATK 3／DEF 6","cost":"6","condition":"山山山森森森","effect":"《唯一》\n【固有】これが戦場に出る時、あなたのデッキの上からカード9枚を裏向きで除外して、これは妖狐カウンター9個が置かれた状態で戦場に出る。\n【起動（手札）】あなたの手札のこれを公開して、あなたの戦場の動物1体を生贄に捧げて、あなたの戦場の「妖狐の巻物」道具1つから妖狐カウンター9個を取り除いて発動する。これをあなたの戦場に出す。\n【起動（戦場）】これから妖狐カウンター1個を取り除いて、あなたの除外領域の裏向きの動物カードや「妖狐」を含むカードの内1枚を表向きにして発動する。これが戦場を離れるまで、これはこの効果で表向きにしたカードの能力を得る。","route_search":["狐ルート","九尾ルート"],"general_effect":[],"reading":"きゅうび","image":"https://acgtcg.com/img/BP1-029","illustrator":"巴啓祐"},
-{"code":"BP1-030","name":"狐の隠里","type":"縄張り","tribe":"キツネ","stats":"","cost":"1","condition":"山／森","effect":"《唯一》\n【常時（戦場）】あなたの戦場にキツネ動物が1体以上いるなら、これは《山岳》と《森林》を得る。\n【誘発（戦場）】これが戦場に出た時に発動する。あなたのデッキからキツネ動物カードや「妖狐」を含むカードの内1枚を探して手札に加える。\n【起動（戦場）】これから妖狐カウンター2個を取り除いて、戦場の「妖狐」を含む存在1つを対象に発動する。それをウェイクする。","route_search":["狐ルート","アルマジロルート","禁術ルート","九尾ルート"],"general_effect":["サーチ"],"reading":"きつねのかくれざと","image":"https://acgtcg.com/img/BP1-030","illustrator":"ぬん"},
+{"code":"BP1-030","name":"狐の隠里","type":"縄張り","tribe":"キツネ","stats":"","cost":"1","condition":"山／森","effect":"《唯一》\n【常時（戦場）】あなたの戦場にキツネ動物が1体以上いるなら、これは《山岳》と《森林》を得る。\n【誘発（戦場）】これが戦場に出た時に発動する。あなたのデッキからキツネ動物カードや「妖狐」を含むカードの内1枚を探して手札に加える。\n【起動（戦場）】これから妖狐カウンター2個を取り除いて、戦場の「妖狐」を含む存在1つを対象に発動する。それをアンムーブする。","route_search":["狐ルート","アルマジロルート","禁術ルート","九尾ルート"],"general_effect":["サーチ"],"reading":"きつねのかくれざと","image":"https://acgtcg.com/img/BP1-030","illustrator":"ぬん"},
 {"code":"BP1-031","name":"妖狐の変化","type":"道具","tribe":"","stats":"","cost":"4","condition":"山森森","effect":"【固有】これをプレイする時に適用してもよい。これのコストをⓧ軽減する。Xはあなたの戦場のキツネ動物の数に等しい。\n【起動（戦場）】ムーブ、あなたの戦場のキツネ動物1体を生贄に捧げて発動する。あなたの手札のコストX以下のキツネ動物カード1枚をあなたの戦場に出す。出したなら、あなたはカード1枚を引く。Xはこの効果で生贄に捧げた動物のコストの値に等しい。\n【起動（戦場）】これを生贄に捧げて、カウンター名1つを宣言して発動する。このターン中、あなたの戦場の妖狐カウンターはこの効果で宣言したカウンターになる。","route_search":["狐ルート"],"general_effect":[],"reading":"ようこのへんげ","image":"https://acgtcg.com/img/BP1-031","illustrator":"かざすずゆらぎ"},
 {"code":"BP1-032","name":"妖狐の祭壇","type":"道具","tribe":"","stats":"","cost":"4","condition":"山山森","effect":"【固有】これをプレイする時に適用してもよい。これのコストをⓧ軽減する。Xはあなたの戦場のキツネ動物の数に等しい。\n【起動（戦場）】ムーブ、あなたの戦場の存在1つからすべての妖狐カウンターを取り除いて、戦場の存在1つを対象に発動する。それに妖狐カウンターX個を置く。Xはこの効果で取り除いたカウンターの数に等しい。\n【起動（戦場）】これを生贄に捧げて、カウンター名1つを宣言して発動する。このターン中、あなたの戦場の妖狐カウンターはこの効果で宣言したカウンターになる。","route_search":["狐ルート"],"general_effect":[],"reading":"ようこのさいだん","image":"https://acgtcg.com/img/BP1-032","illustrator":"まつ"},
 {"code":"BP1-033","name":"子モグラ","type":"動物","tribe":"モグラ","stats":"ATK 1／DEF 1","cost":"0","condition":"森森","effect":"【誘発（戦場）】これが戦場に出た時、プレイヤー1人を対象に発動する。それのデッキの上からカード1枚を墓地に置く。","route_search":["モグラルート","禁止区狼ルート"],"general_effect":[],"reading":"こもぐら","image":"https://acgtcg.com/img/BP1-033","illustrator":"森島つき"},
@@ -741,7 +742,7 @@ const cards = [
 {"code":"BP1-052","name":"蹂躙の勇者","type":"動物","tribe":"ゾウ","stats":"ATK 7／DEF 7","cost":"4","condition":"森森森森","effect":"《突破》","route_search":[],"general_effect":[],"reading":"じゅうりんのゆうしゃ","image":"https://acgtcg.com/img/BP1-052","illustrator":"かざすずゆらぎ"},
 {"code":"BP1-053","name":"献身の母象","type":"動物","tribe":"ゾウ","stats":"ATK 0／DEF 2","cost":"1","condition":"森","effect":"《唯一》\n【誘発（戦場）】これ以外のあなたの戦場のゾウ動物1体のみが相手の効果の対象になった時、これがその効果の対象として適正なら発動する。その効果の対象をこれに変更する。","route_search":[],"general_effect":[],"reading":"けんしんのははぞう","image":"https://acgtcg.com/img/BP1-053","illustrator":"森島つき"},
 {"code":"BP1-054","name":"象の教育場","type":"縄張り","tribe":"ゾウ","stats":"","cost":"1","condition":"森森","effect":"《唯一》\n【固有（戦場）】ゾウ動物1体以上があなたの戦場に出る時、それらはATK+1/DEF+1カウンター1個ずつが置かれた状態で戦場に出る。\n【起動（手札）】①を支払って、あなたの手札のこれを捨てて、あなたの除外領域のゾウカード1枚を対象に発動する。それを墓地に置く。","route_search":[],"general_effect":[],"reading":"ぞうのきょういくば","image":"https://acgtcg.com/img/BP1-054","illustrator":"森島つき"},
-{"code":"BP1-055","name":"皇后アリゲーター","type":"動物","tribe":"ワニ","stats":"ATK 3／DEF 2","cost":"2","condition":"水","effect":"《唯一》\n【起動（手札）】①を支払って、あなたの手札のこれを捨てて発動する。あなたのデッキから「帝王クロコダイル」カード1枚を探して墓地に置く。墓地に置いたなら、あなたのデッキから「帝王の子」カードや「帝王クロコダイルⅡ世」カードの内1枚を探して手札に加える。\n【起動（墓地）】相手のターン中のみ起動できる。あなたの墓地のワニカード2枚とこれを除外して、戦場のワニ動物1体を対象に発動する。それをウェイクする。","route_search":[],"general_effect":[],"reading":"こうごうありげーたー","image":"https://acgtcg.com/img/BP1-055","illustrator":"KOKI"},
+{"code":"BP1-055","name":"皇后アリゲーター","type":"動物","tribe":"ワニ","stats":"ATK 3／DEF 2","cost":"2","condition":"水","effect":"《唯一》\n【起動（手札）】①を支払って、あなたの手札のこれを捨てて発動する。あなたのデッキから「帝王クロコダイル」カード1枚を探して墓地に置く。墓地に置いたなら、あなたのデッキから「帝王の子」カードや「帝王クロコダイルⅡ世」カードの内1枚を探して手札に加える。\n【起動（墓地）】相手のターン中のみ起動できる。あなたの墓地のワニカード2枚とこれを除外して、戦場のワニ動物1体を対象に発動する。それをアンムーブする。","route_search":[],"general_effect":[],"reading":"こうごうありげーたー","image":"https://acgtcg.com/img/BP1-055","illustrator":"KOKI"},
 {"code":"BP1-056","name":"帝王の子","type":"動物","tribe":"ワニ","stats":"ATK 0／DEF 2","cost":"1","condition":"水水","effect":"【起動（戦場）】ムーブ、②を支払って、これを生贄に捧げて、あなたの手札の「帝王クロコダイルⅡ世」カード1枚を公開して発動する。あなたのデッキから「ワニの沼」カード1枚を探してあなたの戦場に出す。この効果で公開したあなたの手札の「帝王クロコダイルⅡ世」カード1枚をムーブ状態であなたの戦場に出す。\n【起動（手札）】②を支払って、あなたの手札のこれを捨てて発動する。あなたのデッキの上からカード2枚を見て、カード1枚を手札に加えて、残りのカードを墓地に置く。","route_search":[],"general_effect":["ドロー"],"reading":"ていおうのこ","image":"https://acgtcg.com/img/BP1-056","illustrator":"Asa"},
 {"code":"BP1-057","name":"ヒトコブラクダ","type":"動物","tribe":"ラクダ","stats":"ATK 2／DEF 2","cost":"2","condition":"平","effect":"【固有（戦場）】これが戦場に出る時、これは防護カウンター1個が置かれた状態で戦場に出る。","route_search":[],"general_effect":[],"reading":"ひとこぶらくだ","image":"https://acgtcg.com/img/BP1-057","illustrator":"Asa"},
 {"code":"BP1-058","name":"フタコブラクダ","type":"動物","tribe":"ラクダ","stats":"ATK 4／DEF 3","cost":"3","condition":"平","effect":"【固有（戦場）】これが戦場に出る時、これは防護カウンター2個が置かれた状態で戦場に出る。","route_search":[],"general_effect":[],"reading":"ふたこぶらくだ","image":"https://acgtcg.com/img/BP1-058","illustrator":"別府さい"},
@@ -765,7 +766,7 @@ const cards = [
 {"code":"BP1-076","name":"境界の選定","type":"場面","tribe":"","stats":"","cost":"1","condition":"森森森","effect":"【プレイ】あなたのデッキから縄張りカード1枚を探して手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"きょうかいのせんてい","image":"https://acgtcg.com/img/BP1-076","illustrator":"トネコ"},
 {"code":"BP1-077","name":"倒木投げ","type":"特技","tribe":"","stats":"","cost":"1","condition":"森","effect":"【プレイ】戦場のコスト3以下の動物1体を対象に発動する。それを破壊する。2/2の森林リス動物トークン2体を相手の戦場に出す。","route_search":[],"general_effect":["登場","除去"],"reading":"とうぼくなげ","image":"https://acgtcg.com/img/BP1-077","illustrator":"まつ"},
 {"code":"BP1-078","name":"賄賂ある検閲所","type":"道具","tribe":"","stats":"","cost":"1","condition":"無","effect":"《唯一》\n【誘発（戦場）】相手がコストや条件の内1つ以上が軽減されたカードをプレイした時、これを生贄に捧げて発動する。あなたはカード2枚を引く。\n【起動（戦場）】ムーブ、③を支払って、あなたの手札のカード1枚を捨てて、これを生贄に捧げて発動する。あなたはカード2枚を引く。","route_search":[],"general_effect":["ドロー"],"reading":"わいろあるけんえつじょ","image":"https://acgtcg.com/img/BP1-078","illustrator":"Aru-rutan"},
-{"code":"BP1-079","name":"牙城","type":"縄張り","tribe":"","stats":"","cost":"2","condition":"無","effect":"【誘発（戦場）】相手の狩りフェイズ開始時、戦場の動物1体を対象に発動してもよい。それをウェイクする。ターン終了時まで、それは《対空》を得る。","route_search":[],"general_effect":["バフ"],"reading":"がじょう","image":"https://acgtcg.com/img/BP1-079","illustrator":"まつ"},
+{"code":"BP1-079","name":"牙城","type":"縄張り","tribe":"","stats":"","cost":"2","condition":"無","effect":"【誘発（戦場）】相手の狩りフェイズ開始時、戦場の動物1体を対象に発動してもよい。それをアンムーブする。ターン終了時まで、それは《対空》を得る。","route_search":[],"general_effect":["バフ"],"reading":"がじょう","image":"https://acgtcg.com/img/BP1-079","illustrator":"まつ"},
 {"code":"BP1-080","name":"帝王クロコダイル","type":"動物","tribe":"ワニ","stats":"ATK 5／DEF 4","cost":"4","condition":"水水","effect":"《鉄壁》","route_search":[],"general_effect":[],"reading":"ていおうくろこだいる","image":"https://acgtcg.com/img/BP1-080","illustrator":"sai"},
 {"code":"うさカス-ACG-001","name":"帝王クロコダイルⅡ世","type":"動物","tribe":"ワニ","stats":"ATK 7／DEF 4","cost":"5","condition":"水水","effect":"《唯一》《鉄壁》《突破》","route_search":[],"general_effect":[],"reading":"ていおうくろこだいるにせい","image":"https://acgtcg.com/img/ACG-001","illustrator":"sai"},
 {"code":"うさカス-ACG-002","name":"水辺の漁り屋","type":"動物","tribe":"カエル","stats":"ATK 0／DEF 1","cost":"1","condition":"水水","effect":"【誘発（戦場）】これが戦場に出た時、あなたの手札のカード1枚を捨てて、あなたの墓地の非存在カード1枚を対象に発動してもよい。それを手札に加える。","route_search":[],"general_effect":[],"reading":"みずべのあさりや","image":"https://acgtcg.com/img/ACG-002","illustrator":"IKUSA"},
@@ -776,7 +777,7 @@ const cards = [
 {"code":"うさカス-ACG-007","name":"渦巻くキリン","type":"場面","tribe":"キリン","stats":"","cost":"1","condition":"水","effect":"【プレイ】あなたのデッキの上からカード3枚を見て、1枚を手札に加えて、残りを墓地に置く。","route_search":[],"general_effect":["ドロー"],"reading":"うずまくきりん","image":"https://acgtcg.com/img/ACG-007","illustrator":"眞白しろ助"},
 {"code":"うさカス-ACG-008","name":"深海への供物","type":"場面","tribe":"","stats":"","cost":"1","condition":"水／夜","effect":"【プレイ】あなたのデッキからカード1枚を探して墓地に置く。","route_search":[],"general_effect":["サーチ"],"reading":"しんかいへのくもつ","image":"https://acgtcg.com/img/ACG-008","illustrator":"KOKI"},
 {"code":"うさカス-ACG-009","name":"開錠","type":"特技","tribe":"","stats":"","cost":"1","condition":"夜","effect":"【プレイ】あなたのデッキからカード1枚を探して、残りのデッキを切り直す。探したカードをデッキの上に置く。","route_search":[],"general_effect":["サーチ"],"reading":"かいじょう","image":"https://acgtcg.com/img/ACG-009","illustrator":"巴啓祐"},
-{"code":"うさカス-ACG-010","name":"命の実","type":"場面","tribe":"","stats":"","cost":"0","condition":"無","effect":"【プレイ】あなたの手札のカード1枚を捨てる。\n【起動（墓地）】あなたの墓地のカード4枚とこれを除外して、領土1つを対象に発動する。それをウェイクする。","route_search":[],"general_effect":["域サポート"],"reading":"いのちのみ","image":"https://acgtcg.com/img/ACG-010","illustrator":"巴啓祐"},
+{"code":"うさカス-ACG-010","name":"命の実","type":"場面","tribe":"","stats":"","cost":"0","condition":"無","effect":"【プレイ】あなたの手札のカード1枚を捨てる。\n【起動（墓地）】あなたの墓地のカード4枚とこれを除外して、領土1つを対象に発動する。それをアンムーブする。","route_search":[],"general_effect":["域サポート"],"reading":"いのちのみ","image":"https://acgtcg.com/img/ACG-010","illustrator":"巴啓祐"},
 {"code":"うさカス-ACG-011","name":"黄昏の神隠し","type":"特技","tribe":"","stats":"","cost":"1","condition":"山／夜","effect":"【プレイ】戦場のコスト1以下の動物1体を対象に発動する。それを除外して、これによって除外されたカードをコントローラーの戦場に出す。これを除外する。\n【起動（墓地）】あなたの墓地のカード4枚を除外して発動する。あなたの墓地のこれをコストと条件を無視してプレイする。","route_search":[],"general_effect":["除去"],"reading":"たそがれのかみかくし","image":"https://acgtcg.com/img/ACG-011","illustrator":"まつ"},
 {"code":"うさカス-ACG-012","name":"海中への探査","type":"特技","tribe":"","stats":"","cost":"1","condition":"水","effect":"【固有】これをプレイする時、あなたの手札のカード1枚を捨てて適用してもよい。これのコストを①軽減する。\n【プレイ】あなたのデッキの上からカード3枚を見て、1枚を手札に加えて、残りをデッキの下に任意の順で置く。","route_search":[],"general_effect":["ドロー"],"reading":"かいちゅうへのたんさ","image":"https://acgtcg.com/img/ACG-012","illustrator":"KOKI"},
 {"code":"うさカス-ACG-013","name":"処刑","type":"特技","tribe":"","stats":"","cost":"1","condition":"夜","effect":"【プレイ】戦場のコスト2以下の動物1体を対象にする。それを除外する。","route_search":[],"general_effect":["除去"],"reading":"しょけい","image":"https://acgtcg.com/img/ACG-013","illustrator":"巴啓祐"},
@@ -853,13 +854,13 @@ const cards = [
 {"code":"剣士-ACG-084","name":"ヘビ貴族","type":"動物","tribe":"ヘビ","stats":"ATK 0／DEF 1","cost":"1","condition":"山","effect":"《敏捷》《唯一》\n【常時（戦場）】デッキからカードが墓地に置かれるなら、代わりにそれを除外する。\n【起動（戦場）】相手のみ起動できる。②を支払って発動する。これを夜にする。","route_search":[],"general_effect":[],"reading":"へびきぞく","image":"https://acgtcg.com/img/ACG-084","illustrator":"sai"},
 {"code":"剣士-ACG-085","name":"足跡の発火","type":"縄張り","tribe":"","stats":"","cost":"2","condition":"山","effect":"【誘発（戦場）】あなたの戦場に動物1体が出た時に発動する。相手に1点ダメージを与える。","route_search":["鷲ルート","禁止区狼ルート"],"general_effect":["火力","ビートバーン"],"reading":"あしあとのはっか","image":"https://acgtcg.com/img/ACG-085","illustrator":"sai"},
 {"code":"剣士-ACG-086","name":"ブタさんのしっぽ","type":"道具","tribe":"ブタ","stats":"","cost":"1","condition":"森森","effect":"《装備（動物）》\n【常時（戦場）】これが装備されている動物はすべての能力を失い、1/1の森林ブタ動物になる。","route_search":[],"general_effect":[],"reading":"ぶたさんのしっぽ","image":"https://acgtcg.com/img/ACG-086","illustrator":"かざすずゆらぎ"},
-{"code":"剣士-ACG-087","name":"火付け狸","type":"動物","tribe":"タヌキ","stats":"ATK 1／DEF 1","cost":"1","condition":"山","effect":"《駿足》\n【起動（戦場）】ムーブ、戦場の動物1体を対象に発動する。ターン終了時まで、それは『これが攻撃した時、相手1人を対象に発動する。それに1点ダメージを与える。』を得る。\n【起動（戦場）】あなたの戦場の動物1体を生贄に捧げて発動する。これをウェイクする。","route_search":["赤猫ルート"],"general_effect":["ビートバーン"],"reading":"ひつけたぬき","image":"https://acgtcg.com/img/ACG-087","illustrator":"Asa"},
+{"code":"剣士-ACG-087","name":"火付け狸","type":"動物","tribe":"タヌキ","stats":"ATK 1／DEF 1","cost":"1","condition":"山","effect":"《駿足》\n【起動（戦場）】ムーブ、戦場の動物1体を対象に発動する。ターン終了時まで、それは『これが攻撃した時、相手1人を対象に発動する。それに1点ダメージを与える。』を得る。\n【起動（戦場）】あなたの戦場の動物1体を生贄に捧げて発動する。これをアンムーブする。","route_search":["赤猫ルート"],"general_effect":["ビートバーン"],"reading":"ひつけたぬき","image":"https://acgtcg.com/img/ACG-087","illustrator":"Asa"},
 {"code":"剣士-ACG-088","name":"脱獄","type":"特技","tribe":"","stats":"","cost":"1","condition":"平／夜","effect":"【プレイ】あなたのデッキからコスト1以下の動物カード1枚を探して手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"だつごく","image":"https://acgtcg.com/img/ACG-088","illustrator":"ぼへ"},
 {"code":"剣士-ACG-089","name":"闇夜の工作","type":"特技","tribe":"","stats":"","cost":"1","condition":"夜","effect":"【プレイ】戦場のコスト2以下の縄張りか道具の内1つを対象に発動する。それを除外する。","route_search":[],"general_effect":["除去"],"reading":"やみよのこうさく","image":"https://acgtcg.com/img/ACG-089","illustrator":"Asa"},
 {"code":"剣士-ACG-090","name":"帰巣本能","type":"特技","tribe":"","stats":"","cost":"0","condition":"森森","effect":"【プレイ】あなたの戦場の動物1体を対象に発動する。それを手札に戻す。","route_search":[],"general_effect":["バウンス"],"reading":"きそうほんのう","image":"https://acgtcg.com/img/ACG-090","illustrator":"sai"},
 {"code":"パン田-ACG-091","name":"少将バッファロー","type":"動物","tribe":"バッファロー","stats":"ATK 2／DEF 2","cost":"3","condition":"山山","effect":"《バッファロー軍》《唯一》《突破》\n【常時（戦場）】このゲーム中、これが最初に1点以上の戦闘ダメージを受けるなら、これはその戦闘ではダメージを受けない。\n【誘発（戦場）】これが攻撃した時、あなたのデッキから「勲章」を含むカード1枚を探して墓地に置く。墓地に置いたなら、ターン終了時まで、これはATK+2/DEF+2を得る。\n【誘発（墓地）】これが戦場から墓地に置かれた時、あなたの墓地の「勲章」を含むカード2枚を除外して、あなたのデッキから《バッファロー軍》を持つカード1枚を探して手札に加える。","route_search":["バッファロールート"],"general_effect":["バフ","サーチ"],"reading":"しょうしょうばっふぁろー","image":"https://acgtcg.com/img/ACG-091","illustrator":"sai"},
 {"code":"パン田-ACG-092","name":"隻腕の大将バッファロー","type":"動物","tribe":"バッファロー","stats":"ATK 6／DEF 6","cost":"6","condition":"山山山山","effect":"《バッファロー軍》《唯一》《突破》\n【常時（戦場）】これは戦闘ダメージを受けない。\n【誘発（戦場）】これが集団防御された時、ターン終了時まで、これのATKをX倍にする。Xはその防御している防御動物の数に等しい。\n【起動（戦場）】あなたの墓地の「勲章」を含むカード1枚を除外して、戦場の動物1体を対象に発動する。ターン終了時まで、それは必ず防御する常時を得る。","route_search":["バッファロールート","九尾ルート"],"general_effect":["バフ"],"reading":"せきわんのたいしょうばっふぁろー","image":"https://acgtcg.com/img/ACG-092","illustrator":"sai"},
-{"code":"パン田-ACG-093","name":"上官中将バッファロー","type":"動物","tribe":"バッファロー","stats":"ATK 1／DEF 4","cost":"2","condition":"山山","effect":"《バッファロー軍》《唯一》《対空》\n【誘発（戦場）】これが戦闘ダメージを受けた時に発動する。これをウェイクする。\n【起動（手札）】①を支払って、あなたの手札のこれを捨てて、戦場の《バッファロー軍》を持つ動物1体を対象に発動する。あなたのデッキから「勲章」を含むカード1枚を探して墓地に置く。置いたなら、ターン終了時まで、それは《鉄壁》を得る。","route_search":[],"general_effect":["バフ","サーチ"],"reading":"じょうかんちゅうじょうばっふぁろー","image":"https://acgtcg.com/img/ACG-093","illustrator":"巴啓祐"},
+{"code":"パン田-ACG-093","name":"上官中将バッファロー","type":"動物","tribe":"バッファロー","stats":"ATK 1／DEF 4","cost":"2","condition":"山山","effect":"《バッファロー軍》《唯一》《対空》\n【誘発（戦場）】これが戦闘ダメージを受けた時に発動する。これをアンムーブする。\n【起動（手札）】①を支払って、あなたの手札のこれを捨てて、戦場の《バッファロー軍》を持つ動物1体を対象に発動する。あなたのデッキから「勲章」を含むカード1枚を探して墓地に置く。置いたなら、ターン終了時まで、それは《鉄壁》を得る。","route_search":[],"general_effect":["バフ","サーチ"],"reading":"じょうかんちゅうじょうばっふぁろー","image":"https://acgtcg.com/img/ACG-093","illustrator":"巴啓祐"},
 {"code":"パン田-ACG-094","name":"勲章持ちリカオン","type":"動物","tribe":"イヌ","stats":"ATK 4／DEF 1","cost":"0","condition":"山山","effect":"《バッファロー軍》《駿足》\n【常時】これはあなたの墓地に《バッファロー軍》を持つカードが4枚以上なければプレイできない。\n【誘発（墓地）】これが墓地に置かれた時、戦場の《バッファロー軍》を持つ動物1体を対象に発動してもよい。ターン終了時まで、それはATK+2/DEF+2を得る。","route_search":["バッファロールート"],"general_effect":["バフ"],"reading":"くんしょうもちりかおん","image":"https://acgtcg.com/img/ACG-094","illustrator":"ぼへ"},
 {"code":"パン田-ACG-095","name":"激情のダチョウ","type":"動物","tribe":"ダチョウ","stats":"ATK 1／DEF 1","cost":"1","condition":"山","effect":"《バッファロー軍》\n【誘発（戦場）】これが相手に戦闘ダメージを与えた時、あなたのデッキからあなたの墓地に同じカード名のカードがない「勲章」を含むカード1枚を探して墓地に置いてもよい。","route_search":[],"general_effect":["サーチ"],"reading":"げきじょうのだちょう","image":"https://acgtcg.com/img/ACG-095","illustrator":"IKUSA"},
 {"code":"パン田-ACG-096","name":"大隊のダチョウ","type":"動物","tribe":"ダチョウ","stats":"ATK 3／DEF 3","cost":"2","condition":"山山山","effect":"《バッファロー軍》《駿足》\n【誘発（戦場）】これが相手に戦闘ダメージを与えた時、あなたのデッキから「勲章」を含むカード1枚を探して手札に加えてもよい。\n【起動（手札）】あなたの手札のこれを捨てて、あなたの墓地の「勲章」を含むカード1枚を対象に発動する。それを手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"だいたいのだちょう","image":"https://acgtcg.com/img/ACG-096","illustrator":"IKUSA"},
@@ -882,7 +883,7 @@ const cards = [
 {"code":"ヒョウ-ACG-113","name":"縄張り","type":"縄張り","tribe":"","stats":"","cost":"2","condition":"無無無無無","effect":"【固有】これが戦場に出る時、あなたは種属1つを宣言する。\n【常時（戦場）】これの固有能力の効果で宣言した種属を持つあなたの戦場の動物は《駿足》とATK+2/DEF+2を得る。","route_search":[],"general_effect":["バフ"],"reading":"なわばり","image":"https://acgtcg.com/img/ACG-113","illustrator":"まつ"},
 {"code":"ヒョウ-ACG-114","name":"夜知恵","type":"場面","tribe":"","stats":"","cost":"1","condition":"夜","effect":"【プレイ】あなたの領地の領土1つを対象に発動する。それを夜にする。あなたのデッキの上からカードX枚を見て、カード1枚を手札に加えて、残りのカードをデッキの下に任意の順で置く。Xはあなたの<夜域>の数に等しい。","route_search":[],"general_effect":["ドロー"],"reading":"よるちえ","image":"https://acgtcg.com/img/ACG-114","illustrator":"別府さい"},
 {"code":"ヒョウ-ACG-115","name":"夜討","type":"場面","tribe":"","stats":"","cost":"1","condition":"夜","effect":"【プレイ】相手1人を対象に発動する。それの手札を見て、存在カード1枚を墓地に置く。","route_search":[],"general_effect":["ハンデス"],"reading":"ようち","image":"https://acgtcg.com/img/ACG-115","illustrator":"Asa"},
-{"code":"ヒョウ-ACG-116","name":"地盤変動","type":"場面","tribe":"","stats":"","cost":"0","condition":"無","effect":"【常時】あなたは「地盤変動」カードを1ターンに1度しかプレイできない。\n【プレイ】あなたの領地のウェイク状態のすべての領土を領土デッキの下に任意の順で置いて、あなたの領土デッキの上からカードX枚を領地に出す。Xが4以上なら、あなたはカード1枚を引く。Xはこの効果で領土デッキの下に置いたカードの数に等しい。","route_search":[],"general_effect":["ドロー"],"reading":"じばんへんどう","image":"https://acgtcg.com/img/ACG-116","illustrator":"巴啓祐"},
+{"code":"ヒョウ-ACG-116","name":"地盤変動","type":"場面","tribe":"","stats":"","cost":"0","condition":"無","effect":"【常時】あなたは「地盤変動」カードを1ターンに1度しかプレイできない。\n【プレイ】あなたの領地のアンムーブ状態のすべての領土を領土デッキの下に任意の順で置いて、あなたの領土デッキの上からカードX枚を領地に出す。Xが4以上なら、あなたはカード1枚を引く。Xはこの効果で領土デッキの下に置いたカードの数に等しい。","route_search":[],"general_effect":["ドロー"],"reading":"じばんへんどう","image":"https://acgtcg.com/img/ACG-116","illustrator":"巴啓祐"},
 {"code":"ヒョウ-ACG-117","name":"日食","type":"特技","tribe":"","stats":"","cost":"1","condition":"夜","effect":"【プレイ】戦場の存在1つを対象に発動する。それを夜にする。\n【起動（墓地）】あなたのターン中のみ起動できる。あなたの墓地のこれを除外して、あなたの戦場の存在1つを対象に発動する。それを夜にする。","route_search":[],"general_effect":[],"reading":"にっしょく","image":"https://acgtcg.com/img/ACG-117","illustrator":"かざすずゆらぎ"},
 {"code":"ヒョウ-ACG-118","name":"狩人の夜","type":"特技","tribe":"ヒョウ","stats":"","cost":"1","condition":"夜","effect":"【プレイ】戦場の動物1体を対象に発動する。ターン終了時まで、それはATK+X/DEF+Xを得る。Xはあなたの<夜域>の数に等しい。\n【起動（手札）】あなたの<夜域>が4以上なら、②を支払って、あなたの手札のこれを捨てて、あなたの墓地の「黒豹」カード1枚を対象に発動する。それをあなたの戦場に出す。","route_search":[],"general_effect":["バフ","登場"],"reading":"かりゅうどのよる","image":"https://acgtcg.com/img/ACG-118","illustrator":"IKUSA"},
 {"code":"ヒョウ-ACG-119","name":"夜を告げる","type":"特技","tribe":"","stats":"","cost":"1","condition":"夜夜","effect":"【プレイ】このターン中、次にトークン以外の存在1つ以上が戦場に出る時、それらは夜状態で戦場に出る。","route_search":[],"general_effect":[],"reading":"よるをつげる","image":"https://acgtcg.com/img/ACG-119","illustrator":"まつ"},
@@ -902,20 +903,20 @@ const cards = [
 {"code":"蔵馬-ACG-133","name":"急拵えの罠","type":"縄張り","tribe":"","stats":"","cost":"2","condition":"平","effect":"《急造》\n【常時（戦場）】戦場のすべての動物は能力を失う。\n【誘発（戦場）】日没フェイズ開始時に発動する。これを生贄に捧げる。","route_search":[],"general_effect":["遅延"],"reading":"きゅうごしらえのわな","image":"https://acgtcg.com/img/ACG-133","illustrator":"かざすずゆらぎ"},
 {"code":"蔵馬-ACG-134","name":"不用品回収所","type":"道具","tribe":"","stats":"","cost":"1","condition":"無無無","effect":"【起動（戦場）】ムーブ、あなたの戦場のこれ以外の道具1つを生贄に捧げて発動する。あなたはカード1枚を引く。","route_search":[],"general_effect":["ドロー"],"reading":"ふようひんかいしゅうじょ","image":"https://acgtcg.com/img/ACG-134","illustrator":"IKUSA"},
 {"code":"蔵馬-ACG-135","name":"輪廻の狭間","type":"特技","tribe":"","stats":"","cost":"1","condition":"水","effect":"【固有】あなたは「輪廻の狭間」カードの固有能力をこのゲーム中に一度しか適用できない。これをプレイする時、あなたの墓地のカード10枚を対象に適用してもよい。それらをデッキの上に任意の順で置いて、デッキを切り直す。カード10枚をデッキの上に置いたなら、これのプレイ能力の効果でカードを探すことはできない。\n【プレイ】プレイ1つを対象に発動する。それのコントローラーは自身のデッキからそれと同じカード名のカード1枚を探して墓地に置いてもよい。置かれなかったなら、それを妨害する。","route_search":[],"general_effect":["遅延","妨害"],"reading":"りんねのはざま","image":"https://acgtcg.com/img/ACG-135","illustrator":"ぼへ"},
-{"code":"キメサイ-ACG-136","name":"群泳カジキ","type":"動物","tribe":"カジキ","stats":"ATK 2／DEF 2","cost":"2","condition":"水","effect":"【起動（戦場）】あなたの戦場にこれ以外のウェイク状態の「群泳カジキ」存在がないなら、ムーブして発動する。あなたのデッキから「群泳カジキ」カード1枚を探してあなたの戦場に出す。\n【起動（除外）】あなたの墓地の「群泳カジキ」カード以外のカード2枚を除外して、あなたの除外領域のこれを墓地に置いて発動する。あなたのデッキの上からカード2枚を見て、カード1枚をデッキの上に置いて、カード1枚をデッキの下に置く。","route_search":["カジキルート"],"general_effect":[],"reading":"ぐんえいかじき","image":"https://acgtcg.com/img/ACG-136","illustrator":"眞白しろ助"},
+{"code":"キメサイ-ACG-136","name":"群泳カジキ","type":"動物","tribe":"カジキ","stats":"ATK 2／DEF 2","cost":"2","condition":"水","effect":"【起動（戦場）】あなたの戦場にこれ以外のアンムーブ状態の「群泳カジキ」存在がないなら、ムーブして発動する。あなたのデッキから「群泳カジキ」カード1枚を探してあなたの戦場に出す。\n【起動（除外）】あなたの墓地の「群泳カジキ」カード以外のカード2枚を除外して、あなたの除外領域のこれを墓地に置いて発動する。あなたのデッキの上からカード2枚を見て、カード1枚をデッキの上に置いて、カード1枚をデッキの下に置く。","route_search":["カジキルート"],"general_effect":[],"reading":"ぐんえいかじき","image":"https://acgtcg.com/img/ACG-136","illustrator":"眞白しろ助"},
 {"code":"キメサイ-ACG-137","name":"反射石","type":"道具","tribe":"","stats":"","cost":"2","condition":"山森","effect":"《敏捷》\n【固有】これが戦場に出る時、あなたの戦場のコスト2以下の動物1体を対象に適用する。これが戦場を離れるまで、これはそれの元の名前と元の能力を得る。\n【プレイ】狩りフェイズ中のみプレイできる。あなたの手札のカードが0枚なら、あなたのデッキからコスト2以下の動物カード1枚を探してムーブ状態であなたの戦場に出す。これをあなたの戦場に出す。この効果で戦場に出したすべての存在は、ターン終了時まで、『日没フェイズ開始時にこれを生贄に捧げる。』を得る。","route_search":["カジキルート"],"general_effect":["コピー"],"reading":"はんしゃいし","image":"https://acgtcg.com/img/ACG-137","illustrator":"森島つき"},
 {"code":"キメサイ-ACG-138","name":"亜音速カジキ","type":"動物","tribe":"カジキ","stats":"ATK 11／DEF 8","cost":"8","condition":"水水","effect":"【固有】これをプレイする時、あなたの戦場の「群泳カジキ」存在4つを除外して適用してもよい。これのコストを⑧軽減する。\n【プレイ】戦場や墓地や領地の中からカードやトークン合計Xつまでを対象に発動する。それらを除外する。これをあなたの戦場に出す。Xはこれの固有能力の効果で除外した存在の数に等しい。\n【常時（戦場）】あなたの除外領域に「群泳カジキ」カードが1枚以上あるなら、これは《駿足》と《突破》を得る。\n【常時（除外）】あなたはこれを除外領域からプレイしてもよい。","route_search":["カジキルート"],"general_effect":[],"reading":"あおんそくかじき","image":"https://acgtcg.com/img/ACG-138","illustrator":"KOKI"},
 {"code":"キメサイ-ACG-139","name":"命削りの運び屋","type":"動物","tribe":"ビーバー","stats":"ATK 1／DEF 1","cost":"1","condition":"水森","effect":"【起動（戦場）】ムーブ、あなたはライフを任意の量支払って発動する。あなたのデッキの上からカードX枚を見て、それらのカードをデッキの上に任意の順で置く。Xはこの効果で支払ったライフの量に等しい。\n【起動（手札）】あなたの手札のこれを捨てて、カード名1つを宣言して発動する。あなたのデッキの上からカード1枚を公開する。公開したカードが宣言したカード名のカードなら、あなたはカード1枚を引く。","route_search":["断崖ルート"],"general_effect":[],"reading":"いのちけずりのはこびや","image":"https://acgtcg.com/img/ACG-139","illustrator":"Aru-rutan"},
-{"code":"キメサイ-ACG-140","name":"火速足袋","type":"道具","tribe":"","stats":"","cost":"1","condition":"山","effect":"【起動（戦場）】あなたのターン中のみ起動できる。ムーブ、これを生贄に捧げて発動する。ターン終了時まで、あなたの手札の動物カード以外のカード1枚を公開する。公開しているなら、それは《敏捷》を得る。\n【起動（手札）】あなたの手札のこれを捨てて、あなたの戦場の動物1体をムーブして、そのムーブした動物のATKと同じ値のATKを持つあなたの戦場の動物1体を対象に発動する。それをウェイクする。","route_search":["断崖ルート"],"general_effect":["ビートバーン"],"reading":"かそくたび","image":"https://acgtcg.com/img/ACG-140","illustrator":"かざすずゆらぎ"},
+{"code":"キメサイ-ACG-140","name":"火速足袋","type":"道具","tribe":"","stats":"","cost":"1","condition":"山","effect":"【起動（戦場）】あなたのターン中のみ起動できる。ムーブ、これを生贄に捧げて発動する。ターン終了時まで、あなたの手札の動物カード以外のカード1枚を公開する。公開しているなら、それは《敏捷》を得る。\n【起動（手札）】あなたの手札のこれを捨てて、あなたの戦場の動物1体をムーブして、そのムーブした動物のATKと同じ値のATKを持つあなたの戦場の動物1体を対象に発動する。それをアンムーブする。","route_search":["断崖ルート"],"general_effect":["ビートバーン"],"reading":"かそくたび","image":"https://acgtcg.com/img/ACG-140","illustrator":"かざすずゆらぎ"},
 {"code":"キメサイ-ACG-141","name":"希望漁り","type":"動物","tribe":"イモリ","stats":"ATK 1／DEF 1","cost":"2","condition":"水","effect":"【固有】これが戦場に出る時、あなたは場面カードのカード名1つを宣言する。\n【常時（戦場）】あなたのライフが1点なら、あなたはこれの固有能力の効果で宣言したカード名の場面カードをプレイするコストを無視する。\n【誘発（戦場）】あなたの日没フェイズ開始時、あなたのライフが1点なら発動してもよい。あなたのデッキや墓地や除外領域からこれの固有能力の効果で宣言したカード名の場面カード1枚を探して手札に加える。","route_search":["断崖ルート"],"general_effect":[],"reading":"きぼうあさり","image":"https://acgtcg.com/img/ACG-141","illustrator":"ぬん"},
 {"code":"キメサイ-ACG-142","name":"断崖を背に","type":"場面","tribe":"","stats":"","cost":"7","condition":"平平","effect":"【プレイ】あなたの墓地のカード1枚を対象に発動する。それを手札に加える。このターンの後、あなたは追加の1ターンを行う。これを除外する。","route_search":["断崖ルート"],"general_effect":[],"reading":"だんがいをせに","image":"https://acgtcg.com/img/ACG-142","illustrator":"ぼへ"},
 {"code":"キメサイ-ACG-143","name":"泥の像","type":"道具","tribe":"","stats":"","cost":"1","condition":"水森","effect":"《装備（コスト2以下の水生動物や森林動物）》\n【常時】これが装備されている動物は『狩りフェイズ中のみ起動できる。ムーブして発動する。《駿足》と『日没フェイズ開始時にこれを生贄に捧げる。』を持つこれの複製トークン1体をあなたの戦場に出す。』を得る。\n【誘発（戦場）】日没フェイズ開始時、これを装備している動物がムーブ状態なら発動する。これを生贄に捧げる。","route_search":["獅子舞ルート"],"general_effect":["コピー"],"reading":"どろのぞう","image":"https://acgtcg.com/img/ACG-143","illustrator":"sai"},
-{"code":"キメサイ-ACG-144","name":"獅子舞行軍","type":"縄張り","tribe":"","stats":"","cost":"3","condition":"平山無","effect":"【固有】これをプレイする時、あなたの戦場に同じ名前の動物が2体以上いるなら適用してもよい。これのコストをⓧ軽減する。Xはその同じ名前の動物1体のコストの値に等しい。\n【誘発（戦場）】あなたの戦場の動物と同じ名前でその動物以外の動物1体以上があなたの戦場に出た時に発動する。それらの戦場に出た動物と同じ名前のあなたの戦場のすべての動物をウェイクする。","route_search":["獅子舞ルート"],"general_effect":[],"reading":"ししまいこうぐん","image":"https://acgtcg.com/img/ACG-144","illustrator":"まつ"},
+{"code":"キメサイ-ACG-144","name":"獅子舞行軍","type":"縄張り","tribe":"","stats":"","cost":"3","condition":"平山無","effect":"【固有】これをプレイする時、あなたの戦場に同じ名前の動物が2体以上いるなら適用してもよい。これのコストをⓧ軽減する。Xはその同じ名前の動物1体のコストの値に等しい。\n【誘発（戦場）】あなたの戦場の動物と同じ名前でその動物以外の動物1体以上があなたの戦場に出た時に発動する。それらの戦場に出た動物と同じ名前のあなたの戦場のすべての動物をアンムーブする。","route_search":["獅子舞ルート"],"general_effect":[],"reading":"ししまいこうぐん","image":"https://acgtcg.com/img/ACG-144","illustrator":"まつ"},
 {"code":"キメサイ-ACG-145","name":"交互の湯浴み","type":"特技","tribe":"","stats":"","cost":"1","condition":"山","effect":"【プレイ】あなたの手札のカード1枚を公開して発動する。この効果でカードを公開しているなら、あなたのデッキからコストXのカード1枚を探して手札に加えて、残りのデッキを切り直して、あなたの手札のコストXのカード1枚をデッキの下に置く。Xはこの効果で公開しているカードのコストの値に等しい。","route_search":["帰郷ルート"],"general_effect":["サーチ"],"reading":"こうごのゆあみ","image":"https://acgtcg.com/img/ACG-145","illustrator":"ぬん"},
 {"code":"キメサイ-ACG-146","name":"道標","type":"場面","tribe":"","stats":"","cost":"3","condition":"森森森","effect":"【プレイ】「道標」カードが公開されるかデッキのカードが0枚になるまで『あなたのデッキの上からカード1枚を公開する。それが「道標」カード以外なら、それを除外する。』を繰り返す。「道標」カードが公開されたなら、この効果で最後に除外したカードをコストと条件を無視してプレイする。この効果で除外したカードをデッキの上に任意の順で置いて、デッキを切り直す。これを除外する。","route_search":["帰郷ルート"],"general_effect":[],"reading":"みちしるべ","image":"https://acgtcg.com/img/ACG-146","illustrator":"KOKI"},
 {"code":"キメサイ-ACG-147","name":"運命の帰郷","type":"場面","tribe":"","stats":"","cost":"1","condition":"平山水森","effect":"【プレイ】あなたの戦場に動物と道具がそれぞれ1つ以上あるなら、あなたのデッキからコスト3の縄張りカード1枚を探してあなたの戦場に出して、あなたのデッキから「天命の門出」カードや「宿命の旅路」カードや「運命の帰郷」カードの3つ以外のカード1枚を探して手札に加える。これをデッキの上に置いて、デッキを切り直す。\n【誘発（デッキ）】これがデッキから公開された時、あなたのデッキがこれ1枚なら発動する。あなたの<平野域>と<山岳域>と<水生域>と<森林域>がすべて1以上なら、あなたはゲームに勝利する。","route_search":["帰郷ルート"],"general_effect":[],"reading":"うんめいのききょう","image":"https://acgtcg.com/img/ACG-147","illustrator":"kacoha"},
 {"code":"キメサイ-ACG-148","name":"暗がりの保管庫","type":"道具","tribe":"","stats":"","cost":"2","condition":"平森","effect":"【常時（デッキ）】デッキから公開されているこれがデッキで非公開になるなら、代わりにこれを除外する。\n【誘発（除外）】これがこれの常時能力の効果で除外された時、あなたの手札のカード1枚を捨てて発動してもよい。これをあなたの戦場に出す。\n【起動（戦場）】ムーブ、①を支払って、あなたの手札の1枚以上のカードを任意の数デッキの上に任意の順で置いて発動する。あなたのデッキを切り直して、あなたはカードX枚を引く。Xはこの効果でデッキの上に置いたカードの数に等しい。\n【起動（手札）】あなたの手札のこれを公開して発動する。この効果で公開したこれをあなたのデッキの上に置く。","route_search":["咆哮ルート","九尾ルート"],"general_effect":[],"reading":"くらがりのほかんこ","image":"https://acgtcg.com/img/ACG-148","illustrator":"かざすずゆらぎ"},
-{"code":"キメサイ-ACG-149","name":"等価な検閲網","type":"縄張り","tribe":"","stats":"","cost":"3","condition":"夜","effect":"【常時（戦場）】これが戦場から墓地に置かれるなら、代わりにこれを除外する。\n【誘発（戦場）】カードがプレイされた時、あなたの手札のカードが0枚なら、あなたのデッキの上からカード1枚を公開して、そのプレイ1つを対象に発動する。この効果でカードを公開していて、それがコストXなら、それを手札に戻して、それのコントローラーは自身の領地の領土Xつをウェイクする。Xはこの効果で公開しているカードのコストの値に等しい。\n【起動（墓地）】あなたの手札のカードが0枚なら、①を支払って発動する。これをあなたの戦場に出す。出したなら、あなたはカード1枚を引く。このターン中、あなたはカードをプレイできない。","route_search":["咆哮ルート"],"general_effect":[],"reading":"とうかなけんえつもう","image":"https://acgtcg.com/img/ACG-149","illustrator":"Asa"},
+{"code":"キメサイ-ACG-149","name":"等価な検閲網","type":"縄張り","tribe":"","stats":"","cost":"3","condition":"夜","effect":"【常時（戦場）】これが戦場から墓地に置かれるなら、代わりにこれを除外する。\n【誘発（戦場）】カードがプレイされた時、あなたの手札のカードが0枚なら、あなたのデッキの上からカード1枚を公開して、そのプレイ1つを対象に発動する。この効果でカードを公開していて、それがコストXなら、それを手札に戻して、それのコントローラーは自身の領地の領土Xつをアンムーブする。Xはこの効果で公開しているカードのコストの値に等しい。\n【起動（墓地）】あなたの手札のカードが0枚なら、①を支払って発動する。これをあなたの戦場に出す。出したなら、あなたはカード1枚を引く。このターン中、あなたはカードをプレイできない。","route_search":["咆哮ルート"],"general_effect":[],"reading":"とうかなけんえつもう","image":"https://acgtcg.com/img/ACG-149","illustrator":"Asa"},
 {"code":"キメサイ-ACG-150","name":"臨終の咆哮","type":"特技","tribe":"","stats":"","cost":"1","condition":"山山無","effect":"【プレイ】任意の1つを対象に発動する。それにX点ダメージを与える。Xはこのターン中にあなたがプレイした「咆哮」を含むカードの数に等しい。\n【起動（墓地）】あなたの手札の2枚以上のすべてのカードを捨てて発動する。これをコストを無視してプレイする。","route_search":["咆哮ルート","赤猫ルート"],"general_effect":[],"reading":"りんじゅうのほうこう","image":"https://acgtcg.com/img/ACG-150","illustrator":"sai"},
 {"code":"キメサイ-ACG-151","name":"言伝","type":"縄張り","tribe":"","stats":"","cost":"0","condition":"平水森","effect":"【誘発（戦場）】日没フェイズ開始時、あなたの戦場の動物1体とこれを生贄に捧げて発動する。あなたのデッキからカード1枚を探して手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"ことづて","image":"https://acgtcg.com/img/ACG-151","illustrator":"巴啓祐"},
 {"code":"キメサイ-ACG-152","name":"脱獄","type":"特技","tribe":"","stats":"","cost":"1","condition":"平／夜","effect":"【プレイ】あなたのデッキからコスト1以下の動物カード1枚を探して手札に加える。","route_search":[],"general_effect":["サーチ"],"reading":"だつごく","image":"https://acgtcg.com/img/ACG-152","illustrator":"森島つき"},
@@ -1250,27 +1251,52 @@ function renderGame() {
   G.field.forEach((obj,i) => { const el=makeCardEl(obj,{showRest:true}); el.addEventListener("click",()=>openMoveModal(obj,"field",i)); fz.appendChild(el); });
   document.getElementById("field-count").textContent = G.field.length;
 
-  // 領土（画像表示）
+  // 領土（画像表示・夜対応）
   const tz = document.getElementById("territory-zone"); tz.innerHTML = "";
   G.territory.forEach((obj,idx) => {
     const div = document.createElement("div");
     let cls = "territory-card " + getTerritoryClass(obj.code);
     if(obj.rested) cls += " rested";
+    if(obj.night)  cls += " night-territory";
     div.className = cls;
+
     const img = document.createElement("img");
-    img.src = getImg(obj.code);
+    // 夜状態は裏向き画像
+    img.src = obj.night ? "uramuki.JPG" : getImg(obj.code);
     img.onerror = () => {
       img.remove();
       div.style.background = obj.rested ? "#2a2a2a" : "#1a3a1a";
       div.style.color = "#e0e8d0";
-      div.textContent = getTerritoryType(obj.code).replace("・","/").substring(0,4);
+      div.textContent = obj.night ? "夜" : getTerritoryType(obj.code).replace("・","/").substring(0,4);
     };
     div.appendChild(img);
+
     const lbl = document.createElement("div");
     lbl.className = "terr-label";
-    lbl.textContent = getTerritoryType(obj.code).replace("・","/");
+    lbl.textContent = obj.night ? "🌙 夜" : getTerritoryType(obj.code).replace("・","/");
     div.appendChild(lbl);
-    div.addEventListener("click",()=>{ obj.rested=!obj.rested; renderGame(); setMsg(obj.rested?"領土をレストしました。":"領土をウェイクしました。"); });
+
+    // クリック挙動をRYOコードで分岐
+    const ryoNum = parseInt((obj.code.match(/RYO-(\d+)/) || [])[1] || 0);
+    div.addEventListener("click", () => {
+      if(ryoNum >= 1 && ryoNum <= 4) {
+        // RYO-001〜004：ムーブ/アンムーブで夜を切り替え
+        if(!obj.rested) {
+          obj.rested = true;
+          obj.night = true;
+          setMsg(`「${obj.code}」をムーブして夜にしました。`);
+        } else {
+          obj.rested = false;
+          obj.night = false;
+          setMsg(`「${obj.code}」をアンムーブして昼に戻しました。`);
+        }
+      } else {
+        // その他の領土：通常のムーブ/アンムーブ
+        obj.rested = !obj.rested;
+        setMsg(obj.rested ? "領土をムーブしました。" : "領土をアンムーブしました。");
+      }
+      renderGame();
+    });
     tz.appendChild(div);
   });
   document.getElementById("territory-count").textContent = G.territory.length;
@@ -1333,7 +1359,7 @@ function openMoveModal(obj, from, idx) {
   if(from!=="pile")  dests.push({l:"📋 パイルへ",to:"pile"});
   dests.push({l:"⬇ デッキ下へ",to:"deck-bottom"});
   dests.push({l:"⬆ デッキ上へ",to:"deck-top"});
-  if(from==="field") dests.push({l:obj.rested?"↑ ウェイク":"↩ レスト",to:"rest-toggle"});
+  if(from==="field") dests.push({l:obj.rested?"↑ アンムーブ":"↩ ムーブ",to:"rest-toggle"});
   dests.forEach(d => {
     const btn = document.createElement("button");
     btn.className = "modal-btn confirm";
@@ -1379,7 +1405,7 @@ function execMove(from, idx, to) {
   const zones={hand:G.hand,field:G.field,grave:G.grave,pile:G.pile,exile:G.exile};
   const obj = zones[from].splice(idx,1)[0];
   obj.rested = false;
-  if(to==="rest-toggle"){ obj.rested=!obj.rested; G.field.splice(idx,0,obj); setMsg(obj.rested?"レストしました。":"ウェイクしました。"); }
+  if(to==="rest-toggle"){ obj.rested=!obj.rested; G.field.splice(idx,0,obj); setMsg(obj.rested?"ムーブしました。":"アンムーブしました。"); }
   else if(to==="deck-bottom"){ G.mainDeck.push(obj); setMsg("デッキ下へ送りました。"); }
   else if(to==="deck-top"){ G.mainDeck.unshift(obj); setMsg("デッキ上へ戻しました。"); }
   else { zones[to].push(obj); const n={field:"戦場",hand:"手札",grave:"墓地",exile:"除外",pile:"パイル"}; setMsg(`${n[to]}へ移動しました。`); }
@@ -1393,7 +1419,11 @@ function countTerrain() {
   const count = { 山: 0, 水: 0, 森: 0, 平: 0, 夜: 0, 合計: 0 };
   G.territory.forEach(obj => {
     count.合計++;
-    // cards配列のterritory_typeを優先使用
+    // 夜状態の領土は「夜」としてカウント（元の地形ではなくなる）
+    if(obj.night) {
+      count.夜++;
+      return;
+    }
     const cardData = cards.find(c => c.code === obj.code);
     if(cardData && cardData.territory_type) {
       cardData.territory_type.forEach(t => {
@@ -1404,7 +1434,6 @@ function countTerrain() {
         if(t === "夜")   count.夜++;
       });
     } else {
-      // フォールバック：getTerritoryTypeの文字列で判定
       const t = getTerritoryType(obj.code);
       if(t.includes("山岳")) count.山++;
       if(t.includes("水生")) count.水++;
@@ -1592,7 +1621,7 @@ function openAttackModal() {
 function confirmAttack() {
   if(selectedAttack.length===0) return;
   selectedAttack.forEach(i=>G.field[i].rested=true);
-  setMsg(`攻撃しました（レスト）。ダメージを手動で処理してください。`);
+  setMsg(`攻撃しました（ムーブ）。ダメージを手動で処理してください。`);
   closeModal("attack-modal");
   renderGame();
 }
@@ -1607,12 +1636,108 @@ function drawCard() {
 }
 
 function drawTerritory() {
-  if(G.territoryDeck.length===0){ setMsg("⚠️ 領土デッキが空です！"); return; }
+  if(G.territoryDeck.length === 0) { setMsg("⚠️ 領土デッキが空です！"); return; }
   const obj = G.territoryDeck.shift();
   obj.rested = false;
+  obj.night = false;
+
+  const ryoNum = parseInt((obj.code.match(/RYO-(\d+)/) || [])[1] || 0);
+
+  // RYO-013〜018：領土が自分含め3枚以上ならムーブ状態で出る
+  if(ryoNum >= 13 && ryoNum <= 18) {
+    if(G.territory.length + 1 >= 3) {
+      obj.rested = true;
+      G.territory.push(obj);
+      setMsg(`「${obj.code}」を置きました。領土が3枚以上のためムーブ状態で出ました。`);
+      renderGame();
+      return;
+    }
+  }
+
   G.territory.push(obj);
-  setMsg(`「${getTerritoryType(obj.code)}」を領土エリアに置きました。`);
   renderGame();
+
+  // RYO-005〜008：出た時に夜にできる（選択式）
+  if(ryoNum >= 5 && ryoNum <= 8) {
+    showTerritoryNightChoice(obj);
+    return;
+  }
+
+  // RYO-009〜012：領土デッキ上1枚確認→上か下に戻す
+  if(ryoNum >= 9 && ryoNum <= 12) {
+    showTerritoryScry(obj);
+    return;
+  }
+
+  setMsg(`「${getTerritoryType(obj.code)}」を置きました。`);
+}
+
+// RYO-005〜008：夜にするか選択モーダル
+function showTerritoryNightChoice(obj) {
+  const name = getTerritoryType(obj.code);
+  // 既存のsimple-confirmモーダルを流用するかインラインで生成
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.style.cssText = "display:flex;z-index:300;";
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3>🌙 誘発効果</h3>
+      <p style="color:#e0e8d0;font-size:13px;margin-bottom:14px;">「${name}」が置かれました。<br>このカードを夜にしますか？</p>
+      <div class="modal-btn-row">
+        <button class="modal-btn confirm" id="night-yes">🌙 夜にする</button>
+        <button class="modal-btn cancel" id="night-no">そのまま</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById("night-yes").onclick = () => {
+    obj.night = true;
+    overlay.remove();
+    setMsg(`「${name}」を夜にしました。`);
+    renderGame();
+  };
+  document.getElementById("night-no").onclick = () => {
+    overlay.remove();
+    setMsg(`「${name}」を置きました。`);
+  };
+}
+
+// RYO-009〜012：領土デッキ上1枚スクライ
+function showTerritoryScry(obj) {
+  if(G.territoryDeck.length === 0) {
+    setMsg(`「${getTerritoryType(obj.code)}」を置きました。（領土デッキが空のためスクライ効果なし）`);
+    return;
+  }
+  const top = G.territoryDeck[0];
+  const topName = getTerritoryType(top.code);
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.style.cssText = "display:flex;z-index:300;";
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3>🔍 誘発効果</h3>
+      <p style="color:#e0e8d0;font-size:13px;margin-bottom:6px;">領土デッキの上のカード：</p>
+      <div style="text-align:center;margin-bottom:14px;">
+        <img src="${getImg(top.code)}" style="width:80px;height:112px;object-fit:cover;border-radius:8px;border:2px solid #4a8a4a;" onerror="this.style.display='none'">
+        <div style="color:#a8e0a8;font-size:13px;margin-top:6px;">${topName}</div>
+      </div>
+      <p style="color:#aaa;font-size:12px;margin-bottom:12px;">このカードをどこに戻しますか？</p>
+      <div class="modal-btn-row">
+        <button class="modal-btn confirm" id="scry-top">⬆ デッキ上へ戻す</button>
+        <button class="modal-btn" style="background:#2a3a5a;color:#88ccff;" id="scry-bottom">⬇ デッキ下へ送る</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById("scry-top").onclick = () => {
+    overlay.remove();
+    setMsg(`「${topName}」をデッキ上に戻しました。`);
+  };
+  document.getElementById("scry-bottom").onclick = () => {
+    G.territoryDeck.shift();
+    G.territoryDeck.push(top);
+    overlay.remove();
+    setMsg(`「${topName}」をデッキ下に送りました。`);
+    renderGame();
+  };
 }
 
 function changeLife(target, delta) {
@@ -1646,9 +1771,9 @@ function nextPhase() {
     G.phase = 0;
     G.turn++;
     G.isFirstTurn = false;
-    // 次ターン起床：全ウェイク自動
+    // 次ターン起床：全アンムーブ自動
     wakeAllSilent();
-    setMsg(G.turn + "ターン目開始。起床フェイズ：全存在と領土をウェイクしました。");
+    setMsg(G.turn + "ターン目開始。起床フェイズ：全存在と領土をアンムーブしました。");
     updatePhase();
     renderGame();
     return;
@@ -1696,7 +1821,7 @@ function nextPhase() {
   }
 
   const msgs = [
-    "起床フェイズ：全ウェイクボタンを押してください。",
+    "起床フェイズ：全アンムーブボタンを押してください。",
     "準備フェイズ：準備フェイズ限定カードや優先券をもらった相手のプレイタイミングです。",
     "",
     "狩りフェイズ：カードのプレイや効果・攻撃を行います。",
@@ -1739,7 +1864,7 @@ function endTurn() {
 function updatePhase() { document.getElementById("phase-badge").textContent = PHASES[G.phase] || "起床フェイズ"; }
 
 function wakeAllSilent() { G.field.forEach(c=>c.rested=false); G.territory.forEach(c=>c.rested=false); }
-function wakeAll() { wakeAllSilent(); setMsg("全ての存在と領土をウェイクしました。"); renderGame(); }
+function wakeAll() { wakeAllSilent(); setMsg("全ての存在と領土をアンムーブしました。"); renderGame(); }
 
 // 夜警手札捨てモーダル
 function openDiscardModal() {
