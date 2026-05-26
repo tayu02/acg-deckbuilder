@@ -1280,22 +1280,22 @@ function renderGame() {
     const ryoNum = parseInt((obj.code.match(/RYO-(\d+)/) || [])[1] || 0);
     div.addEventListener("click", () => {
       if(ryoNum >= 1 && ryoNum <= 4) {
-        // RYO-001〜004：ムーブ/アンムーブで夜を切り替え
         if(!obj.rested) {
-          obj.rested = true;
-          obj.night = true;
-          setMsg(`「${obj.code}」をムーブして夜にしました。`);
+          // ウェイク状態→ムーブする：夜にするか確認
+          showRyo1to4Choice(obj);
         } else {
+          // ムーブ状態→ウェイクに戻す（夜も解除）
           obj.rested = false;
           obj.night = false;
-          setMsg(`「${obj.code}」をアンムーブして昼に戻しました。`);
+          setMsg(`「${obj.code}」をウェイクして昼に戻しました。`);
+          renderGame();
         }
       } else {
-        // その他の領土：通常のムーブ/アンムーブ
+        // その他の領土：通常のムーブ/ウェイク
         obj.rested = !obj.rested;
-        setMsg(obj.rested ? "領土をムーブしました。" : "領土をアンムーブしました。");
+        setMsg(obj.rested ? "領土をムーブしました。" : "領土をウェイクしました。");
+        renderGame();
       }
-      renderGame();
     });
     tz.appendChild(div);
   });
@@ -1642,57 +1642,95 @@ function drawTerritory() {
   obj.night = false;
 
   const ryoNum = parseInt((obj.code.match(/RYO-(\d+)/) || [])[1] || 0);
+  const name = getTerritoryType(obj.code);
 
-  // RYO-013〜018：自分が3枚目以降の領土ならムーブ状態で出る
-  if(ryoNum >= 13 && ryoNum <= 18) {
-    if(G.territory.length + 1 >= 3) {
-      obj.rested = true;
-      G.territory.push(obj);
-      setMsg(`「${obj.code}」を置きました。領土が3枚以上のためムーブ状態で出ました。`);
-      renderGame();
-      return;
-    }
+  // RYO-013〜018：3枚目以降はムーブ状態で出る
+  if(ryoNum >= 13 && ryoNum <= 18 && G.territory.length >= 2) {
+    obj.rested = true;
+    G.territory.push(obj);
+    setMsg(`「${name}」を置きました。領土が3枚目以降のためムーブ状態で出ました。`);
+    renderGame();
+    return;
   }
 
-  G.territory.push(obj);
-  renderGame();
-
-  // RYO-005〜008：出た時に夜にできる（選択式）
+  // RYO-005〜008：ウェイク状態で置いてから夜にするか選択
   if(ryoNum >= 5 && ryoNum <= 8) {
+    G.territory.push(obj);
+    renderGame();
     showTerritoryNightChoice(obj);
     return;
   }
 
-  // RYO-009〜012：領土デッキ上1枚確認→上か下に戻す
+  // RYO-009〜012：置いてからスクライ（何枚目でも発動）
   if(ryoNum >= 9 && ryoNum <= 12) {
+    G.territory.push(obj);
+    renderGame();
     showTerritoryScry(obj);
     return;
   }
 
-  setMsg(`「${getTerritoryType(obj.code)}」を置きました。`);
+  G.territory.push(obj);
+  setMsg(`「${name}」を置きました。`);
+  renderGame();
 }
 
-// RYO-005〜008：夜にするか選択モーダル
+// RYO-001〜004：ムーブ時に夜にするかムーブだけか確認
+function showRyo1to4Choice(obj) {
+  const name = getTerritoryType(obj.code);
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.style.cssText = "display:flex;z-index:300;";
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3>領土をムーブ</h3>
+      <p style="color:#e0e8d0;font-size:13px;margin-bottom:14px;">「${name}」をムーブします。<br>夜にしますか？</p>
+      <div class="modal-btn-row">
+        <button class="modal-btn confirm" id="ryo-night">🌙 ムーブして夜にする</button>
+        <button class="modal-btn" style="background:#2a3a2a;color:#88ff88;" id="ryo-move">↩ ムーブだけ</button>
+        <button class="modal-btn cancel" id="ryo-cancel">キャンセル</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById("ryo-night").onclick = () => {
+    obj.rested = true;
+    obj.night = true;
+    overlay.remove();
+    setMsg(`「${name}」をムーブして夜にしました。`);
+    renderGame();
+  };
+  document.getElementById("ryo-move").onclick = () => {
+    obj.rested = true;
+    obj.night = false;
+    overlay.remove();
+    setMsg(`「${name}」をムーブしました。`);
+    renderGame();
+  };
+  document.getElementById("ryo-cancel").onclick = () => {
+    overlay.remove();
+  };
+}
+
+// RYO-005〜008：夜にするか選択モーダル（夜の時はウェイク状態）
 function showTerritoryNightChoice(obj) {
   const name = getTerritoryType(obj.code);
-  // 既存のsimple-confirmモーダルを流用するかインラインで生成
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";
   overlay.style.cssText = "display:flex;z-index:300;";
   overlay.innerHTML = `
     <div class="modal-box">
       <h3>🌙 誘発効果</h3>
-      <p style="color:#e0e8d0;font-size:13px;margin-bottom:14px;">「${name}」が置かれました。<br>このカードを夜にしますか？</p>
+      <p style="color:#e0e8d0;font-size:13px;margin-bottom:14px;">「${name}」が置かれました。<br>このカードを夜にしますか？<br><span style="font-size:11px;color:#aaa;">※夜にする場合はウェイク状態で夜になります</span></p>
       <div class="modal-btn-row">
-        <button class="modal-btn confirm" id="night-yes">🌙 夜にする</button>
+        <button class="modal-btn confirm" id="night-yes">🌙 夜にする（ウェイク）</button>
         <button class="modal-btn cancel" id="night-no">そのまま</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
   document.getElementById("night-yes").onclick = () => {
     obj.night = true;
+    obj.rested = false; // ウェイク状態で夜
     overlay.remove();
-    setMsg(`「${name}」を夜にしました。`);
+    setMsg(`「${name}」をウェイク状態の夜で置きました。`);
     renderGame();
   };
   document.getElementById("night-no").onclick = () => {
@@ -1800,10 +1838,8 @@ function nextPhase() {
       }
       // 領土設置
       if(G.territoryDeck.length > 0) {
-        const t = G.territoryDeck.shift();
-        t.rested = false;
-        G.territory.push(t);
-        msg += `「${getTerritoryType(t.code)}」を領地に置きました。`;
+        drawTerritory();
+        msg += `領土を1枚置きました。`;
       } else {
         msg += "領土デッキが空です。";
       }
@@ -1850,11 +1886,7 @@ function endTurn() {
         if(G.territoryDeck.length > 0) drawTerritory();
       } else {
         if(G.mainDeck.length > 0) G.hand.push(G.mainDeck.shift());
-        if(G.territoryDeck.length > 0) {
-          const t = G.territoryDeck.shift();
-          t.rested = false;
-          G.territory.push(t);
-        }
+        if(G.territoryDeck.length > 0) drawTerritory();
       }
     } else {
       G.phase++;
