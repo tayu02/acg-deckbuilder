@@ -384,6 +384,35 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
   </div>
 </div>
 
+<!-- コピーモーダル -->
+<div id="copy-modal" class="modal-overlay" style="display:none;" onclick="closeModal('copy-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3>🔮 コピー対象を選択</h3>
+    <!-- タブ -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button id="copy-tab-field" onclick="switchCopyTab('field')"
+        style="flex:1;padding:6px;background:#2a4a2a;border:1px solid #4a8a4a;border-radius:8px;color:#a8e0a8;font-size:12px;cursor:pointer;">🟢 戦場</button>
+      <button id="copy-tab-search" onclick="switchCopyTab('search')"
+        style="flex:1;padding:6px;background:#1a2a3a;border:1px solid #4a6a8a;border-radius:8px;color:#88aacc;font-size:12px;cursor:pointer;">🔍 デッキ検索</button>
+    </div>
+    <!-- 戦場タブ -->
+    <div id="copy-tab-field-content">
+      <div class="modal-card-list" id="copy-field-cards" style="max-height:40vh;overflow-y:auto;"></div>
+    </div>
+    <!-- デッキ検索タブ -->
+    <div id="copy-tab-search-content" style="display:none;">
+      <input id="copy-search-input" type="text" placeholder="カード名・コードで検索..."
+        style="width:100%;padding:6px 10px;background:#1a2a3a;border:1px solid #4a8a4a;border-radius:8px;color:#e0e8d0;font-size:13px;margin-bottom:8px;">
+      <div class="modal-card-list" id="copy-search-cards" style="max-height:35vh;overflow-y:auto;"></div>
+    </div>
+    <div id="copy-selected-info" style="font-size:11px;color:#ffdd88;margin:8px 0;min-height:16px;text-align:center;"></div>
+    <div class="modal-btn-row">
+      <button class="modal-btn confirm" onclick="confirmCopy()">🔮 コピー確定</button>
+      <button class="modal-btn cancel" onclick="closeModal('copy-modal')">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- 手札捨て（夜警）モーダル -->
 <div id="discard-modal" class="modal-overlay" style="display:none;">
   <div class="modal-box" onclick="event.stopPropagation()">
@@ -1233,6 +1262,16 @@ function makeCardEl(obj, opts={}) {
       .join(" ");
     div.appendChild(badge);
   }
+
+  // コピーバッジ表示
+  if(obj.copyFromList && obj.copyFromList.length > 0) {
+    const cb = document.createElement("div");
+    cb.style.cssText = "position:absolute;bottom:1px;left:1px;background:rgba(80,0,120,0.85);border-radius:4px;padding:1px 3px;font-size:8px;color:#ddaaff;cursor:pointer;z-index:3;";
+    cb.textContent = obj.copyFromList.length > 1 ? `🔮×${obj.copyFromList.length}` : "🔮";
+    cb.addEventListener("click", e => { e.stopPropagation(); showCopyEffectModal(obj); });
+    div.appendChild(cb);
+  }
+
   return div;
 }
 
@@ -1385,6 +1424,16 @@ function openMoveModal(obj, from, idx) {
     };
     actRow.appendChild(btn);
   });
+  // コピーボタン（コピー能力持ちカード）
+  if(card && hasCopyAbility(obj.code)) {
+    const cpBtn = document.createElement("button");
+    cpBtn.className = "modal-btn";
+    cpBtn.style.cssText = "font-size:12px;padding:7px 8px;min-width:82px;flex:none;background:#2a1a4a;color:#ddaaff;border:1px solid #6644aa;";
+    cpBtn.textContent = (obj.copyFromList && obj.copyFromList.length > 0) ? "🔮 コピー追加/変更" : "🔮 コピー";
+    cpBtn.onclick = () => { closeModal("card-info-modal"); openCopyModal(obj); };
+    actRow.appendChild(cpBtn);
+  }
+
   // 固有ボタン（手札のカード対象）
   if(card && card.effect && from === "hand") {
     const hasKoyuu = card.effect.includes("【固有】") || card.effect.includes("【固有（戦場）】");
@@ -2342,6 +2391,202 @@ function buildReductionHtml(r) {
   html += `</div>`;
   return html;
 }
+// =============== コピー機能 ===============
+
+// コピー能力持ちカードのcode一覧
+const COPY_CARD_CODES = new Set([
+  'BP4-039',
+  'BP3-022',
+  '蔵馬-ACG-129',
+  'キメサイ-ACG-137',
+  'キメサイ-ACG-143',
+  'BP1-029',
+]);
+
+let copyTargetObj = null;
+let copySelectedCode = null;
+
+function hasCopyAbility(code) { return COPY_CARD_CODES.has(code); }
+
+function openCopyModal(obj) {
+  copyTargetObj = obj;
+  copySelectedCode = null;
+  document.getElementById("copy-selected-info").textContent = "対象カードを選んでください";
+  switchCopyTab("field");
+  document.getElementById("copy-modal").style.display = "flex";
+}
+
+function switchCopyTab(tab) {
+  const isField = tab === "field";
+  document.getElementById("copy-tab-field-content").style.display = isField ? "block" : "none";
+  document.getElementById("copy-tab-search-content").style.display = isField ? "none" : "block";
+  document.getElementById("copy-tab-field").style.background = isField ? "#2a4a2a" : "#1a2a3a";
+  document.getElementById("copy-tab-search").style.background = isField ? "#1a2a3a" : "#1a2a4a";
+  if(isField) {
+    renderCopyFieldCards();
+  } else {
+    document.getElementById("copy-search-input").value = "";
+    renderCopySearchCards("");
+    document.getElementById("copy-search-input").oninput = e => renderCopySearchCards(e.target.value);
+    setTimeout(() => document.getElementById("copy-search-input").focus(), 100);
+  }
+}
+
+function renderCopyFieldCards() {
+  const con = document.getElementById("copy-field-cards");
+  con.innerHTML = "";
+  const sources = [...G.field, ...G.exile];
+  if(sources.length === 0) {
+    con.innerHTML = `<p style="color:#666;font-size:12px;padding:8px;text-align:center;">戦場・除外にカードがありません</p>`;
+    return;
+  }
+  sources.forEach(obj => {
+    const card = cards.find(c => c.code === obj.code);
+    if(!card) return;
+    const div = makeCopyCardEl(obj.code, card);
+    div.addEventListener("click", () => selectCopyTarget(obj.code, card.name, con));
+    con.appendChild(div);
+  });
+}
+
+function renderCopySearchCards(filter) {
+  const con = document.getElementById("copy-search-cards");
+  con.innerHTML = "";
+  const filtered = filter
+    ? cards.filter(c => c.name.includes(filter) || c.code.includes(filter))
+    : cards;
+  const shown = filtered.slice(0, 40);
+  shown.forEach(card => {
+    const div = makeCopyCardEl(card.code, card);
+    div.addEventListener("click", () => selectCopyTarget(card.code, card.name, con));
+    con.appendChild(div);
+  });
+  if(shown.length === 0) {
+    con.innerHTML = `<p style="color:#666;font-size:12px;padding:8px;text-align:center;">該当カードなし</p>`;
+  }
+}
+
+function makeCopyCardEl(code, card) {
+  const div = document.createElement("div");
+  div.className = "modal-select-card";
+  div.dataset.code = code;
+  div.style.cssText = "position:relative;width:56px;height:78px;";
+  const img = document.createElement("img");
+  img.src = getImg(code);
+  img.onerror = () => {
+    img.remove();
+    const s = document.createElement("span");
+    s.className = "card-label";
+    s.textContent = card.name;
+    div.appendChild(s);
+  };
+  div.appendChild(img);
+  const lbl = document.createElement("div");
+  lbl.style.cssText = "position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);font-size:6px;color:#e0e8d0;text-align:center;padding:1px;line-height:1.2;";
+  lbl.textContent = card.name;
+  div.appendChild(lbl);
+  return div;
+}
+
+function selectCopyTarget(code, name, container) {
+  container.querySelectorAll(".modal-select-card").forEach(el => el.classList.remove("selected"));
+  const el = container.querySelector(`[data-code]`);
+  // data-code属性で一致するものを探す
+  Array.from(container.querySelectorAll(".modal-select-card"))
+    .find(el => el.dataset.code === code)?.classList.add("selected");
+  copySelectedCode = code;
+  document.getElementById("copy-selected-info").textContent = `選択中：${name}`;
+}
+
+function confirmCopy() {
+  if(!copySelectedCode || !copyTargetObj) {
+    document.getElementById("copy-selected-info").textContent = "⚠️ カードを選んでください";
+    return;
+  }
+  const sourceCard = cards.find(c => c.code === copySelectedCode);
+  if(!sourceCard) return;
+
+  // 九尾のみ複数コピー可（配列に追加）、他は上書き
+  const isKyubi = copyTargetObj.code === 'BP1-029';
+  if(isKyubi) {
+    if(!copyTargetObj.copyFromList) copyTargetObj.copyFromList = [];
+    if(!copyTargetObj.copyFromList.includes(copySelectedCode)) {
+      copyTargetObj.copyFromList.push(copySelectedCode);
+    }
+  } else {
+    copyTargetObj.copyFromList = [copySelectedCode];
+  }
+
+  closeModal("copy-modal");
+  setMsg(`🔮「${sourceCard.name}」の能力をコピーしました。`);
+  renderGame();
+}
+
+function showCopyEffectModal(obj) {
+  if(!obj.copyFromList || obj.copyFromList.length === 0) return;
+
+  const selfCard = cards.find(c => c.code === obj.code);
+  const sourceCards = obj.copyFromList.map(code => cards.find(c => c.code === code)).filter(Boolean);
+
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay trigger-notice";
+  overlay.style.cssText = "display:flex;z-index:400;";
+
+  const sourcesHtml = sourceCards.map((sc, i) => `
+    <div style="background:rgba(60,0,80,0.4);border:1px solid #6644aa;border-radius:8px;padding:8px;margin-bottom:8px;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+        <img src="${getImg(sc.code)}"
+          style="width:36px;height:50px;object-fit:cover;border-radius:4px;border:1px solid #9944cc;flex-shrink:0;"
+          onerror="this.style.display='none'">
+        <div>
+          <div style="font-size:12px;font-weight:bold;color:#ddaaff;">${sc.name}</div>
+          <button onclick="removeCopyAt('${obj.id}',${i});this.closest('.trigger-notice').remove();"
+            style="margin-top:3px;padding:2px 6px;background:#3a1a5a;border:1px solid #6644aa;border-radius:4px;color:#ddaaff;font-size:10px;cursor:pointer;">🗑 解除</button>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#e0e8d0;line-height:1.6;white-space:pre-wrap;max-height:120px;overflow-y:auto;">${sc.effect}</div>
+    </div>`).join('');
+
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:360px;" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <img src="${getImg(obj.code)}"
+          style="width:40px;height:56px;object-fit:cover;border-radius:6px;border:2px solid #4a8a4a;"
+          onerror="this.style.display='none'">
+        <div>
+          <h3 style="color:#ddaaff;margin:0;">🔮 コピー中の能力</h3>
+          <div style="font-size:11px;color:#aaa;">${selfCard?.name || obj.code}（${sourceCards.length}件）</div>
+        </div>
+      </div>
+      <div style="max-height:50vh;overflow-y:auto;">${sourcesHtml}</div>
+      <div class="modal-btn-row" style="margin-top:10px;">
+        <button class="modal-btn" style="background:#3a1a5a;color:#ddaaff;border:1px solid #6644aa;"
+          onclick="removeCopyAll('${obj.id}');this.closest('.trigger-notice').remove();">🗑 全解除</button>
+        <button class="modal-btn cancel" onclick="this.closest('.trigger-notice').remove()">閉じる</button>
+      </div>
+    </div>`;
+  overlay.addEventListener("click", () => overlay.remove());
+  document.body.appendChild(overlay);
+}
+
+function removeCopyAt(id, index) {
+  const obj = [...G.field, ...G.pile, ...G.hand, ...G.grave].find(o => o.id === id);
+  if(obj && obj.copyFromList) {
+    obj.copyFromList.splice(index, 1);
+    setMsg("🔮 コピーを1件解除しました。");
+    renderGame();
+  }
+}
+
+function removeCopyAll(id) {
+  const obj = [...G.field, ...G.pile, ...G.hand, ...G.grave].find(o => o.id === id);
+  if(obj) {
+    obj.copyFromList = [];
+    setMsg("🔮 コピーを全て解除しました。");
+    renderGame();
+  }
+}
+
 let searchSelected = null;
 
 function openSearchModal() {
