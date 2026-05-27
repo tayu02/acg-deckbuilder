@@ -1344,7 +1344,7 @@ function openMoveModal(obj, from, idx) {
   if(card && card.effect) {
     const hasActivate =
       (from === "field" && card.effect.includes("【起動（戦場）】")) ||
-      (from === "hand"  && (card.effect.includes("【起動（手札）】") || (CARD_EFFECTS[obj.code]?.activate_hand))) ||
+      (from === "hand"  && (card.effect.includes("【起動（手札）】") || (typeof CARD_EFFECTS !== 'undefined' && CARD_EFFECTS[obj.code]?.activate_hand))) ||
       (from === "grave" && card.effect.includes("【起動（墓地）】"));
     if(hasActivate) {
       const aBtn = document.createElement("button");
@@ -1355,7 +1355,7 @@ function openMoveModal(obj, from, idx) {
         const eventType = from === "field" ? "activate_field" : from === "hand" ? "activate_hand" : "activate_grave";
         closeModal("card-info-modal");
         // effects.jsの実装があれば優先して呼ぶ
-        if(CARD_EFFECTS[obj.code]?.[eventType]) {
+        if(typeof CARD_EFFECTS !== 'undefined' && CARD_EFFECTS[obj.code]?.[eventType]) {
           CARD_EFFECTS[obj.code][eventType](obj);
         } else {
           checkTriggers(eventType, obj);
@@ -1433,7 +1433,8 @@ function openMoveModal(obj, from, idx) {
 
   document.getElementById("card-info-modal").style.display = "flex";
   } catch(e) {
-    alert("モーダルエラー: " + e.message);
+    console.error("モーダルエラー:", e);
+    alert("モーダルエラー: " + e.message + "\n" + (e.stack||"").split("\n").slice(0,3).join("\n"));
   }
 }
 
@@ -2101,6 +2102,23 @@ function changeDomainBonus(key, delta) {
 
 // conditionと現在の領土でプレイ可能か判定
 // 戻り値: { ok: bool, reason: string }
+// =============== カード効果システム ===============
+const CARD_EFFECTS = {};
+
+function triggerCardEffect(obj, triggerType) {
+  if(!obj) return false;
+  const effect = CARD_EFFECTS[obj.code];
+  if(!effect || !effect[triggerType]) return false;
+  effect[triggerType](obj);
+  // 兵隊蜂の固有チェック（誘発発動後に再発動を促す）
+  if(triggerType === "field_enter" || triggerType === "phase_prep") {
+    setTimeout(() => {
+      if(typeof checkSoldierBeeDouble === "function") checkSoldierBeeDouble(obj, triggerType);
+    }, 800);
+  }
+  return true;
+}
+
 function checkPlayable(card) {
   if(!card) return { ok: true, reason: "" };
 
