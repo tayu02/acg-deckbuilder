@@ -1732,27 +1732,29 @@ function checkPlayable(card) {
   if(!card) return { ok: true, reason: "" };
 
   const terrain = countTerrain();
-  const cost = parseInt(card.cost) || 0;
   const condition = card.condition || "";
 
-  // コストチェック（領土合計枚数 >= コスト）
+  // 固有軽減を反映
+  const kr = window.koyuuReduction || { cost: 0, cond: {} };
+  const cost = Math.max(0, (parseInt(card.cost) || 0) - kr.cost);
+
+  // コストチェック
   if(cost > 0 && terrain.合計 < cost) {
     return { ok: false, reason: `コスト${cost}に対し領土が${terrain.合計}枚しかありません` };
   }
 
-  // 条件チェック
   if(condition) {
-    // "山山／森森" のような複数条件はスラッシュで区切って片方満たせばOK
     const variants = condition.split("／");
     const anyOk = variants.some(variant => {
-      // variantを1文字ずつカウント（例: "山森" → 山1, 森1）
       const need = { 山: 0, 水: 0, 森: 0, 平: 0, 夜: 0, 無: 0 };
       for(const ch of variant) {
         if(need[ch] !== undefined) need[ch]++;
       }
-      // 無は合計領土が1以上あればOK
+      // 固有軽減を条件に反映
+      for(const [key, val] of Object.entries(kr.cond)) {
+        if(need[key] !== undefined) need[key] = Math.max(0, need[key] - val);
+      }
       if(need.無 > 0 && terrain.合計 < 1) return false;
-      // 各地形チェック
       for(const ch of ["山","水","森","平","夜"]) {
         if(need[ch] > terrain[ch]) return false;
       }
@@ -1760,10 +1762,12 @@ function checkPlayable(card) {
     });
 
     if(!anyOk) {
-      // 不足内容をわかりやすく表示
-      const best = variants[0]; // とりあえず最初の条件で何が足りないか
+      const best = variants[0];
       const need = { 山: 0, 水: 0, 森: 0, 平: 0, 夜: 0, 無: 0 };
       for(const ch of best) { if(need[ch] !== undefined) need[ch]++; }
+      for(const [key, val] of Object.entries(kr.cond)) {
+        if(need[key] !== undefined) need[key] = Math.max(0, need[key] - val);
+      }
       const map = { 山:"山岳", 水:"水生", 森:"森林", 平:"平野", 夜:"夜", 無:"いずれかの領土" };
       const lacking = ["山","水","森","平","夜","無"]
         .filter(ch => need[ch] > 0 && (ch === "無" ? terrain.合計 < 1 : terrain[ch] < need[ch]))
@@ -1832,6 +1836,7 @@ function confirmPlay() {
   G.hand.splice(selectedPlayIdx, 1);
   obj.rested = false;
   G.pile.push(obj);
+  window.koyuuReduction = null; // 固有軽減リセット
   const name = card ? card.name : obj.code;
   setMsg(`「${name}」をパイルに置きました。効果を処理してください。`);
   closeModal("play-modal");
@@ -2198,32 +2203,36 @@ function confirmDiscard() {
 }
 // 固有効果表示モーダル
 function showKoyuuNotice(obj, card) {
-  // effectから【固有】【固有（戦場）】のブロックを全抽出
   const lines = card.effect.split('\n');
-  const koyuuBlocks = lines.filter(l =>
+  const koyuuLines = lines.filter(l =>
     l.startsWith('【固有】') || l.startsWith('【固有（戦場）】')
   );
-  if(koyuuBlocks.length === 0) return;
+  if(koyuuLines.length === 0) return;
 
-  const blocksHtml = koyuuBlocks.map(line => {
-    const kwMatch = line.match(/^【([^】]+)】/);
-    const kw = kwMatch ? kwMatch[1] : '固有';
-    const text = line.slice(`【${kw}】`.length);
-    // 発動条件（最初の句点まで）と効果テキストを分離
-    const condEnd = text.search(/[。]/);
-    const cond = condEnd >= 0 ? text.slice(0, condEnd + 1) : text;
-    const effect = condEnd >= 0 ? text.slice(condEnd + 1) : '';
-    return `
-      <div style="background:rgba(60,40,0,0.4);border:1px solid #aa8844;border-radius:8px;padding:10px;margin-bottom:8px;">
-        <div style="font-size:10px;color:#ffcc88;margin-bottom:4px;">【${kw}】</div>
-        <div style="font-size:12px;color:#ffe8a0;font-weight:bold;margin-bottom:4px;line-height:1.5;">${cond}</div>
-        ${effect ? `<div style="font-size:11px;color:#e0e8d0;line-height:1.6;">${effect}</div>` : ''}
-      </div>`;
-  }).join('');
+  // 軽減情報を解析
+  const reductions = parseKoyuuReduction(koyuuLines);
+  const reductionHtml = buildReductionHtml(reductions);
 
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay trigger-notice";
   overlay.style.cssText = "display:flex;z-index:400;";
+
+  const blocksHtml = koyuuLines.map(line => {
+    const kwMatch = line.match(/^【([^】]+)】/);
+    const kw = kwMatch ? kwMatch[1] : '固有';
+    const text = line.slice(`【${kw}】`.length);
+    const condEnd = text.search(/。/);
+    const cond = condEnd >= 0 ? text.slice(0, condEnd + 1) : text;
+    const eff = condEnd >= 0 ? text.slice(condEnd + 1) : '';
+    return `
+      <div style="background:rgba(60,40,0,0.4);border:1px solid #aa8844;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="font-size:10px;color:#ffcc88;margin-bottom:4px;">【${kw}】</div>
+        <div style="font-size:12px;color:#ffe8a0;font-weight:bold;margin-bottom:4px;line-height:1.5;">${cond}</div>
+        ${eff ? `<div style="font-size:11px;color:#e0e8d0;line-height:1.6;">${eff}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  // 軽減入力エリア（固定は自動、Xは入力）
   overlay.innerHTML = `
     <div class="modal-box" style="max-width:360px;" onclick="event.stopPropagation()">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
@@ -2235,14 +2244,103 @@ function showKoyuuNotice(obj, card) {
           <div style="font-size:11px;color:#aaa;margin-top:3px;">固有効果を確認して条件を満たしてからプレイしてください</div>
         </div>
       </div>
-      <div style="max-height:45vh;overflow-y:auto;">${blocksHtml}</div>
+      <div style="max-height:35vh;overflow-y:auto;">${blocksHtml}</div>
+      ${reductionHtml}
       <div class="modal-btn-row" style="margin-top:10px;">
-        <button class="modal-btn confirm" onclick="this.closest('.trigger-notice').remove()">確認</button>
+        <button class="modal-btn confirm" id="koyuu-apply-btn"
+          style="background:#3a4a1a;color:#aaffaa;border:1px solid #5a8a2a;">✅ 軽減を適用してプレイへ</button>
+        <button class="modal-btn cancel" onclick="this.closest('.trigger-notice').remove()">閉じる</button>
       </div>
     </div>`;
 
   overlay.addEventListener("click", () => overlay.remove());
   document.body.appendChild(overlay);
+
+  // 適用ボタン：軽減値を読み取ってplayableReductionにセット
+  document.getElementById("koyuu-apply-btn").onclick = () => {
+    const costFixed = reductions.costFixed;
+    const costX = reductions.costX ? parseInt(document.getElementById("koyuu-x-input")?.value || 0) : 0;
+    const condReductions = {};
+    for(const [terrain, fixed] of Object.entries(reductions.condFixed)) {
+      condReductions[terrain] = fixed;
+    }
+    if(reductions.condX) {
+      const xv = parseInt(document.getElementById("koyuu-cond-x-input")?.value || 0);
+      const terrain = reductions.condXTerrain;
+      condReductions[terrain] = (condReductions[terrain] || 0) + xv;
+    }
+    // グローバルに一時保存（次のcheckPlayableで参照）
+    window.koyuuReduction = { cost: costFixed + costX, cond: condReductions };
+    overlay.remove();
+    setMsg(`⚡ 固有軽減を適用：コスト-${costFixed + costX}、条件-${JSON.stringify(condReductions)}。この状態でプレイしてください。`);
+  };
+}
+
+// 固有軽減をテキストから解析
+function parseKoyuuReduction(lines) {
+  const MARU = {'①':1,'②':2,'③':3,'④':4,'⑤':5,'⑥':6,'⑦':7,'⑧':8,'⑨':9,'⑩':10};
+  const result = { costFixed: 0, costX: false, condFixed: {}, condX: false, condXTerrain: null };
+  for(const line of lines) {
+    if(!line.includes('軽減')) continue;
+    // コスト固定軽減
+    for(const [ch, val] of Object.entries(MARU)) {
+      if(line.includes(ch) && line.includes('コスト') && line.includes('軽減')) {
+        result.costFixed += val;
+      }
+    }
+    // コストX軽減
+    if(line.includes('ⓧ') && (line.includes('コスト') || line.includes('コスト')) && line.includes('軽減')) {
+      result.costX = true;
+    }
+    // 条件固定軽減
+    const condMatches = [...line.matchAll(/(山岳|水生|森林|平野|夜|種別のない)条件を(\d+)軽減/g)];
+    for(const cm of condMatches) {
+      const map = { 山岳:'山', 水生:'水', 森林:'森', 平野:'平', 夜:'夜', 種別のない:'無' };
+      const key = map[cm[1]] || cm[1];
+      result.condFixed[key] = (result.condFixed[key] || 0) + parseInt(cm[2]);
+    }
+    // 条件X軽減
+    const condXMatch = line.match(/(山岳|水生|森林|平野|夜|平野)条件をX軽減/);
+    if(condXMatch) {
+      const map = { 山岳:'山', 水生:'水', 森林:'森', 平野:'平', 夜:'夜' };
+      result.condX = true;
+      result.condXTerrain = map[condXMatch[1]] || condXMatch[1];
+    }
+  }
+  return result;
+}
+
+// 軽減入力UIのHTML生成
+function buildReductionHtml(r) {
+  if(!r.costFixed && !r.costX && !Object.keys(r.condFixed).length && !r.condX) return '';
+  const TERRAIN_LABEL = { 山:'山岳', 水:'水生', 森:'森林', 平:'平野', 夜:'夜', 無:'種別なし' };
+  let html = `<div style="background:rgba(0,60,0,0.3);border:1px solid #4a8a4a;border-radius:8px;padding:10px;margin-top:8px;">
+    <div style="font-size:11px;color:#88ff88;margin-bottom:8px;">⚡ 軽減の適用</div>`;
+
+  if(r.costFixed) {
+    html += `<div style="font-size:12px;color:#e0e8d0;margin-bottom:6px;">コスト固定軽減：<span style="color:#ffdd88;font-weight:bold;">-${r.costFixed}</span>（自動適用）</div>`;
+  }
+  if(r.costX) {
+    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <span style="font-size:12px;color:#e0e8d0;">コストX軽減：</span>
+      <input id="koyuu-x-input" type="number" min="0" max="20" value="0"
+        style="width:50px;padding:3px 6px;background:#1a2a3a;border:1px solid #ffdd88;border-radius:6px;color:#ffdd88;font-size:14px;text-align:center;">
+      <span style="font-size:11px;color:#aaa;">Xの値を入力</span>
+    </div>`;
+  }
+  for(const [key, val] of Object.entries(r.condFixed)) {
+    html += `<div style="font-size:12px;color:#e0e8d0;margin-bottom:6px;">${TERRAIN_LABEL[key]||key}条件軽減：<span style="color:#ffdd88;font-weight:bold;">-${val}</span>（自動適用）</div>`;
+  }
+  if(r.condX) {
+    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <span style="font-size:12px;color:#e0e8d0;">${TERRAIN_LABEL[r.condXTerrain]||r.condXTerrain}条件X軽減：</span>
+      <input id="koyuu-cond-x-input" type="number" min="0" max="20" value="0"
+        style="width:50px;padding:3px 6px;background:#1a2a3a;border:1px solid #ffdd88;border-radius:6px;color:#ffdd88;font-size:14px;text-align:center;">
+      <span style="font-size:11px;color:#aaa;">Xの値を入力</span>
+    </div>`;
+  }
+  html += `</div>`;
+  return html;
 }
 let searchSelected = null;
 
