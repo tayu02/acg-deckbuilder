@@ -1112,6 +1112,44 @@ function openMoveModal(obj, from, idx) {
     };
     actRow.appendChild(btn);
   });
+  // ▶️ プレイボタン（戦場以外のカード対象・コスト条件チェックあり）
+  if(from !== "field") {
+    const playBtn = document.createElement("button");
+    playBtn.className = "modal-btn";
+    playBtn.style.cssText = "font-size:12px;padding:7px 8px;min-width:82px;flex:none;background:#4a3a1a;color:#ffcc88;border:1px solid #aa8844;";
+    playBtn.textContent = "▶️ プレイ";
+    playBtn.onclick = () => {
+      // 手札からのプレイはコスト・条件チェック
+      if(from === "hand") {
+        const { ok, reason } = checkPlayable(card);
+        if(!ok) {
+          const info = document.getElementById("card-info-effect");
+          info.style.display = "block";
+          info.style.color = "#ff8888";
+          info.style.background = "rgba(100,0,0,0.3)";
+          info.textContent = `⚠️ プレイ不可：${reason}`;
+          return;
+        }
+      }
+      // パイルへ移動してプレイ宣言
+      const zones = {hand:G.hand, grave:G.grave, exile:G.exile, pile:G.pile};
+      const sourceArr = zones[from];
+      if(sourceArr) {
+        sourceArr.splice(idx, 1);
+        obj.rested = false;
+        G.pile.push(obj);
+        window.koyuuReduction = null;
+      }
+      closeModal("card-info-modal");
+      const name = card ? card.name : obj.code;
+      setMsg(`▶️「${name}」をプレイしました。効果を処理してください。`);
+      // 誘発チェック
+      setTimeout(()=>checkTriggers("field_enter", obj), 300);
+      renderGame();
+    };
+    actRow.appendChild(playBtn);
+  }
+
   // 攻撃ボタン（戦場のカードのみ・動物タイプのみ）
   if(from === "field" && card && card.type === "動物") {
     const atkBtn = document.createElement("button");
