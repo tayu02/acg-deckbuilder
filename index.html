@@ -68,6 +68,7 @@
   <div style="display:flex; gap:8px;">
     <button id="tabSearch" onclick="showTab('search')" style="padding:6px 14px; background:#3a6a3a; border:none; border-radius:8px; color:#a8e0a8; font-size:14px; cursor:pointer;">🔍 検索</button>
     <button id="tabDeck" onclick="showTab('deck')" style="padding:6px 14px; background:#1f2a35; border:1px solid #4a8a4a; border-radius:8px; color:#a8e0a8; font-size:14px; cursor:pointer;">📋 デッキ</button>
+    <button id="tabSim" onclick="goToSimulator()" style="padding:6px 14px; background:#1f2a35; border:1px solid #4a8a4a; border-radius:8px; color:#ffcc77; font-size:14px; cursor:pointer;">🎮 試遊</button>
   </div>
   <div id="deckTotal" style="font-size:16px; color:#ffcc77; font-weight:bold; cursor:pointer;">デッキ：0 枚</div>
 </div>
@@ -838,6 +839,7 @@ function renderDeckView() {
           onchange="deckName=this.value"
           style="flex:1; margin-right:8px; padding:6px 10px; background:#1f2a35; border:1px solid #4a8a4a; border-radius:8px; color:white; font-size:14px;">
         <button onclick="copyDeckURL()" style="padding:6px 12px; background:#1a3a5a; border:1px solid #4a8aaa; border-radius:8px; color:#88ccff; font-size:13px; cursor:pointer; margin-right:8px;">🔗 URL</button>
+        <button onclick="goToSimulator()" style="padding:6px 12px; background:#2a4a1a; border:1px solid #5a9a3a; border-radius:8px; color:#a8ff88; font-size:13px; cursor:pointer; margin-right:8px;">🎮 試遊</button>
         <button onclick="resetDeck()" style="padding:6px 12px; background:#5a1a1a; border:1px solid #aa4444; border-radius:8px; color:#ffaaaa; font-size:14px; cursor:pointer;">🗑</button>
       </div>
 
@@ -964,19 +966,19 @@ let deckName = "";
 const FIREBASE_URL = "https://acg-original-default-rtdb.firebaseio.com";
 
 // =============== URL生成・読み込み（LZString使用） ===============
+// =============== デッキエンコード（simulator互換：code直接埋め込み） ===============
 function encodeDeck() {
-  const codeToIdx = {};
-  cards.forEach((card, i) => { codeToIdx[card.code] = i; });
   const data = {
     n: deckName || "",
-    m: getDeckMain().map(([code, cnt]) => [codeToIdx[code], cnt]),
-    s: getDeckSide().map(([code, cnt]) => [codeToIdx[code], cnt]),
-    t: getDeckTerritory().map(([code, cnt]) => [codeToIdx[code], cnt])
+    m: getDeckMain().map(([code, cnt]) => [code, cnt]),
+    s: getDeckSide().map(([code, cnt]) => [code, cnt]),
+    t: getDeckTerritory().map(([code, cnt]) => [code, cnt])
   };
   const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(data));
   return window.location.href.split("?")[0] + "?d=" + compressed;
 }
 
+// =============== URL読み込み（新旧両形式対応） ===============
 async function decodeDeck(url) {
   const params = new URLSearchParams(url.split("?")[1] || "");
   const idParam = params.get("id");
@@ -994,13 +996,40 @@ async function decodeDeck(url) {
     const data = JSON.parse(LZString.decompressFromEncodedURIComponent(compressed));
     const idxToCode = cards.map(c => c.code);
     if (data.n) deckName = data.n;
-    if (data.m) data.m.forEach(([idx, cnt]) => { if (idxToCode[idx]) deck[idxToCode[idx]] = cnt; });
-    if (data.s) data.s.forEach(([idx, cnt]) => { if (idxToCode[idx]) sideDeck[idxToCode[idx]] = cnt; });
-    if (data.t) data.t.forEach(([idx, cnt]) => {
-      if (idxToCode[idx]) { deck[idxToCode[idx]] = cnt; deckSide[idxToCode[idx]] = "territory"; }
+    // code直接形式（新）とインデックス形式（旧）の両方に対応
+    function resolveCode(entry) {
+      const [key, cnt] = entry;
+      if (typeof key === "string") return [key, cnt];
+      return [idxToCode[key], cnt];
+    }
+    if (data.m) data.m.forEach(e => { const [code, cnt] = resolveCode(e); if (code) deck[code] = cnt; });
+    if (data.s) data.s.forEach(e => { const [code, cnt] = resolveCode(e); if (code) sideDeck[code] = cnt; });
+    if (data.t) data.t.forEach(e => {
+      const [code, cnt] = resolveCode(e);
+      if (code) { deck[code] = cnt; deckSide[code] = "territory"; }
     });
     updateDeckTotal();
   } catch(e) { console.error("デッキ読み込み失敗", e); }
+}
+
+// =============== シミュレーターへ遷移 ===============
+function goToSimulator() {
+  const mainTotal = getDeckMain().reduce((a, [, cnt]) => a + cnt, 0);
+  const terrTotal = getDeckTerritory().reduce((a, [, cnt]) => a + cnt, 0);
+  if (mainTotal < 40) {
+    alert(`メインデッキが${mainTotal}枚です。40枚以上必要です。`);
+    showTab("deck");
+    return;
+  }
+  if (terrTotal < 10) {
+    alert(`領土デッキが${terrTotal}枚です。10枚以上必要です。`);
+    showTab("deck");
+    return;
+  }
+  const url = encodeDeck();
+  const dParam = url.split("?d=")[1];
+  if (!dParam) { alert("デッキのエンコードに失敗しました"); return; }
+  window.location.href = "simulator.html?d=" + dParam;
 }
 
 async function copyDeckURL() {
