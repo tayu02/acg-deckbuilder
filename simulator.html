@@ -1196,7 +1196,6 @@ function openMoveModal(obj, from, idx) {
   if(from!=="hand")  dests.push({l:"🤚 手札へ",to:"hand"});
   if(from!=="grave") dests.push({l:"🗑 墓地へ",to:"grave"});
   if(from!=="exile") dests.push({l:"💨 除外へ",to:"exile"});
-  if(from!=="pile")  dests.push({l:"📋 パイルへ",to:"pile"});
   dests.push({l:"⬇ デッキ下へ",to:"deck-bottom"});
   dests.push({l:"⬆ デッキ上へ",to:"deck-top"});
   if(from==="field") dests.push({l:obj.rested?"↑ アンムーブ":"↩ ムーブ",to:"rest-toggle"});
