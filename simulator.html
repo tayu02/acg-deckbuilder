@@ -522,7 +522,7 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
       <button class="action-btn phase" onclick="nextPhase()">▶ 次のフェイズ</button>
       <button class="action-btn draw" onclick="drawCard()">📚 ドロー</button>
       <button class="action-btn territory" onclick="drawTerritory()">🌍 領土</button>
-      <button class="action-btn" style="background:#1a3a4a;color:#88ddff;" onclick="openSearchModal()">🔍 サーチ</button>
+      <button class="action-btn" style="background:#1a3a4a;color:#88ddff;" onclick="if(G.noSearchThisTurn){setMsg('🙈 見猿の効果：このターン中はサーチできません。');}else{openSearchModal()}">🔍 サーチ</button>
       <button class="action-btn phase" style="background:#4a1a1a;color:#ffaaaa;" onclick="endTurn()">⏭ ターンエンド</button>
     </div>
   </div><!-- #action-panel -->
@@ -715,6 +715,11 @@ let G = {
   playerLife: 20, enemyLife: 20,
   mainDeck: [], hand: [], field: [], grave: [], exile: [], pile: [], territory: [], territoryDeck: [],
   turn: 1, phase: 0, isFirstTurn: true, isFirst: true, huntTriggered: false, hinshinFlag: false,
+  noSearchThisTurn: false,    // 見猿：このターンサーチ不可
+  noTriggerThisTurn: false,   // 聞猿：このターン誘発・起動不可（通知）
+  noTargetWarning: false,     // 言猿：対象を取る時に警告
+  nightClearCount: 0,         // 獄炎：このターンの領土夜明け回数
+  acornSacrificeCount: 0,     // 森の貪食者：木の実トークン生贄カウント
 };
 
 // 域ボーナス（効果による追加条件カウンター）
@@ -1283,7 +1288,23 @@ function openMoveModal(obj, from, idx) {
     actRow.appendChild(atkBtn);
   }
 
-  // 行動待機状態のトグル（戦場のカードのみ）
+  // 夜にする / 夜を明けるボタン
+  const nightBtn = document.createElement("button");
+  nightBtn.className = "modal-btn";
+  nightBtn.style.cssText = "font-size:12px;padding:7px 8px;min-width:82px;flex:none;background:#2a1a4a;color:#cc99ff;border:1px solid #6644aa;";
+  nightBtn.textContent = obj.night ? "☀️ 夜を明ける" : "🌙 夜にする";
+  nightBtn.onclick = () => {
+    if(obj.night) {
+      if(typeof clearNight === "function") clearNight(obj);
+      else { obj.night = false; renderGame(); }
+    } else {
+      obj.night = true;
+      renderGame();
+    }
+    closeModal("card-info-modal");
+    if(G.noTargetWarning) setMsg("⚠️ 言猿の効果：このターン動物は対象にならないことに注意してください。");
+  };
+  actRow.appendChild(nightBtn);
   if(from === "field") {
     // 駿足付与トグル
     const sfBtn = document.createElement("button");
@@ -1457,6 +1478,13 @@ function execMove(from, idx, to) {
   else if(to==="deck-bottom"){ G.mainDeck.push(obj); setMsg("デッキ下へ送りました。"); }
   else if(to==="deck-top"){ G.mainDeck.unshift(obj); setMsg("デッキ上へ戻しました。"); }
   else {
+    // ヘビ華族が戦場にいて手札から墓地に行く場合は除外に変更
+    if(from === "hand" && to === "grave" && G.field.some(o => o.code === "BP4-021" && o.snakeNobilityActive)) {
+      G.exile.push(obj);
+      setMsg(`🐍 ヘビ華族：「${cards.find(c=>c.code===obj.code)?.name||obj.code}」は墓地の代わりに除外されました。`);
+      renderGame();
+      return;
+    }
     obj.rested = false;
     zones[to].push(obj);
     const n={field:"戦場",hand:"手札",grave:"墓地",exile:"除外",pile:"パイル"};
@@ -1703,6 +1731,11 @@ function showTriggerNotice(found, eventLabel) {
 function applyConstantEffects() {
   // queenBuff・soldierBuffをリセットしてから再計算
   G.field.forEach(obj => {
+    // 恋狐・恋兎の相互チェックリセット
+    obj.koiCheckDone = false;
+    // リス木の実バフリセット
+    obj.squirrelBuff1 = false;
+    obj.squirrelBuff2 = false;
     if(obj.travellerEquipBuff !== undefined) {
       obj.atkMod = (obj.atkMod||0) - obj.travellerEquipBuff;
       obj.defMod = (obj.defMod||0) - obj.travellerEquipBuff;
@@ -2438,6 +2471,11 @@ function nextPhase() {
     G.huntTriggered = false;
     G.hinshinFlag = false;
     G.turnPlayLog = [];
+    G.noSearchThisTurn = false;
+    G.noTriggerThisTurn = false;
+    G.noTargetWarning = false;
+    G.nightClearCount = 0;
+    G.acornSacrificeCount = 0;
     // playedThisTurnフラグをリセット
     [...G.field, ...G.pile, ...G.hand, ...G.grave, ...G.exile].forEach(o => { o.playedThisTurn = false; });
 
@@ -2558,7 +2596,10 @@ function nextPhase() {
   renderGame();
 
   // 準備フェイズ（phase=1）：準備フェイズ誘発チェック
-  if(G.phase === 1) setTimeout(()=>checkTriggers("phase_prep"), 400);
+  if(G.phase === 1) {
+    setTimeout(()=>checkTriggers("phase_prep"), 400);
+    setTimeout(()=>{ if(typeof processDasshutsuCounters==="function") processDasshutsuCounters(); }, 600);
+  }
   // 狩りフェイズ（phase=3）：最初の1回のみ誘発チェック
   if(G.phase === 3 && !G.huntTriggered) {
     G.huntTriggered = true;
