@@ -122,6 +122,23 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 .territory-card.forest { border-color: #4a8a4a; }
 .game-card.night-card { border-color: #6644aa; box-shadow: 0 0 6px #6644aa88; }
 .game-card.damaged { border-color: #cc4444; }
+.card-stack-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+.card-stack-wrapper .equipped-card {
+  position: absolute;
+  top: 14px;
+  left: 4px;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  border: 2px solid #aa8844;
+  border-radius: 8px;
+  overflow: hidden;
+  pointer-events: none;
+}
 .damage-badge {
   position: absolute; top: 1px; right: 1px;
   background: rgba(180,0,0,0.85); border-radius: 4px;
@@ -1008,6 +1025,9 @@ function makeCardEl(obj, opts={}) {
   return div;
 }
 
+function getCardW() { return window.innerWidth >= 768 ? 90 : 56; }
+function getCardH() { return window.innerWidth >= 768 ? 126 : 78; }
+
 function renderGame() {
   // 常時効果の適用（effects.jsのconstant_field）
   applyConstantEffects();
@@ -1025,7 +1045,41 @@ function renderGame() {
 
   // 戦場
   const fz = document.getElementById("field-zone"); fz.innerHTML = "";
-  G.field.forEach((obj,i) => { const el=makeCardEl(obj,{showRest:true}); const h=(e)=>{e.preventDefault();openMoveModal(obj,"field",i);}; el.addEventListener("click",h); el.addEventListener("touchend",h,{passive:false}); fz.appendChild(el); });
+  G.field.forEach((obj,i) => {
+    // 装備カードは本体の下に重ねるのでスキップ
+    if(obj.isEquipped) return;
+    const wrapper = document.createElement("div");
+    wrapper.className = "card-stack-wrapper";
+    wrapper.style.cssText = `position:relative;display:inline-block;width:${getCardW()}px;height:${getCardH()}px;margin:2px;flex-shrink:0;`;
+
+    // 装備カードを先に描画（下に重なる）
+    const equipped = G.field.filter(e => e.isEquipped && e.equippedTo === obj.id);
+    equipped.forEach((eq, ei) => {
+      const eqDiv = document.createElement("div");
+      eqDiv.className = "equipped-card";
+      eqDiv.style.cssText = `position:absolute;top:${(ei+1)*10}px;left:${(ei+1)*4}px;width:100%;height:100%;border:2px solid #aa8844;border-radius:8px;overflow:hidden;z-index:${ei};pointer-events:none;`;
+      const eqImg = document.createElement("img");
+      eqImg.src = getImg(eq.code);
+      eqImg.style.cssText = "width:100%;height:100%;object-fit:cover;pointer-events:none;";
+      eqDiv.appendChild(eqImg);
+      wrapper.appendChild(eqDiv);
+    });
+
+    const el = makeCardEl(obj, {showRest:true});
+    el.style.cssText += ";position:relative;z-index:10;width:100%;height:100%;margin:0;";
+    const h = (e) => { e.preventDefault(); openMoveModal(obj,"field",i); };
+    el.addEventListener("click", h);
+    el.addEventListener("touchend", h, {passive:false});
+    wrapper.appendChild(el);
+    // 装備バッジ
+    if(equipped.length > 0) {
+      const badge = document.createElement("div");
+      badge.style.cssText = "position:absolute;bottom:2px;left:2px;background:rgba(160,120,0,0.9);border-radius:3px;padding:1px 4px;font-size:7px;color:#ffdd88;z-index:20;pointer-events:none;";
+      badge.textContent = `⚙️×${equipped.length}`;
+      wrapper.appendChild(badge);
+    }
+    fz.appendChild(wrapper);
+  });
   document.getElementById("field-count").textContent = G.field.length;
 
   // 領土（画像表示・夜対応）
@@ -1342,32 +1396,39 @@ function openMoveModal(obj, from, idx) {
   xBtn.onclick = () => closeModal("card-info-modal");
   actRow.appendChild(xBtn);
 
-  // 取得能力の表示
+  // 装備カードの表示
+  const equippedCards = G.field.filter(e => e.isEquipped && e.equippedTo === obj.id);
   const gainedArea = document.getElementById("card-info-gained");
   if(gainedArea) {
-    const hasGained = (obj.keywords && obj.keywords.length > 0) ||
-                      obj.atkMod || obj.defMod ||
-                      (obj.gainedEffects && obj.gainedEffects.length > 0);
-    if(hasGained) {
-      let html = '<div style="margin-top:8px;padding:6px 8px;background:rgba(0,60,0,0.3);border:1px solid #4a8a4a;border-radius:6px;font-size:11px;">';
-      html += '<div style="color:#88ff88;margin-bottom:4px;">⚡ 取得中の能力</div>';
-      (obj.keywords||[]).forEach(kw => {
-        html += `<div style="color:#a0ffa0;">《${kw}》</div>`;
+    let html = "";
+    if(equippedCards.length > 0) {
+      html += '<div style="margin-top:6px;padding:6px;background:rgba(80,60,0,0.3);border:1px solid #aa8844;border-radius:6px;">';
+      html += '<div style="color:#ffdd88;font-size:11px;margin-bottom:4px;">⚙️ 装備中</div>';
+      html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
+      equippedCards.forEach(eq => {
+        const eqCard = cards.find(c => c.code === eq.code);
+        html += `<div style="text-align:center;">
+          <img src="${getImg(eq.code)}" style="width:40px;height:56px;object-fit:cover;border-radius:4px;border:1px solid #aa8844;" onerror="this.style.display='none'">
+          <div style="font-size:7px;color:#ffcc88;">${eqCard?.name||eq.code}</div>
+        </div>`;
       });
+      html += '</div></div>';
+    }
+    const hasGained = (obj.keywords && obj.keywords.length > 0) || obj.atkMod || obj.defMod || (obj.gainedEffects && obj.gainedEffects.length > 0);
+    if(hasGained) {
+      html += '<div style="margin-top:8px;padding:6px 8px;background:rgba(0,60,0,0.3);border:1px solid #4a8a4a;border-radius:6px;font-size:11px;">';
+      html += '<div style="color:#88ff88;margin-bottom:4px;">⚡ 取得中の能力</div>';
+      (obj.keywords||[]).forEach(kw => { html += `<div style="color:#a0ffa0;">《${kw}》</div>`; });
       if(obj.atkMod || obj.defMod) {
         let t = "";
         if(obj.atkMod) t += `ATK${obj.atkMod>0?"+":""}${obj.atkMod} `;
         if(obj.defMod) t += `DEF${obj.defMod>0?"+":""}${obj.defMod}`;
         html += `<div style="color:#ffcc88;">${t.trim()}</div>`;
       }
-      (obj.gainedEffects||[]).forEach(e => {
-        html += `<div style="color:#ddaaff;">『${e}』</div>`;
-      });
+      (obj.gainedEffects||[]).forEach(e => { html += `<div style="color:#ddaaff;">『${e}』</div>`; });
       html += '</div>';
-      gainedArea.innerHTML = html;
-    } else {
-      gainedArea.innerHTML = "";
     }
+    gainedArea.innerHTML = html;
   }
 
   document.getElementById("card-info-modal").style.display = "flex";
@@ -1436,6 +1497,10 @@ function execMove(from, idx, to) {
       obj.diedThisTurn = true;
       setTimeout(()=>checkTriggers("to_grave", obj), 300);
       setTimeout(()=>{ const eff=CARD_EFFECTS[obj.code]; if(eff?.to_grave) eff.to_grave(obj); }, 500);
+      // デッキから来た場合はon_deck_revealを呼ぶ
+      if(obj.fromDeck) {
+        setTimeout(()=>{ const eff=CARD_EFFECTS[obj.code]; if(eff?.on_deck_reveal) eff.on_deck_reveal(obj); }, 600);
+      }
     }
   }
   renderGame();
@@ -1638,6 +1703,11 @@ function showTriggerNotice(found, eventLabel) {
 function applyConstantEffects() {
   // queenBuff・soldierBuffをリセットしてから再計算
   G.field.forEach(obj => {
+    if(obj.travellerEquipBuff !== undefined) {
+      obj.atkMod = (obj.atkMod||0) - obj.travellerEquipBuff;
+      obj.defMod = (obj.defMod||0) - obj.travellerEquipBuff;
+      obj.travellerEquipBuff = undefined;
+    }
     if(obj.frogsAtkBuff !== undefined) {
       obj.atkMod = (obj.atkMod||0) - obj.frogsAtkBuff;
       obj.frogsAtkBuff = undefined;
@@ -1826,8 +1896,9 @@ function confirmAttack() {
 
   if(attackTargetIdx === "direct") {
     G.enemyLife = Math.max(0, G.enemyLife - totalAtk);
-    showDamageFloat(totalAtk, "enemy");
     groupAttackers.forEach(o => { o.rested = true; });
+    // 統治する猟犬フック
+    setTimeout(() => { G.field.forEach(o => { const eff=CARD_EFFECTS[o.code]; if(eff?.on_enemy_damage) eff.on_enemy_damage(o, totalAtk); }); }, 200);
     setMsg(attackMode==="group" ? `👥 集団攻撃ダイレクト！${attackerCount}体 合計ATK:${totalAtk}` : `⚔️「${attackerCard.name}」ダイレクトアタック！相手ライフに${totalAtk}ダメージ。`);
     closeModal("attack-modal");
     if(attackMode==="group") setTimeout(()=>triggerGroupAttack(groupAttackers,attackerCount),300);
@@ -1845,7 +1916,6 @@ function confirmAttack() {
   let msg = attackMode==="group"
     ? `👥 集団攻撃：${attackerCount}体 合計ATK:${totalAtk}→「${tCard?.name}」(DEF:${tDef})`
     : `⚔️「${attackerCard.name}」(ATK:${totalAtk})→「${tCard?.name}」(DEF:${tDef})`;
-  showDamageFloat(totalAtk, "enemy");
   if(target.damage >= tDef) {
     G.field.splice(attackTargetIdx,1); target.damage=0; G.grave.push(target);
     msg += ` 💀${tCard?.name}墓地へ`;
@@ -2145,7 +2215,8 @@ function confirmPlay() {
   }
   G.hand.splice(selectedPlayIdx, 1);
   obj.rested = false;
-  obj.playedThisTurn = true; // プレイで出たフラグ
+  obj.playedThisTurn = true;
+  logPlay(obj); // ターン中プレイログ記録
   G.pile.push(obj);
   window.koyuuReduction = null; // 固有軽減リセット
   const name = card ? card.name : obj.code;
@@ -2155,6 +2226,7 @@ function confirmPlay() {
     G.field.forEach(o => {
       const eff = CARD_EFFECTS[o.code];
       if(eff?.on_play_reaction && o !== obj) eff.on_play_reaction(o);
+      if(eff?.on_enemy_play) eff.on_enemy_play(o); // 海洋の楽園など（自分プレイにも反応）
     });
   }, 400);
   setMsg(`「${name}」をパイルに置きました。効果を処理してください。`);
@@ -2348,6 +2420,7 @@ function nextPhase() {
     G.isFirstTurn = false;
     G.huntTriggered = false;
     G.hinshinFlag = false;
+    G.turnPlayLog = [];
     // playedThisTurnフラグをリセット
     [...G.field, ...G.pile, ...G.hand, ...G.grave, ...G.exile].forEach(o => { o.playedThisTurn = false; });
 
@@ -2370,7 +2443,6 @@ function nextPhase() {
   if(G.phase === 2) {
     let msg = "補充フェイズ：";
     if(G.isFirstTurn && G.isFirst) {
-      // 先行1ターン目はドローなし・領土のみ補充
       if(G.territoryDeck.length > 0) {
         drawTerritory();
         msg += "先行1ターン目のためドローはありません。領土を1枚置きました。";
@@ -2378,19 +2450,59 @@ function nextPhase() {
         msg += "先行1ターン目のためドローはありません。（領土デッキが空です）";
       }
     } else {
-      // ドロー
       if(G.mainDeck.length > 0) {
         G.hand.push(G.mainDeck.shift());
         msg += `デッキから1枚ドロー（残${G.mainDeck.length}枚）。`;
       } else {
         msg += "⚠️デッキが空でドローできません。";
       }
-      // 領土設置
-      if(G.territoryDeck.length > 0) {
-        drawTerritory();
-        msg += `領土を1枚置きました。`;
+      // 無国籍国家が戦場にいる場合は領土補充を変更
+      const mukoku = G.field.find(o => o.code === "BP2-007");
+      if(mukoku) {
+        askChoice("【無国籍国家】領土補充をどうしますか？",
+          [
+            { label: "領土デッキ上から2枚を墓地に置く", value: "mill" },
+            { label: "除外領域から領土カード2枚を墓地に置く", value: "exile" },
+          ],
+          (choice) => {
+            if(choice === "mill") {
+              const count = Math.min(2, G.territoryDeck.length);
+              for(let i=0; i<count; i++) {
+                const top = G.territoryDeck.shift();
+                G.grave.push(top);
+              }
+              setMsg(`無国籍国家：領土デッキ上${count}枚を墓地へ。`);
+            } else {
+              const exileTerritory = G.exile.filter(o => {
+                const c = cards.find(c => c.code === o.code);
+                return c && c.type === "領土";
+              });
+              if(exileTerritory.length < 2) {
+                setMsg(`無国籍国家：除外の領土が${exileTerritory.length}枚です。通常の領土補充を行います。`);
+                if(G.territoryDeck.length > 0) drawTerritory();
+              } else {
+                pickFromZone("exile", {
+                  message: "墓地に置く領土カードを2枚選んでください",
+                  count: 2,
+                  filter: (o, c) => c && c.type === "領土",
+                }, (selected) => {
+                  selected.forEach(o => moveCard(o, "exile", "grave"));
+                  setMsg("無国籍国家：除外の領土2枚を墓地へ。");
+                  renderGame();
+                });
+              }
+            }
+            renderGame();
+          }
+        );
+        msg += "（無国籍国家：領土補充を選択中）";
       } else {
-        msg += "領土デッキが空です。";
+        if(G.territoryDeck.length > 0) {
+          drawTerritory();
+          msg += `領土を1枚置きました。`;
+        } else {
+          msg += "領土デッキが空です。";
+        }
       }
     }
     setMsg(msg);
