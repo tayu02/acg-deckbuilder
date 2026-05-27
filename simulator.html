@@ -1150,6 +1150,19 @@ function openMoveModal(obj, from, idx) {
     actRow.appendChild(playBtn);
   }
 
+  // 💥ダメージボタン（戦場の動物のみ）
+  if(from === "field" && card && card.type === "動物") {
+    const dmgBtn = document.createElement("button");
+    dmgBtn.className = "modal-btn";
+    dmgBtn.style.cssText = "font-size:12px;padding:7px 8px;min-width:82px;flex:none;background:#3a1a1a;color:#ff8888;border:1px solid #884444;";
+    dmgBtn.textContent = "💥 ダメージ";
+    dmgBtn.onclick = () => {
+      closeModal("card-info-modal");
+      showDamageInputModal(obj, card);
+    };
+    actRow.appendChild(dmgBtn);
+  }
+
   // 攻撃ボタン（戦場のカードのみ・動物タイプのみ）
   if(from === "field" && card && card.type === "動物") {
     const atkBtn = document.createElement("button");
@@ -1631,6 +1644,85 @@ function confirmAttack() {
   renderGame();
 }
 
+function showDamageInputModal(obj, card) {
+  const def = getDEF(card);
+  const cur = obj.damage || 0;
+
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay trigger-notice";
+  overlay.style.cssText = "display:flex;z-index:400;";
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:320px;" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <img src="${getImg(obj.code)}"
+          style="width:50px;height:70px;object-fit:cover;border-radius:6px;border:2px solid #884444;flex-shrink:0;"
+          onerror="this.style.display='none'">
+        <div>
+          <div style="font-size:14px;font-weight:bold;color:#ffaaaa;">${card.name}</div>
+          <div style="font-size:12px;color:#aaa;margin-top:3px;">DEF:${def}　現在ダメージ:${cur}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#e0e8d0;margin-bottom:8px;">与えるダメージを入力：</div>
+      <input id="dmg-input" type="number" min="0" max="99" value="1"
+        style="width:100%;padding:8px;background:#1a2a3a;border:1px solid #884444;border-radius:8px;color:#ff8888;font-size:18px;text-align:center;margin-bottom:10px;">
+      <div id="dmg-preview" style="font-size:12px;color:#ffdd88;text-align:center;margin-bottom:10px;min-height:18px;"></div>
+      <div class="modal-btn-row">
+        <button class="modal-btn" style="background:#5a1a1a;color:#ffaaaa;border:1px solid #aa4444;"
+          onclick="applyDamageInput('${obj.id}')">💥 適用</button>
+        <button class="modal-btn cancel" onclick="this.closest('.trigger-notice').remove()">キャンセル</button>
+      </div>
+    </div>`;
+
+  // 入力値が変わるたびにプレビュー更新
+  overlay.addEventListener("click", () => overlay.remove());
+  document.body.appendChild(overlay);
+
+  const input = document.getElementById("dmg-input");
+  const preview = document.getElementById("dmg-preview");
+  const updatePreview = () => {
+    const dmg = parseInt(input.value) || 0;
+    const total = cur + dmg;
+    preview.textContent = total >= def
+      ? `累積 ${total}/${def} → 💀墓地送り`
+      : `累積 ${total}/${def}`;
+    preview.style.color = total >= def ? "#ff4444" : "#ffdd88";
+  };
+  input.addEventListener("input", updatePreview);
+  updatePreview();
+  input.focus();
+  input.select();
+}
+
+function applyDamageInput(id) {
+  const input = document.getElementById("dmg-input");
+  const dmg = parseInt(input.value) || 0;
+  if(dmg <= 0) { document.querySelector(".trigger-notice")?.remove(); return; }
+
+  const obj = [...G.field, ...G.pile].find(o => o.id === id);
+  if(!obj) { document.querySelector(".trigger-notice")?.remove(); return; }
+
+  const card = cards.find(c => c.code === obj.code);
+  const def = getDEF(card);
+  obj.damage = (obj.damage || 0) + dmg;
+
+  let msg = `💥「${card?.name || obj.code}」に${dmg}ダメージ（累積${obj.damage}/${def}）`;
+
+  // DEF超えで墓地送り
+  if(obj.damage >= def) {
+    const idx = G.field.indexOf(obj);
+    if(idx >= 0) {
+      G.field.splice(idx, 1);
+      obj.damage = 0;
+      G.grave.push(obj);
+      msg += ` → 💀墓地へ`;
+      setTimeout(()=>checkTriggers("to_grave", obj), 300);
+    }
+  }
+
+  document.querySelector(".trigger-notice")?.remove();
+  setMsg(msg);
+  renderGame();
+}
 function resetAllDamage() {
   G.field.forEach(obj => { obj.damage = 0; });
   renderGame();
