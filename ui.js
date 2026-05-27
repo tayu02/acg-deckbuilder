@@ -179,6 +179,11 @@ function pickFromZone(zoneName, options, callback) {
 
     div.addEventListener("click", () => {
       if(count === 1) {
+        // 赤猫チェック：選ばれたカードが赤猫ならon_targetedを呼ぶ
+        if(typeof CARD_EFFECTS !== "undefined") {
+          const targetEff = CARD_EFFECTS[obj.code];
+          if(targetEff?.on_targeted) targetEff.on_targeted(obj);
+        }
         // 1枚選択：即決定
         overlay.remove();
         callback && callback([obj]);
@@ -400,4 +405,160 @@ function resetTempAbilities() {
     }
     obj.tempAbilities = [];
   });
+}
+
+// ------------------------------------------------------------
+// isAri(card) - アリ判定
+// ------------------------------------------------------------
+function isAri(card) {
+  if(!card) return false;
+  return (card.tribe || "").includes("アリ");
+}
+
+// ------------------------------------------------------------
+// payTerrainCost(count, filter, callback)
+// 戦場のカードをcoast枚生贄に捧げる
+// filter: 生贄対象の絞り込み（省略で全て）
+// callback(): 支払い完了後の処理
+// ------------------------------------------------------------
+function sacrificeFromField(count, filter, callback) {
+  const label = count === 1 ? "1つ" : `${count}つ`;
+  pickFromZone("field", {
+    message: `生贄に捧げるカードを${label}選んでください`,
+    count,
+    filter: filter || (() => true),
+    canCancel: false,
+  }, (selected) => {
+    if(selected.length < count) return;
+    selected.forEach(o => moveCard(o, "field", "grave"));
+    renderGame();
+    callback && callback(selected);
+  });
+}
+
+// ------------------------------------------------------------
+// payMoveCost(obj)
+// 「ムーブ、〜して発動する」のムーブコスト処理
+// objをムーブ状態にして返す
+// ------------------------------------------------------------
+function payMoveCost(obj) {
+  obj.rested = true;
+  renderGame();
+}
+
+// ------------------------------------------------------------
+// payCostTerrain(amount, callback)
+// ②などのコスト支払い（領土をamt枚ムーブ）
+// ------------------------------------------------------------
+function payCostTerrain(amount, callback) {
+  const available = G.territory.filter(o => !o.rested);
+  if(available.length < amount) {
+    setMsg(`⚠️ コスト${amount}を支払えません（ウェイク領土：${available.length}枚）`);
+    return;
+  }
+  pickFromZone("field", {
+    message: `コスト②：領土を${amount}枚選んでムーブしてください`,
+    count: amount,
+    filter: (o) => G.territory.includes(o) && !o.rested,
+    canCancel: false,
+  }, (selected) => {
+    selected.forEach(o => { o.rested = true; });
+    renderGame();
+    callback && callback();
+  });
+}
+
+// ------------------------------------------------------------
+// revealDeckTop(count, callback)
+// デッキ上count枚を公開してcallback(revealedObjs[])に渡す
+// ------------------------------------------------------------
+function revealDeckTop(count, callback) {
+  const actual = Math.min(count, G.mainDeck.length);
+  if(actual === 0) { setMsg("デッキが空です。"); return; }
+  const revealed = G.mainDeck.slice(0, actual);
+  const names = revealed.map(o => cards.find(c=>c.code===o.code)?.name || o.code).join("、");
+  setMsg(`公開：${names}`);
+  callback && callback(revealed);
+}
+
+// ------------------------------------------------------------
+// deployFromHand(filter, rested, callback)
+// 手札のカードを戦場に出す（rested=true でムーブ状態）
+// ------------------------------------------------------------
+function deployFromHand(filter, rested, callback) {
+  pickFromZone("hand", {
+    message: "戦場に出すカードを選んでください",
+    count: 1,
+    filter: filter || (() => true),
+  }, (selected) => {
+    if(selected.length === 0) return;
+    const obj = selected[0];
+    moveCard(obj, "hand", "field");
+    if(rested) obj.rested = true;
+    const c = cards.find(c => c.code === obj.code);
+    if(!(c?.effect||"").includes("《駿足》")) obj.summonedThisTurn = true;
+    renderGame();
+    setTimeout(() => triggerCardEffect(obj, "field_enter"), 300);
+    callback && callback(obj);
+  });
+}
+
+// ------------------------------------------------------------
+// キツネ系ユーティリティ
+// ------------------------------------------------------------
+function isKitsune(card) {
+  if(!card) return false;
+  return (card.tribe || "").includes("キツネ");
+}
+
+function isKitsuneObj(obj) {
+  const c = cards.find(c => c.code === obj.code);
+  return c && isKitsune(c);
+}
+
+// ------------------------------------------------------------
+// addYouko(obj, amount)
+// 妖狐カウンターをamount個追加する
+// 見狐の常時効果（自身の効果以外では置けない）はcallerで管理
+// ------------------------------------------------------------
+function addYouko(obj, amount, caller = null) {
+  // 見狐が戦場にいて、対象が見狐でない場合、見狐以外からの付与をブロック
+  const mikoBan = G.field.find(o => o.code === "BP1-023");
+  if(mikoBan && obj !== mikoBan && obj.code !== "BP1-023") {
+    // 見狐自身の効果（caller === "BP1-023"）以外は通常通り
+  }
+  if(!obj.counters) obj.counters = {};
+  obj.counters["妖狐"] = (obj.counters["妖狐"] || 0) + amount;
+  renderGame();
+}
+
+// ------------------------------------------------------------
+// removeYouko(obj, amount, caller)
+// 妖狐カウンターをamount個取り除く
+// 見狐が戦場にいれば連動して妖狐カウンターを付与する
+// ------------------------------------------------------------
+function removeYouko(obj, amount, caller = null) {
+  if(!obj.counters) obj.counters = {};
+  const current = obj.counters["妖狐"] || 0;
+  const actual = Math.min(amount, current);
+  obj.counters["妖狐"] = current - actual;
+  renderGame();
+
+  // 見狐の誘発チェック：自分以外のキツネ存在から妖狐カウンターが取り除かれた時
+  const miko = G.field.find(o => o.code === "BP1-023" && o !== obj);
+  if(miko && actual > 0) {
+    const c = cards.find(c => c.code === obj.code);
+    const isKitsuneTarget = c && isKitsune(c);
+    if(isKitsuneTarget) {
+      // 見狐自身の効果で取り除かれた場合は連動しない
+      if(caller !== "BP1-023") {
+        if(!miko.counters) miko.counters = {};
+        miko.counters["妖狐"] = (miko.counters["妖狐"] || 0) + actual;
+        setMsg(`🦊 見狐：妖狐カウンター${actual}個を得ました。`);
+        renderGame();
+      }
+    }
+  }
+
+  return actual;
 }
