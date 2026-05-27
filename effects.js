@@ -2601,3 +2601,391 @@ CARD_EFFECTS["BP1-079"] = {
 
 // =============== BP1-080 帝王クロコダイル ===============
 // 《鉄壁》のみ（キーワード）→常時で付与
+
+
+// ============================================================
+// BP2 特殊カード実装
+// ============================================================
+
+// =============== BP2-002 漂う海月 ===============
+CARD_EFFECTS["BP2-002"] = {
+  // 【誘発（戦場）】プレイ効果で出た時→放浪者カードをサーチ
+  field_enter(obj) {
+    if(!obj.playedThisTurn) return;
+    askYesNo("【誘発】デッキから漂う海月以外の《放浪者》カード1枚を手札に加えますか？",
+      () => searchDeck(
+        card => (card.effect||"").includes("《放浪者》") && card.code !== "BP2-002",
+        1, "hand", { message: "デッキから《放浪者》カードを選んでください" }
+      )
+    );
+  },
+  // 【誘発（墓地）】日没フェイズ開始時、領土なし+墓地の放浪者2枚除外→戦場へ
+  phase_sunset(obj) {
+    if(G.territory.length > 0) return;
+    const hasOnField = G.field.some(o => o.code === "BP2-002");
+    if(hasOnField) return;
+    const wanderers = G.grave.filter(o => {
+      const c = cards.find(c => c.code === o.code);
+      return c && (c.effect||"").includes("《放浪者》") && o !== obj;
+    });
+    if(wanderers.length < 2) return;
+    askYesNo(`【誘発（墓地）】墓地の《放浪者》2枚を除外して漂う海月を戦場に出しますか？（放浪者：${wanderers.length}枚）`,
+      () => {
+        pickFromZone("grave", {
+          message: "除外する《放浪者》カードを2枚選んでください",
+          count: 2,
+          filter: (o, c) => c && (c.effect||"").includes("《放浪者》") && o !== obj,
+        }, (selected) => {
+          if(selected.length < 2) return;
+          selected.forEach(o => moveCard(o, "grave", "exile"));
+          const graveIdx = G.grave.indexOf(obj);
+          if(graveIdx >= 0) { G.grave.splice(graveIdx, 1); G.field.push(obj); obj.summonedThisTurn = true; }
+          setMsg("🪼 漂う海月：墓地から戦場に出ました。");
+          renderGame();
+        });
+      }
+    );
+  },
+};
+
+// =============== BP2-007 無国籍国家 ===============
+CARD_EFFECTS["BP2-007"] = {
+  can_play() {
+    if(G.territory.length < 4) return { ok: false, reason: `領土が${G.territory.length}枚です（4枚以上必要）` };
+    return { ok: true };
+  },
+  play(obj) {
+    // 領土を4枚以上生贄に捧げてプレイ
+    pickFromZone("field", {
+      message: "生贄にする領土を4枚以上選んでください（全部でもOK）",
+      count: G.territory.length,
+      filter: (o) => G.territory.includes(o),
+    }, (selected) => {
+      if(selected.length < 4) { setMsg("無国籍国家：4枚以上選んでください。"); return; }
+      selected.forEach(o => {
+        G.territory.splice(G.territory.indexOf(o), 1);
+        G.grave.push(o);
+      });
+      G.field.push(obj);
+      setMsg("🌐 無国籍国家：戦場に出ました。");
+      renderGame();
+    });
+  },
+  // 固有（戦場）：プレイ時に墓地の領土を除外してコスト軽減→checkPlayableから参照
+  // 常時（戦場）：補充フェイズの領土補充変更→nextPhase内で処理済み
+};
+
+// =============== BP2-024 海洋の楽園 ===============
+CARD_EFFECTS["BP2-024"] = {
+  play(obj) {
+    // デッキからコスト1イルカ動物を戦場に、これを戦場に
+    searchDeck(
+      card => card.type === "動物" && (card.tribe||"").includes("イルカ") && (parseInt(card.cost)||0) === 1,
+      1, "field", { message: "デッキからコスト1のイルカ動物を選んでください" }
+    );
+    G.field.push(obj);
+    setMsg("🌊 海洋の楽園：戦場に出ました。相手がプレイするたびに成長カウンターが増えます。");
+    renderGame();
+  },
+  // 相手のプレイに反応→on_enemy_play_reactionで呼ぶ
+  on_enemy_play(obj) {
+    if(!obj.counters) obj.counters = {};
+    obj.counters["成長"] = (obj.counters["成長"] || 0) + 1;
+    const cnt = obj.counters["成長"];
+    setMsg(`🌊 海洋の楽園：成長カウンター${cnt}個。`);
+    if(cnt >= 14) {
+      setMsg("🌊 海洋の楽園：成長カウンター14個！特殊勝利！");
+      alert("🌊 海洋の楽園：特殊勝利！成長カウンターが14個になりました！");
+    }
+    renderGame();
+  },
+};
+
+// =============== BP2-028 死の兎 ===============
+CARD_EFFECTS["BP2-028"] = {
+  field_enter(obj) {
+    askYesNo("【誘発】相手の手札を見てカード1枚を除外しますか？（これが戦場にある限り除外）",
+      () => {
+        // 相手の手札は1人用なので手動確認のみ
+        setMsg("🐰 死の兎：相手の手札から除外するカードを確認して、除外領域に移動してください（手動）。");
+        // 除外したカードのコードを記録
+        obj.exiledFromHand = true;
+      }
+    );
+  },
+  to_grave(obj) {
+    askYesNo("【誘発（墓地）】墓地のコスト1以下の夜カード1枚をデッキ上に置きますか？",
+      () => {
+        searchDeck(
+          card => (parseInt(card.cost)||0) <= 1 && (card.condition||"").includes("夜"),
+          1, "deck-top", { message: "デッキ上に置く夜カードを選んでください" }
+        );
+        // 除外していたカードを手札に戻す
+        if(obj.exiledFromHand) setMsg("🐰 死の兎：除外していたカードが相手の手札に戻りました（手動で戻してください）。");
+      }
+    );
+  },
+};
+
+// =============== BP2-032 月の使者 ===============
+CARD_EFFECTS["BP2-032"] = {
+  field_enter(obj) {
+    const animals = G.field.filter(o => { const c = cards.find(c => c.code === o.code); return c && c.type === "動物" && o !== obj; });
+    if(animals.length === 0) return;
+    askYesNo("【誘発】戦場の動物1体を生贄に捧げて、存在1つを夜にしますか？",
+      () => {
+        pickFromZone("field", { message: "生贄にする動物を選んでください", count: 1, filter: (o, c) => c && c.type === "動物" && o !== obj },
+          (sac) => {
+            if(sac.length === 0) return;
+            moveCard(sac[0], "field", "grave");
+            pickFromZone("field", { message: "夜にする存在を選んでください", count: 1, filter: (o) => o !== obj },
+              (targets) => { if(targets.length > 0) { targets[0].night = true; setMsg("🌙 月の使者：存在を夜にしました。"); } renderGame(); }
+            );
+          }
+        );
+      }
+    );
+  },
+  // 相手の手札が除外された時→on_enemy_exile_handで呼ぶ
+  on_enemy_exile_hand(obj) {
+    const exileRabbits = G.exile.filter(o => { const c = cards.find(c => c.code === o.code); return c && (c.tribe||"").includes("ウサギ") && o !== obj; });
+    if(exileRabbits.length === 0) return;
+    askYesNo("【月の使者・誘発（除外）】除外ウサギカード1枚を墓地に→除外カードを墓地へ→これを戦場に出しますか？",
+      () => {
+        pickFromZone("exile", { message: "墓地に置く除外ウサギを選んでください", count: 1, filter: (o, c) => c && (c.tribe||"").includes("ウサギ") && o !== obj },
+          (selected) => {
+            if(selected.length === 0) return;
+            moveCard(selected[0], "exile", "grave");
+            // 除外カード→墓地へ（手動）
+            setMsg("🌙 月の使者：条件達成。除外されたカードを墓地に置き、これを戦場に出しました。");
+            const graveIdx = G.grave.indexOf(obj);
+            if(graveIdx >= 0) { G.grave.splice(graveIdx, 1); G.field.push(obj); obj.summonedThisTurn = true; }
+            renderGame();
+          }
+        );
+      }
+    );
+  },
+};
+
+// =============== BP2-033 月を駆ける兎 ===============
+CARD_EFFECTS["BP2-033"] = {
+  on_enemy_exile_hand(obj) {
+    askYesNo("【月を駆ける兎・誘発】ATK+1/DEF+1カウンターを置きますか？",
+      () => { obj.atkMod = (obj.atkMod||0) + 1; obj.defMod = (obj.defMod||0) + 1; setMsg("🐰 月を駆ける兎：ATK+1/DEF+1カウンターを置きました。"); renderGame(); }
+    );
+  },
+};
+
+// =============== BP2-038 運命の帰郷 ===============
+CARD_EFFECTS["BP2-038"] = {
+  play(obj) {
+    const hasAnimal = G.field.some(o => { const c = cards.find(c => c.code === o.code); return c && c.type === "動物"; });
+    const hasTool = G.field.some(o => { const c = cards.find(c => c.code === o.code); return c && c.type === "道具"; });
+    if(!hasAnimal || !hasTool) { setMsg("運命の帰郷：戦場に動物と道具が両方必要です。"); return; }
+    // コスト3縄張りをサーチ→展開
+    searchDeck(card => card.type === "縄張り" && (parseInt(card.cost)||0) === 3, 1, "field", { message: "コスト3縄張りを選んで戦場に出してください" });
+    setTimeout(() => {
+      // 天命・宿命・運命以外のカード1枚を手札へ
+      searchDeck(
+        card => !["天命の門出","宿命の旅路","運命の帰郷"].includes(card.name),
+        1, "hand", { message: "手札に加えるカードを選んでください（天命・宿命・運命以外）" }
+      );
+      // これをデッキ上へ
+      const idx = G.pile.indexOf(obj);
+      if(idx >= 0) { G.pile.splice(idx, 1); G.mainDeck.unshift(obj); }
+      setMsg("運命の帰郷：縄張りを展開、カードを手札へ、これをデッキ上に戻してシャッフル。");
+      shuffleDeck();
+      renderGame();
+    }, 1000);
+  },
+  // デッキから公開された時（デッキが1枚でこれが出た時）
+  on_deck_reveal(obj) {
+    if(G.mainDeck.length !== 0) return; // デッキがこれ1枚の時のみ
+    setMsg("🌟 運命の帰郷：特殊勝利！");
+    alert("🌟 運命の帰郷：デッキの最後の1枚が公開されました！特殊勝利！");
+  },
+};
+
+// =============== BP2-039 不屈の旅人 ===============
+CARD_EFFECTS["BP2-039"] = {
+  constant_field(obj) {
+    // 装備数×3のATK/DEF
+    const count = getEquippedCount(obj);
+    const bonus = count * 3;
+    if(obj.travellerEquipBuff !== undefined) {
+      obj.atkMod = (obj.atkMod||0) - obj.travellerEquipBuff;
+      obj.defMod = (obj.defMod||0) - obj.travellerEquipBuff;
+    }
+    obj.travellerEquipBuff = bonus;
+    obj.atkMod = (obj.atkMod||0) + bonus;
+    obj.defMod = (obj.defMod||0) + bonus;
+  },
+  activate_field(obj) {
+    // 場面タイミング中のみ（狩りフェイズ中は場面カードをプレイできないため、起動は手動確認）
+    if(G.phase !== 3) { setMsg("🦌 不屈の旅人：場面タイミング中のみ起動できます。"); return; }
+    const tools = G.field.filter(o => { const c = cards.find(c => c.code === o.code); return c && c.type === "道具" && !(c.effect||"").includes("《装備》") && !o.isEquipped; });
+    if(tools.length === 0) { setMsg("🦌 不屈の旅人：装備可能な道具がありません。"); return; }
+    pickFromZone("field", {
+      message: "装備する道具を選んでください（《装備》を持たないもの）",
+      count: 1,
+      filter: (o, c) => c && c.type === "道具" && !(c.effect||"").includes("《装備》") && !o.isEquipped,
+    }, (selected) => {
+      if(selected.length === 0) return;
+      equipCard(selected[0], obj);
+    });
+  },
+};
+
+// =============== BP2-048 炎猿 ===============
+CARD_EFFECTS["BP2-048"] = {
+  field_enter(obj) {
+    // 固有：手札の山岳非存在カードを捨てて道具トークンを装備状態で出す
+    const mtnNonExistence = G.hand.filter(o => {
+      const c = cards.find(c => c.code === o.code);
+      return c && (c.condition||"").includes("山") && c.type !== "動物" && c.type !== "縄張り" && c.type !== "道具" && c.type !== "場面" && c.type !== "特技";
+    });
+    // 実際は「非存在カード」＝場面・特技・道具など（条件に山がある）
+    const mtnCards = G.hand.filter(o => {
+      const c = cards.find(c => c.code === o.code);
+      return c && (c.condition||"").includes("山");
+    });
+    if(mtnCards.length === 0) return;
+    askYesNo("【固有】手札の山岳カード1枚を捨てて、同名の道具トークンを装備した状態で出しますか？",
+      () => {
+        pickFromZone("hand", {
+          message: "捨てる山岳カードを選んでください",
+          count: 1,
+          filter: (o, c) => c && (c.condition||"").includes("山"),
+        }, (selected) => {
+          if(selected.length === 0) return;
+          const srcCard = cards.find(c => c.code === selected[0].code);
+          moveCard(selected[0], "hand", "grave");
+          // 同名の道具トークンを生成して装備
+          const token = {
+            id: "token_equip_" + Date.now(),
+            code: selected[0].code,
+            isToken: true,
+            isEquipped: true,
+            equippedTo: obj.id,
+            tokenName: srcCard?.name + "（装備）",
+            tokenStats: "",
+            tokenType: "道具",
+          };
+          G.field.push(token);
+          setMsg(`🐒 炎猿：「${srcCard?.name}」の道具トークンを装備しました。`);
+          renderGame();
+        });
+      }
+    );
+  },
+  // 相手に戦闘ダメージを与えた時→attack後に呼ぶ
+  on_combat_damage(obj) {
+    const equipped = G.field.filter(e => e.isEquipped && e.equippedTo === obj.id);
+    if(equipped.length === 0) return;
+    askYesNo(`【炎猿・誘発】装備トークンを発動しますか？コストが必要です。`,
+      () => {
+        const eq = equipped[0];
+        const eqCard = cards.find(c => c.code === eq.code);
+        const cost = parseInt(eqCard?.cost||0);
+        if(cost > 0) {
+          payCostTerrain(cost, () => {
+            setMsg(`🐒 炎猿：「${eqCard?.name}」のプレイ効果を発動します（手動で処理してください）。`);
+          });
+        } else {
+          setMsg(`🐒 炎猿：「${eqCard?.name}」のプレイ効果を発動します（手動で処理してください）。`);
+        }
+      }
+    );
+  },
+};
+
+// =============== BP2-051 万雷 ===============
+CARD_EFFECTS["BP2-051"] = {
+  play(obj) {
+    const mtnCount = countMountainPlays();
+    const x = mtnCount * 2;
+    setMsg(`⚡ 万雷：このターンの山岳カードプレイ回数${mtnCount}×2=${x}点ダメージ。${x >= 10 ? "（軽減不可）" : ""}`);
+    askNumber(`⚡ 万雷：ダメージ対象を選んでください（${x}点ダメージ）\n1=相手ライフ / その他=戦場の動物（手動選択）`, 0, 1,
+      (choice) => {
+        if(choice === 1) {
+          G.enemyLife = Math.max(0, G.enemyLife - x);
+          setMsg(`⚡ 万雷：相手ライフに${x}点ダメージ。`);
+        } else {
+          pickFromZone("field", { message: `${x}点ダメージを与える対象を選んでください`, count: 1 },
+            (selected) => { if(selected.length > 0) dealDamageToCard(selected[0], x); }
+          );
+        }
+        renderGame();
+      }
+    );
+  },
+};
+
+// =============== BP2-059 統治する猟犬 ===============
+CARD_EFFECTS["BP2-059"] = {
+  // 相手ライフが減った時（効果ダメージ）→on_enemy_damage_reactionで呼ぶ
+  on_enemy_damage(obj, amount) {
+    gainAbility(obj, `ATK+1/DEF+1`, true);
+    setMsg(`🐕 統治する猟犬：相手が${amount}点ダメージを受けました！ATK+1/DEF+1を得ます。`);
+    renderGame();
+  },
+  // 自分ライフが減った時→on_self_damage_reactionで呼ぶ
+  on_self_damage(obj, amount) {
+    G.playerLife = Math.max(0, G.playerLife - amount);
+    setMsg(`🐕 統治する猟犬：自分に${amount}点ダメージが入りました（反射）。`);
+    renderGame();
+  },
+};
+
+// =============== BP2-065 ウルフハウル ===============
+CARD_EFFECTS["BP2-065"] = {
+  can_play() {
+    const inPile = G.pile.some(o => o.code === "BP2-065");
+    if(inPile) return { ok: false, reason: "パイルにウルフハウルがあるためプレイできません" };
+    return { ok: true };
+  },
+  play(obj) {
+    // 相手の補充フェイズ以外でのドロー数を確認
+    askNumber("🐺 ウルフハウル：相手がこのターン中に補充フェイズ以外で引いたカードの枚数は？", 0, 3,
+      (enemyDraw) => {
+        // コスト軽減：enemyDraw分
+        setMsg(`🐺 ウルフハウル：コスト${Math.max(0, 3 - enemyDraw)}（${enemyDraw}枚分軽減）でプレイ。`);
+        // デッキ上2枚を除外してターン終了時までプレイ可能
+        const count = Math.min(2, G.mainDeck.length);
+        for(let i = 0; i < count; i++) {
+          const top = G.mainDeck.shift();
+          top.wolfHowlExile = G.turn;
+          G.exile.push(top);
+        }
+        setMsg(`🐺 ウルフハウル：デッキ上${count}枚を除外。ターン終了時まで除外領域からプレイ可能。このターン、ウルフハウルのコストは③増加。`);
+        renderGame();
+      }
+    );
+  },
+};
+
+// =============== BP2-076 狸舞 ===============
+CARD_EFFECTS["BP2-076"] = {
+  play(obj) {
+    askNumber("🦝 狸舞：コストXをいくつ支払いますか？", 0, 10, (x) => {
+      payCostTerrain(x, () => {
+        // このターン中に戦場に出たコストXの動物を破壊
+        const targets = G.field.filter(o => {
+          const c = cards.find(c => c.code === o.code);
+          return c && c.type === "動物" && (parseInt(c.cost)||0) === x && !o.isToken;
+          // このターン中に出た判定は簡易：全て対象
+        });
+        const destroyed = targets.length;
+        targets.forEach(o => {
+          if(o.indestructible) return;
+          moveCard(o, "field", "grave");
+          setTimeout(() => { const eff = CARD_EFFECTS[o.code]; if(eff?.to_grave) eff.to_grave(o); }, 300);
+        });
+        // タヌキトークンを相手戦場に生成（通知のみ）
+        setMsg(`🦝 狸舞：コスト${x}の動物${destroyed}体を破壊。相手の戦場に2/2森林タヌキトークン${destroyed}体を出しました（相手盤面に出しました）。`);
+        renderGame();
+      });
+    });
+  },
+};
