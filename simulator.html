@@ -572,8 +572,17 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 <div id="attack-modal" class="modal-overlay" style="display:none;" onclick="closeModal('attack-modal')">
   <div class="modal-box" onclick="event.stopPropagation()">
     <h3>⚔️ 攻撃先を選択</h3>
-    <div id="attack-attacker-info" style="font-size:12px;color:#ffdd88;margin-bottom:10px;"></div>
-    <div id="attack-target-list" class="modal-card-list" style="max-height:40vh;overflow-y:auto;"></div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;">
+      <button id="atk-mode-single" class="modal-btn" style="flex:1;background:#5a1a1a;color:#ffaaaa;border:1px solid #aa4444;font-size:11px;" onclick="setAttackMode('single')">⚔️ 単体攻撃</button>
+      <button id="atk-mode-group" class="modal-btn" style="flex:1;background:#1a1a5a;color:#aaaaff;border:1px solid #4444aa;font-size:11px;" onclick="setAttackMode('group')">👥 集団攻撃</button>
+    </div>
+    <div id="attack-attacker-info" style="font-size:12px;color:#ffdd88;margin-bottom:6px;"></div>
+    <div id="attack-group-select" style="display:none;margin-bottom:8px;">
+      <div style="font-size:11px;color:#aaaaff;margin-bottom:4px;">集団攻撃に参加する動物を選択（自分含む）：</div>
+      <div id="attack-group-list" class="modal-card-list" style="max-height:20vh;overflow-y:auto;"></div>
+      <div id="attack-group-atk" style="font-size:12px;color:#ffdd88;margin-top:4px;text-align:center;"></div>
+    </div>
+    <div id="attack-target-list" class="modal-card-list" style="max-height:30vh;overflow-y:auto;"></div>
     <div id="attack-modal-info" style="font-size:11px;color:#ff8888;margin:6px 0;min-height:16px;text-align:center;"></div>
     <div class="modal-btn-row">
       <button class="modal-btn" style="background:#5a1a1a;color:#ffaaaa;border:1px solid #aa4444;" onclick="confirmAttack()">⚔️ 攻撃確定</button>
@@ -688,7 +697,7 @@ function getTerritoryClass(code) {
 let G = {
   playerLife: 20, enemyLife: 20,
   mainDeck: [], hand: [], field: [], grave: [], exile: [], pile: [], territory: [], territoryDeck: [],
-  turn: 1, phase: 0, isFirstTurn: true, isFirst: true, huntTriggered: false,
+  turn: 1, phase: 0, isFirstTurn: true, isFirst: true, huntTriggered: false, hinshinFlag: false,
 };
 
 // 域ボーナス（効果による追加条件カウンター）
@@ -899,17 +908,28 @@ function makeCardEl(obj, opts={}) {
   div.style.cssText += ";background:none;padding:0;border:2px solid #4a8a4a;cursor:pointer;";
 
   const img = document.createElement("img");
-  img.style.pointerEvents = "none"; // タップをdivに届かせる
-  // 夜状態は裏向き画像
-  img.src = obj.night ? "uramuki.JPG" : getImg(obj.code);
-  img.onerror = () => {
-    img.remove();
-    const span = document.createElement("span");
-    span.className = "card-label";
-    span.textContent = obj.night ? "🌙" : obj.code;
-    div.appendChild(span);
-  };
-  div.appendChild(img);
+  img.style.pointerEvents = "none";
+
+  // トークンの場合は専用表示
+  if(obj.isToken) {
+    const tokenLabel = document.createElement("div");
+    tokenLabel.style.cssText = "width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a3a1a,#0f1a0f);padding:2px;pointer-events:none;";
+    tokenLabel.innerHTML = `
+      <div style="font-size:7px;color:#88ff88;font-weight:bold;text-align:center;line-height:1.3;">${obj.tokenName||"トークン"}</div>
+      <div style="font-size:7px;color:#a0ffa0;margin-top:1px;">${obj.tokenStats||""}</div>`;
+    div.appendChild(tokenLabel);
+  } else {
+    // 夜状態は裏向き画像
+    img.src = obj.night ? "uramuki.JPG" : getImg(obj.code);
+    img.onerror = () => {
+      img.remove();
+      const span = document.createElement("span");
+      span.className = "card-label";
+      span.textContent = obj.night ? "🌙" : obj.code;
+      div.appendChild(span);
+    };
+    div.appendChild(img);
+  }
 
   // ダメージバッジ表示
   if(obj.damage && obj.damage > 0) {
@@ -989,6 +1009,9 @@ function makeCardEl(obj, opts={}) {
 }
 
 function renderGame() {
+  // 常時効果の適用（effects.jsのconstant_field）
+  applyConstantEffects();
+
   document.getElementById("player-life-num").textContent = G.playerLife;
   document.getElementById("enemy-life-num").textContent = G.enemyLife;
   document.getElementById("player-life-bar").style.width = Math.max(0,G.playerLife/20*100)+"%";
@@ -1267,7 +1290,7 @@ function openMoveModal(obj, from, idx) {
   if(card && card.effect) {
     const hasActivate =
       (from === "field" && card.effect.includes("【起動（戦場）】")) ||
-      (from === "hand"  && card.effect.includes("【起動（手札）】")) ||
+      (from === "hand"  && (card.effect.includes("【起動（手札）】") || (CARD_EFFECTS[obj.code]?.activate_hand))) ||
       (from === "grave" && card.effect.includes("【起動（墓地）】"));
     if(hasActivate) {
       const aBtn = document.createElement("button");
@@ -1277,7 +1300,12 @@ function openMoveModal(obj, from, idx) {
       aBtn.onclick = () => {
         const eventType = from === "field" ? "activate_field" : from === "hand" ? "activate_hand" : "activate_grave";
         closeModal("card-info-modal");
-        checkTriggers(eventType, obj);
+        // effects.jsの実装があれば優先して呼ぶ
+        if(CARD_EFFECTS[obj.code]?.[eventType]) {
+          CARD_EFFECTS[obj.code][eventType](obj);
+        } else {
+          checkTriggers(eventType, obj);
+        }
       };
       actRow.appendChild(aBtn);
     }
@@ -1376,16 +1404,39 @@ function execMove(from, idx, to) {
     if(to === "field") {
       const card = cards.find(c => c.code === obj.code);
       const effect = card?.effect || "";
-      // 駿足持ちは行動待機なし
       obj.hasShunsoku = effect.includes("《駿足》") || (obj.copyFromList?.some(code => cards.find(c=>c.code===code)?.effect?.includes("《駿足》")));
-      // 早業持ちはムーブ可・攻撃不可
       obj.hasHayawaza = effect.includes("《早業》");
-      // 駿足がなければ行動待機
       if(!obj.hasShunsoku) obj.summonedThisTurn = true;
       setTimeout(()=>checkTriggers("field_enter", obj), 300);
+      setTimeout(()=>{ triggerCardEffect(obj, "field_enter"); }, 500);
+      // hinshinFlag：次のプレイ以外着地1体を手札に戻す
+      if(!obj.playedThisTurn && !obj.isToken && G.hinshinFlag) {
+        G.hinshinFlag = false;
+        setTimeout(() => {
+          const idx = G.field.indexOf(obj);
+          if(idx >= 0) {
+            G.field.splice(idx, 1);
+            G.hand.push(obj);
+            setMsg(`🚫 不法侵入禁止区：「${cards.find(c=>c.code===obj.code)?.name||obj.code}」を手札に戻しました。`);
+            renderGame();
+          }
+        }, 700);
+      }
+      // 他カードのfield_enter_otherを呼ぶ（蜂の巣など）
+      setTimeout(() => {
+        G.field.forEach(other => {
+          if(other === obj) return;
+          const eff = CARD_EFFECTS[other.code];
+          if(eff && eff.field_enter_other) eff.field_enter_other(other, obj);
+        });
+      }, 500);
     }
-    // 墓地送り→誘発（墓地）チェック
-    if(to === "grave") setTimeout(()=>checkTriggers("to_grave", obj), 300);
+    // 墓地送り→誘発（墓地）チェック＋effects.jsのto_grave
+    if(to === "grave") {
+      obj.diedThisTurn = true;
+      setTimeout(()=>checkTriggers("to_grave", obj), 300);
+      setTimeout(()=>{ const eff=CARD_EFFECTS[obj.code]; if(eff?.to_grave) eff.to_grave(obj); }, 500);
+    }
   }
   renderGame();
 }
@@ -1583,31 +1634,154 @@ function showTriggerNotice(found, eventLabel) {
   document.body.appendChild(overlay);
 }
 
+// =============== 常時効果の適用 ===============
+function applyConstantEffects() {
+  // queenBuff・soldierBuffをリセットしてから再計算
+  G.field.forEach(obj => {
+    if(obj.frogsAtkBuff !== undefined) {
+      obj.atkMod = (obj.atkMod||0) - obj.frogsAtkBuff;
+      obj.frogsAtkBuff = undefined;
+    }
+    if(obj.hiderikiBuff) {
+      obj.keywords = (obj.keywords||[]).filter(k=>k!=="山岳"&&k!=="森林");
+      obj.hiderikiBuff = false;
+    }
+    obj.indestructible = false;
+    if(obj.queenAntBuff) {
+      obj.atkMod = (obj.atkMod||0) - 1;
+      obj.defMod = (obj.defMod||0) - 1;
+      obj.queenAntBuff = false;
+    }
+    if(obj.queenBuff) {
+      obj.atkMod = (obj.atkMod || 0) - 1;
+      obj.defMod = (obj.defMod || 0) - 1;
+      obj.keywords = (obj.keywords || []).filter(k => k !== "有毒");
+      obj.queenBuff = false;
+    }
+    if(obj.gateBuff) {
+      obj.keywords = (obj.keywords || []).filter(k => k !== "鉄壁");
+      obj.gateBuff = false;
+    }
+    if(obj.soldierBuff) {
+      obj.hasShunsoku = (obj.keywords || []).includes("駿足") || obj.code === "BP1-003";
+      obj.soldierBuff = false;
+    }
+  });
+  // 戦場にいるCARD_EFFECTSのconstant_fieldを実行
+  G.field.forEach(obj => {
+    const effect = CARD_EFFECTS[obj.code];
+    if(effect && effect.constant_field) effect.constant_field(obj);
+  });
+}
+
 // =============== 攻撃システム ===============
 
 let attackerObj = null;
 let attackerCard = null;
 let attackTargetIdx = null;
+let attackMode = "single";
+let groupAttackers = [];
 
 function getATK(card) { return parseInt((card?.stats||'').match(/ATK\s*(\d+)/)?.[1]||0); }
 function getDEF(card) { return parseInt((card?.stats||'').match(/DEF\s*(\d+)/)?.[1]||0); }
 
-function openAttackModal(obj, card) {
-  if(obj.summonedThisTurn && !obj.hasShunsoku) {
-    setMsg("⚠️ 行動待機中のため、このターンは攻撃できません。"); return;
-  }
-  if(obj.hasHayawaza) {
-    setMsg("⚠️ 早業持ちのため攻撃できません。"); return;
-  }
-  attackerObj = obj; attackerCard = card; attackTargetIdx = null;
-  const atk = getATK(card);
-  document.getElementById("attack-attacker-info").textContent = `「${card.name}」ATK:${atk} で攻撃`;
-  document.getElementById("attack-modal-info").textContent = "";
+function setAttackMode(mode) {
+  attackMode = mode;
+  document.getElementById("atk-mode-single").style.background = mode==="single" ? "#8a1a1a" : "#5a1a1a";
+  document.getElementById("atk-mode-group").style.background = mode==="group" ? "#1a1a8a" : "#1a1a5a";
+  document.getElementById("attack-group-select").style.display = mode==="group" ? "block" : "none";
+  if(mode === "group") { groupAttackers = [attackerObj]; buildGroupList(); checkRhinoLeader(); }
+  else { groupAttackers = [attackerObj]; }
+  updateAttackerInfo();
+}
 
+function checkRhinoLeader() {
+  const rhino = G.field.find(o => o.code === "BP1-048" && !o.rested && o !== attackerObj);
+  if(!rhino) return;
+  askYesNo(
+    "【師団長ライノ・固有】デッキからコスト2以下の《ライノ軍》動物を集団攻撃に参加させますか？",
+    () => {
+      searchDeck(
+        card => (parseInt(card.cost)||0) <= 2 && card.type === "動物" && (card.effect||"").includes("《ライノ軍》"),
+        1, "field", { message: "集団攻撃に参加するライノ軍を選んでください" }
+      );
+      setTimeout(() => {
+        const newest = G.field[G.field.length - 1];
+        if(newest && !groupAttackers.includes(newest)) {
+          newest.rested = true;
+          groupAttackers.push(newest);
+          buildGroupList(); updateAttackerInfo();
+        }
+      }, 800);
+    }
+  );
+}
+
+function buildGroupList() {
+  const list = document.getElementById("attack-group-list");
+  list.innerHTML = "";
+  G.field.forEach((obj) => {
+    const c = cards.find(c => c.code === obj.code);
+    if(!c || c.type !== "動物") return;
+    const isIn = groupAttackers.includes(obj);
+    if(obj.rested && !isIn) return;
+    const div = document.createElement("div");
+    const atk = getATK(c) + (obj.atkMod||0);
+    div.style.cssText = `display:flex;align-items:center;gap:6px;padding:4px;border:2px solid ${isIn?"#ffdd00":"#4a4a4a"};border-radius:6px;cursor:pointer;margin-bottom:4px;background:${isIn?"rgba(80,60,0,0.4)":"rgba(30,30,30,0.4)"};`;
+    div.innerHTML = `<img src="${getImg(obj.code)}" style="width:32px;height:44px;object-fit:cover;border-radius:4px;pointer-events:none;" onerror="this.style.display='none'">
+      <div style="flex:1;font-size:11px;color:#e0e8d0;pointer-events:none;">${c.name}<br><span style="color:#ffaaaa;">ATK:${atk}</span></div>
+      <div style="font-size:10px;color:${isIn?"#ffdd00":"#888"};pointer-events:none;">${isIn?"✅":"タップ"}</div>`;
+    div.onclick = () => {
+      if(obj === attackerObj) return;
+      if(isIn) { groupAttackers = groupAttackers.filter(a => a !== obj); obj.rested = false; }
+      else {
+        if(obj.summonedThisTurn && !obj.hasShunsoku) return;
+        groupAttackers.push(obj); obj.rested = true;
+      }
+      buildGroupList(); updateAttackerInfo();
+    };
+    list.appendChild(div);
+  });
+}
+
+function getGroupTotalATK() {
+  return groupAttackers.reduce((sum, obj) => {
+    const c = cards.find(c => c.code === obj.code);
+    return sum + getATK(c) + (obj.atkMod||0);
+  }, 0);
+}
+
+function updateAttackerInfo() {
+  const info = document.getElementById("attack-attacker-info");
+  const atkInfo = document.getElementById("attack-group-atk");
+  if(attackMode === "group") {
+    const total = getGroupTotalATK();
+    info.textContent = `集団攻撃：${groupAttackers.length}体　合計ATK:${total}`;
+    if(atkInfo) atkInfo.textContent = `合計ATK：${total}`;
+  } else {
+    const atk = getATK(attackerCard) + (attackerObj?.atkMod||0);
+    info.textContent = `「${attackerCard?.name}」ATK:${atk} で攻撃`;
+  }
+}
+
+function openAttackModal(obj, card) {
+  if(obj.summonedThisTurn && !obj.hasShunsoku) { setMsg("⚠️ 行動待機中のため攻撃できません。"); return; }
+  if(obj.hasHayawaza) { setMsg("⚠️ 早業持ちのため攻撃できません。"); return; }
+  attackerObj = obj; attackerCard = card;
+  attackTargetIdx = null; attackMode = "single"; groupAttackers = [obj];
+  document.getElementById("atk-mode-single").style.background = "#8a1a1a";
+  document.getElementById("atk-mode-group").style.background = "#1a1a5a";
+  document.getElementById("attack-group-select").style.display = "none";
+  document.getElementById("attack-modal-info").textContent = "";
+  updateAttackerInfo();
+  buildTargetList();
+  document.getElementById("attack-modal").style.display = "flex";
+}
+
+function buildTargetList() {
   const list = document.getElementById("attack-target-list");
   list.innerHTML = "";
-
-  // ダイレクトアタック
+  const totalAtk = attackMode === "group" ? getGroupTotalATK() : (getATK(attackerCard) + (attackerObj?.atkMod||0));
   const directDiv = document.createElement("div");
   directDiv.style.cssText = "width:100%;padding:10px;background:rgba(100,20,20,0.4);border:2px solid #aa4444;border-radius:8px;cursor:pointer;text-align:center;font-size:13px;color:#ffaaaa;margin-bottom:8px;";
   directDiv.textContent = "💥 ダイレクトアタック（相手ライフへ）";
@@ -1615,102 +1789,90 @@ function openAttackModal(obj, card) {
     list.querySelectorAll("[data-atk-target]").forEach(e=>{e.style.borderColor="#6a4a4a";e.style.boxShadow="none";});
     directDiv.style.borderColor="#ffdd00"; directDiv.style.boxShadow="0 0 10px rgba(255,221,0,0.6)";
     attackTargetIdx = "direct";
-    document.getElementById("attack-modal-info").textContent = `相手ライフに${atk}ダメージ`;
+    document.getElementById("attack-modal-info").textContent = `相手ライフに${totalAtk}ダメージ`;
   };
   list.appendChild(directDiv);
-
-  // 戦場の他の動物
   G.field.forEach((target, i) => {
-    if(target === obj) return;
+    if(groupAttackers.includes(target)) return;
     const tCard = cards.find(c => c.code === target.code);
     if(!tCard || tCard.type !== "動物") return;
-    const def = getDEF(tCard);
+    const def = getDEF(tCard) + (target.defMod||0);
     const curDmg = target.damage || 0;
-    const remaining = def - curDmg;
     const div = document.createElement("div");
     div.dataset.atkTarget = i;
     div.style.cssText = "display:flex;align-items:center;gap:8px;padding:8px;background:rgba(60,20,20,0.4);border:2px solid #6a4a4a;border-radius:8px;cursor:pointer;margin-bottom:6px;";
-    div.innerHTML = `
-      <img src="${getImg(target.code)}" style="width:44px;height:62px;object-fit:cover;border-radius:6px;pointer-events:none;" onerror="this.style.display='none'">
-      <div style="flex:1;">
-        <div style="font-size:13px;color:#e0e8d0;">${tCard.name}</div>
-        <div style="font-size:11px;color:#ffaaaa;">DEF:${def}　残り:${remaining}　ATK:${getATK(tCard)}</div>
-        ${curDmg > 0 ? `<div style="font-size:10px;color:#ff8888;">累積ダメージ:${curDmg}</div>` : ''}
-      </div>`;
+    div.innerHTML = `<img src="${getImg(target.code)}" style="width:44px;height:62px;object-fit:cover;border-radius:6px;pointer-events:none;" onerror="this.style.display='none'">
+      <div style="flex:1;"><div style="font-size:13px;color:#e0e8d0;">${tCard.name}</div>
+      <div style="font-size:11px;color:#ffaaaa;">DEF:${def}　残り:${def-curDmg}</div>
+      ${curDmg>0?`<div style="font-size:10px;color:#ff8888;">累積:${curDmg}</div>`:""}</div>`;
     div.onclick = () => {
       list.querySelectorAll("[data-atk-target]").forEach(e=>{e.style.borderColor="#6a4a4a";e.style.boxShadow="none";});
       directDiv.style.borderColor="#aa4444"; directDiv.style.boxShadow="none";
       div.style.borderColor="#ffdd00"; div.style.boxShadow="0 0 10px rgba(255,221,0,0.6)";
       attackTargetIdx = i;
-      const dmgAfter = curDmg + atk;
+      const dmgAfter = curDmg + totalAtk;
       document.getElementById("attack-modal-info").textContent = dmgAfter >= def
-        ? `「${tCard.name}」に${atk}ダメージ → 合計${dmgAfter}/${def} 💀墓地送り`
-        : `「${tCard.name}」に${atk}ダメージ → 合計${dmgAfter}/${def}`;
+        ? `「${tCard.name}」に${totalAtk}ダメージ → 合計${dmgAfter}/${def} 💀墓地送り`
+        : `「${tCard.name}」に${totalAtk}ダメージ → 合計${dmgAfter}/${def}`;
     };
     list.appendChild(div);
   });
-
-  document.getElementById("attack-modal").style.display = "flex";
 }
 
 function confirmAttack() {
-  if(attackTargetIdx === null) {
-    document.getElementById("attack-modal-info").textContent = "⚠️ 攻撃先を選んでください"; return;
-  }
-  const atk = getATK(attackerCard);
+  if(attackTargetIdx === null) { document.getElementById("attack-modal-info").textContent = "⚠️ 攻撃先を選んでください"; return; }
+  const totalAtk = attackMode === "group" ? getGroupTotalATK() : (getATK(attackerCard) + (attackerObj?.atkMod||0));
+  const attackerCount = groupAttackers.length;
 
   if(attackTargetIdx === "direct") {
-    G.enemyLife = Math.max(0, G.enemyLife - atk);
-    showDamageFloat(atk, "enemy");
-    attackerObj.rested = true;
-    setMsg(`⚔️「${attackerCard.name}」ダイレクトアタック！相手ライフに${atk}ダメージ。`);
+    G.enemyLife = Math.max(0, G.enemyLife - totalAtk);
+    showDamageFloat(totalAtk, "enemy");
+    groupAttackers.forEach(o => { o.rested = true; });
+    setMsg(attackMode==="group" ? `👥 集団攻撃ダイレクト！${attackerCount}体 合計ATK:${totalAtk}` : `⚔️「${attackerCard.name}」ダイレクトアタック！相手ライフに${totalAtk}ダメージ。`);
     closeModal("attack-modal");
-    setTimeout(()=>checkTriggers("damage", attackerObj), 300);
+    if(attackMode==="group") setTimeout(()=>triggerGroupAttack(groupAttackers,attackerCount),300);
+    setTimeout(()=>checkTriggers("damage",attackerObj),300);
     renderGame(); return;
   }
 
   const target = G.field[attackTargetIdx];
   if(!target) { closeModal("attack-modal"); return; }
   const tCard = cards.find(c => c.code === target.code);
-  const tDef = getDEF(tCard);
-  const tatk = getATK(tCard);
-
-  target.damage = (target.damage || 0) + atk;
-  attackerObj.damage = (attackerObj.damage || 0) + tatk;
-
-  let msg = `⚔️「${attackerCard.name}」(ATK:${atk})→「${tCard?.name}」(DEF:${tDef})`;
-  showDamageFloat(atk, "enemy");
-
-  // 攻撃先がDEF超えで墓地送り
+  const tDef = getDEF(tCard) + (target.defMod||0);
+  const tatk = getATK(tCard) + (target.atkMod||0);
+  target.damage = (target.damage||0) + totalAtk;
+  attackerObj.damage = (attackerObj.damage||0) + tatk;
+  let msg = attackMode==="group"
+    ? `👥 集団攻撃：${attackerCount}体 合計ATK:${totalAtk}→「${tCard?.name}」(DEF:${tDef})`
+    : `⚔️「${attackerCard.name}」(ATK:${totalAtk})→「${tCard?.name}」(DEF:${tDef})`;
+  showDamageFloat(totalAtk, "enemy");
   if(target.damage >= tDef) {
-    G.field.splice(attackTargetIdx, 1);
-    target.damage = 0;
-    G.grave.push(target);
+    G.field.splice(attackTargetIdx,1); target.damage=0; G.grave.push(target);
     msg += ` 💀${tCard?.name}墓地へ`;
-    setTimeout(()=>checkTriggers("to_grave", target), 300);
+    setTimeout(()=>{ const eff=CARD_EFFECTS[target.code]; if(eff?.to_grave) eff.to_grave(target); },500);
+    setTimeout(()=>checkTriggers("to_grave",target),300);
   }
-
-  // 攻撃側も反撃でDEF超えなら墓地送り
-  const aDef = getDEF(attackerCard);
+  const aDef = getDEF(attackerCard) + (attackerObj?.defMod||0);
   if(attackerObj.damage >= aDef) {
     const aIdx = G.field.indexOf(attackerObj);
-    if(aIdx >= 0) {
-      G.field.splice(aIdx, 1);
-      attackerObj.damage = 0;
-      G.grave.push(attackerObj);
-      msg += ` 💀${attackerCard.name}も墓地へ（相打ち）`;
-      setTimeout(()=>checkTriggers("to_grave", attackerObj), 300);
-    }
-  } else {
-    attackerObj.rested = true;
+    if(aIdx>=0){ G.field.splice(aIdx,1); attackerObj.damage=0; G.grave.push(attackerObj); msg+=` 💀${attackerCard.name}も墓地へ（相打ち）`; setTimeout(()=>checkTriggers("to_grave",attackerObj),300); }
+  } else { groupAttackers.forEach(o=>{o.rested=true;}); }
+  if(attackMode==="group" && totalAtk>=8) {
+    groupAttackers.forEach(o=>gainAbility(o,"《突破》",true));
+    msg += " 👊ATK合計8以上！全攻撃動物が《突破》を得ました。";
   }
-
   setMsg(msg);
   closeModal("attack-modal");
-  setTimeout(()=>checkTriggers("attack", attackerObj), 300);
-  setTimeout(()=>checkTriggers("damage", attackerObj), 300);
+  if(attackMode==="group") setTimeout(()=>triggerGroupAttack(groupAttackers,attackerCount),300);
+  setTimeout(()=>checkTriggers("attack",attackerObj),300);
   renderGame();
 }
+
+function triggerGroupAttack(attackers, count) {
+  attackers.forEach(obj => { const eff=CARD_EFFECTS[obj.code]; if(eff?.group_attack) eff.group_attack(obj,count); });
+  G.hand.forEach(obj => { const eff=CARD_EFFECTS[obj.code]; if(eff?.group_attack_hand) eff.group_attack_hand(obj,count,attackers); });
+}
+
 
 function showDamageInputModal(obj, card) {
   const def = getDEF(card);
@@ -1872,6 +2034,13 @@ function changeDomainBonus(key, delta) {
 function checkPlayable(card) {
   if(!card) return { ok: true, reason: "" };
 
+  // 常時効果によるプレイ制限チェック
+  const ext = CARD_EFFECTS[card.code];
+  if(ext && ext.can_play) {
+    const result = ext.can_play();
+    if(!result.ok) return result;
+  }
+
   const terrain = countTerrain();
   const condition = card.condition || "";
 
@@ -1976,43 +2145,24 @@ function confirmPlay() {
   }
   G.hand.splice(selectedPlayIdx, 1);
   obj.rested = false;
+  obj.playedThisTurn = true; // プレイで出たフラグ
   G.pile.push(obj);
   window.koyuuReduction = null; // 固有軽減リセット
   const name = card ? card.name : obj.code;
+  setMsg(`▶️「${name}」をパイルへ置きました。`);
+  // 狂乱モグラが戦場にいればプレイ反応を呼ぶ
+  setTimeout(() => {
+    G.field.forEach(o => {
+      const eff = CARD_EFFECTS[o.code];
+      if(eff?.on_play_reaction && o !== obj) eff.on_play_reaction(o);
+    });
+  }, 400);
   setMsg(`「${name}」をパイルに置きました。効果を処理してください。`);
   closeModal("play-modal");
   renderGame();
 }
 
 // 攻撃
-function openAttackModal() {
-  selectedAttack = [];
-  const con = document.getElementById("attack-modal-cards"); con.innerHTML = "";
-  G.field.forEach((obj,idx) => {
-    const div = document.createElement("div");
-    div.className = "modal-select-card";
-    const img = document.createElement("img");
-    img.src = getImg(obj.code);
-    img.onerror = () => { img.remove(); const s=document.createElement("span"); s.className="card-label"; s.textContent=obj.code; div.appendChild(s); };
-    div.appendChild(img);
-    div.addEventListener("click",()=>{
-      const pos=selectedAttack.indexOf(idx);
-      if(pos>=0){ selectedAttack.splice(pos,1); div.classList.remove("selected"); }
-      else{ selectedAttack.push(idx); div.classList.add("selected"); }
-    });
-    con.appendChild(div);
-  });
-  document.getElementById("attack-modal").style.display = "flex";
-}
-
-function confirmAttack() {
-  if(selectedAttack.length===0) return;
-  selectedAttack.forEach(i=>G.field[i].rested=true);
-  setMsg(`攻撃しました（ムーブ）。ダメージを手動で処理してください。`);
-  closeModal("attack-modal");
-  renderGame();
-}
-
 function drawCard() {
   if(G.isFirstTurn && G.isFirst){ setMsg("先行1ターン目はドローできません。（補充フェイズで自動処理されます）"); return; }
   if(G.mainDeck.length===0){ setMsg("⚠️ デッキが空です！"); return; }
@@ -2197,6 +2347,9 @@ function nextPhase() {
     G.turn++;
     G.isFirstTurn = false;
     G.huntTriggered = false;
+    G.hinshinFlag = false;
+    // playedThisTurnフラグをリセット
+    [...G.field, ...G.pile, ...G.hand, ...G.grave, ...G.exile].forEach(o => { o.playedThisTurn = false; });
 
     // 1. すべての存在と領土の夜を明ける
     [...G.field, ...G.territory].forEach(obj => { obj.night = false; });
