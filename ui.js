@@ -620,3 +620,41 @@ function logPlay(obj) {
 function countMountainPlays() {
   return (G.turnPlayLog||[]).filter(p => p.isMountain).length;
 }
+
+// ------------------------------------------------------------
+// 脱出カウンターシステム
+// 準備フェイズに脱出カウンターを1個減らし、0になったら戦場へ
+// ------------------------------------------------------------
+function processDasshutsuCounters() {
+  const returning = [];
+  G.exile.forEach(obj => {
+    if(!obj.counters || !obj.counters["脱出"]) return;
+    obj.counters["脱出"]--;
+    if(obj.counters["脱出"] <= 0) {
+      delete obj.counters["脱出"];
+      returning.push(obj);
+    }
+  });
+  returning.forEach(obj => {
+    G.exile.splice(G.exile.indexOf(obj), 1);
+    G.field.push(obj);
+    obj.summonedThisTurn = true;
+    const c = cards.find(c => c.code === obj.code);
+    setMsg(`⚡「${c?.name||obj.code}」が脱出カウンターがなくなり戦場に戻りました。`);
+    setTimeout(() => triggerCardEffect(obj, "field_enter"), 300);
+  });
+  if(returning.length > 0) renderGame();
+}
+
+// ------------------------------------------------------------
+// 夜を明けた回数カウント（獄炎用）
+// G.nightClearCount：このターンの狩りフェイズ中の領土夜明け回数
+// ------------------------------------------------------------
+function clearNight(obj) {
+  obj.night = false;
+  // 領土の夜明けカウント
+  if(G.territory.includes(obj)) {
+    G.nightClearCount = (G.nightClearCount||0) + 1;
+  }
+  renderGame();
+}
