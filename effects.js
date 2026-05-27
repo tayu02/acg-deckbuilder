@@ -1,30 +1,8 @@
 // ============================================================
-// effects/cards.js
+// effects/effects.js
 // 各カードの効果実装
-// ui.jsの汎用関数を使って記述する
+// CARD_EFFECTS・triggerCardEffectはsimulator.htmlで定義済み
 // ============================================================
-
-// ------------------------------------------------------------
-// 効果実装の登録
-// CARD_EFFECTS[code] = { play, landingField, activateField, activateGrave, ... }
-// ------------------------------------------------------------
-const CARD_EFFECTS = {};
-
-// ------------------------------------------------------------
-// 効果発動のエントリーポイント
-// simulator.htmlから呼ばれる想定
-// triggerType: "play"|"field_enter"|"activate_field"|"activate_grave"|"activate_hand"
-// ------------------------------------------------------------
-function triggerCardEffect(obj, triggerType) {
-  const effect = CARD_EFFECTS[obj.code];
-  if(!effect || !effect[triggerType]) return false;
-  effect[triggerType](obj);
-  // 兵隊蜂の固有チェック（誘発発動後に再発動を促す）
-  if(triggerType === "field_enter" || triggerType === "phase_prep") {
-    setTimeout(() => checkSoldierBeeDouble(obj, triggerType), 800);
-  }
-  return true;
-}
 
 // ============================================================
 // 効果実装
@@ -2987,5 +2965,527 @@ CARD_EFFECTS["BP2-076"] = {
         renderGame();
       });
     });
+  },
+};
+
+
+// ============================================================
+// BP3・BP4 特殊カード実装
+// ============================================================
+
+// =============== BP3-004 見猿 ===============
+CARD_EFFECTS["BP3-004"] = {
+  field_enter(obj) {
+    G.noSearchThisTurn = true;
+    setMsg("🙈 見猿：このターン中、全プレイヤーはデッキを探すことができません。");
+    renderGame();
+  },
+  activate_hand(obj) {
+    payCostTerrain(1, () => {
+      moveCard(obj, "hand", "exile");
+      obj.counters = obj.counters || {};
+      obj.counters["脱出"] = 1;
+      G.field.push(obj);
+      G.exile.splice(G.exile.indexOf(obj), 1);
+      obj.gainedEffects = obj.gainedEffects || [];
+      if(!obj.gainedEffects.includes("これが戦場に出た時にこれを生贄に捧げる"))
+        obj.gainedEffects.push("これが戦場に出た時にこれを生贄に捧げる");
+      obj.summonedThisTurn = true;
+      setTimeout(() => {
+        moveCard(obj, "field", "grave");
+        setMsg("🙈 見猿：効果で生贄に捧げられました。");
+        renderGame();
+      }, 500);
+      renderGame();
+    });
+  },
+};
+
+// =============== BP3-005 聞猿 ===============
+CARD_EFFECTS["BP3-005"] = {
+  field_enter(obj) {
+    G.noTriggerThisTurn = true;
+    setMsg("🙉 聞猿：このターン中、全ての動物カード・トークンは誘発能力・起動能力を発動できません（通知のみ）。");
+    renderGame();
+  },
+  activate_hand(obj) { CARD_EFFECTS["BP3-004"].activate_hand(obj); },
+};
+
+// =============== BP3-006 言猿 ===============
+CARD_EFFECTS["BP3-006"] = {
+  field_enter(obj) {
+    G.noTargetWarning = true;
+    setMsg("🙊 言猿：このターン中、全ての動物カード・トークンは効果の対象になりません（対象選択時に警告表示）。");
+    renderGame();
+  },
+  activate_hand(obj) { CARD_EFFECTS["BP3-004"].activate_hand(obj); },
+};
+
+// =============== BP3-022 芸達者なオウム ===============
+CARD_EFFECTS["BP3-022"] = {
+  // コスト1以下の非存在プレイが発動した時→on_play_reactionで呼ぶ
+  on_play_reaction(obj) {
+    const lastPlayed = G.pile[G.pile.length - 1];
+    if(!lastPlayed) return;
+    const lc = cards.find(c => c.code === lastPlayed.code);
+    if(!lc) return;
+    const isNonExistence = lc.type !== "動物" && lc.type !== "縄張り" && lc.type !== "道具";
+    if(!isNonExistence || (parseInt(lc.cost)||0) > 1) return;
+    askYesNo(
+      `🦜 芸達者なオウム：「${lc.name}」（コスト${lc.cost}の非存在）がプレイされました。これを生贄に捧げて対象を選び直して複製しますか？`,
+      () => {
+        moveCard(obj, "field", "grave");
+        setMsg(`🦜 芸達者なオウム：「${lc.name}」の効果を複製します。対象を選び直して同じ効果を発動してください（手動で処理）。`);
+        // 複製：同じ効果を再発動
+        const eff = CARD_EFFECTS[lastPlayed.code];
+        if(eff?.play) setTimeout(() => eff.play(lastPlayed), 300);
+        renderGame();
+      }
+    );
+  },
+};
+
+// =============== BP3-036 飲み込む大クジラ ===============
+CARD_EFFECTS["BP3-036"] = {
+  field_enter(obj) {
+    const targets = G.field.filter(o => {
+      if(o === obj) return false;
+      const c = cards.find(c => c.code === o.code);
+      return c && (c.type === "動物" || c.type === "道具");
+    });
+    if(targets.length === 0) return;
+    targets.forEach(o => {
+      G.field.splice(G.field.indexOf(o), 1);
+      if(!o.counters) o.counters = {};
+      o.counters["脱出"] = 2; // 2ターン後に戻る
+      G.exile.push(o);
+    });
+    setMsg(`🐋 飲み込む大クジラ：${targets.length}体の存在を脱出カウンター2個付きで除外しました。2ターン後に戦場に戻ります。`);
+    renderGame();
+  },
+};
+
+// =============== BP3-047 森の収集者 ===============
+CARD_EFFECTS["BP3-047"] = {
+  constant_field(obj) {
+    // 木の実トークンに起動能力を付与（renderGame毎）
+    const acorns = G.field.filter(o => o.isToken && o.tokenName === "木の実");
+    acorns.forEach(a => {
+      if(!a.gainedEffects) a.gainedEffects = [];
+      if(!a.gainedEffects.includes("ムーブ、これを生贄に捧げて発動する。あなたはカード1枚を引く。")) {
+        a.gainedEffects.push("ムーブ、これを生贄に捧げて発動する。あなたはカード1枚を引く。");
+      }
+      // 起動効果をCARD_EFFECTSに動的登録
+      if(!CARD_EFFECTS["TOKEN_ACORN"]) {
+        CARD_EFFECTS["TOKEN_ACORN"] = {
+          activate_field(aObj) {
+            payMoveCost(aObj);
+            moveCard(aObj, "field", "grave");
+            drawCards(1);
+            setMsg("🌰 木の実：1枚ドローしました。");
+            renderGame();
+          },
+        };
+      }
+    });
+  },
+  // ドロー置き換えはaskYesNoで確認
+  on_draw_replace(obj) {
+    askYesNo("🐿 森の収集者：ドローの代わりに木の実トークンを出しますか？",
+      () => {
+        G.field.push({
+          id: "token_acorn_" + Date.now(),
+          code: "TOKEN_ACORN",
+          isToken: true,
+          tokenName: "木の実",
+          tokenStats: "",
+          tokenType: "道具",
+          keywords: [], gainedEffects: [], damage: 0, rested: false, night: false, summonedThisTurn: false,
+        });
+        setMsg("🌰 木の実トークンを生成しました（ドロー代替）。");
+        renderGame();
+      }
+    );
+  },
+};
+
+// =============== BP3-051 目眩ましの腹狸 ===============
+CARD_EFFECTS["BP3-051"] = {
+  field_enter(obj) {
+    const forestCount = countTerrain()["森"] || 0;
+    if(forestCount >= 2) {
+      drawCards(1);
+      setMsg("🦝 目眩ましの腹狸：森林域2以上のため1枚ドローしました。");
+      renderGame();
+    }
+  },
+  // 相手効果で手札から除外された時→on_enemy_exile_handで呼ぶ
+  on_enemy_exile_hand(obj) {
+    const graveIdx = G.exile.indexOf(obj);
+    if(graveIdx < 0) return;
+    G.exile.splice(graveIdx, 1);
+    G.field.push(obj);
+    obj.summonedThisTurn = true;
+    setMsg("🦝 目眩ましの腹狸：相手の効果で除外されたため戦場に出ました。");
+    setTimeout(() => triggerCardEffect(obj, "field_enter"), 300);
+    renderGame();
+  },
+};
+
+// =============== BP3-069 朱色の達人 ===============
+CARD_EFFECTS["BP3-069"] = {
+  // ムーブした時→on_move_reaction
+  on_move(obj) {
+    // 手札の非存在カードを公開してコスト軽減
+    setMsg("🦎 朱色の達人：ムーブしました。手札の非存在カードを公開するとプレイコストを①軽減できます（手動で確認）。");
+  },
+  // 非存在カードをプレイした時→on_play_reactionで呼ぶ
+  on_play_reaction(obj) {
+    const lastPlayed = G.pile[G.pile.length - 1];
+    if(!lastPlayed) return;
+    const lc = cards.find(c => c.code === lastPlayed.code);
+    if(!lc) return;
+    const isNonExistence = lc.type !== "動物" && lc.type !== "縄張り" && lc.type !== "道具";
+    if(!isNonExistence) return;
+    askYesNo("🦎 朱色の達人：非存在カードがプレイされました。これを脱出カウンター1個付きで除外しますか？",
+      () => {
+        moveCard(obj, "field", "exile");
+        obj.counters = obj.counters || {};
+        obj.counters["脱出"] = 1;
+        setMsg("🦎 朱色の達人：脱出カウンター1個付きで除外されました。次の準備フェイズに戦場に戻ります。");
+        renderGame();
+      }
+    );
+  },
+};
+
+// =============== BP3-073 恋狐 ===============
+CARD_EFFECTS["BP3-073"] = {
+  constant_field(obj) {
+    // 恋兎がいなければ生贄
+    const hasKoiUsagi = G.field.some(o => o.code === "BP3-074");
+    if(!hasKoiUsagi && !obj.koiCheckDone) {
+      obj.koiCheckDone = true;
+      setTimeout(() => {
+        if(!G.field.some(o => o.code === "BP3-074")) {
+          const idx = G.field.indexOf(obj);
+          if(idx >= 0) { G.field.splice(idx, 1); G.grave.push(obj); setMsg("💔 恋狐：恋兎がいないため生贄に捧げられました。"); renderGame(); }
+        }
+        obj.koiCheckDone = false;
+      }, 100);
+    }
+  },
+  field_enter(obj) {
+    const hasKoiUsagi = G.field.some(o => o.code === "BP3-074");
+    if(hasKoiUsagi) {
+      askYesNo("💔 恋狐：相手の動物1体を生贄に捧げさせますか？",
+        () => {
+          pickFromZone("field", { message: "生贄にする相手の動物を選んでください", count: 1, filter: (o, c) => c && c.type === "動物" && o !== obj },
+            (selected) => { if(selected.length > 0) moveCard(selected[0], "field", "grave"); renderGame(); }
+          );
+        }
+      );
+    }
+  },
+  activate_grave(obj) {
+    payCostTerrain(3, () => {
+      pickFromZone("hand", { message: "捨てるカードを1枚選んでください", count: 1 },
+        (selected) => {
+          if(selected.length === 0) return;
+          moveCard(selected[0], "hand", "grave");
+          // 墓地の恋狐と恋兎を戦場に
+          const koiKitsune = G.grave.find(o => o.code === "BP3-073" && o !== obj);
+          const koiUsagi = G.grave.find(o => o.code === "BP3-074");
+          [obj, koiKitsune, koiUsagi].filter(Boolean).forEach(o => {
+            const idx = G.grave.indexOf(o);
+            if(idx >= 0) { G.grave.splice(idx, 1); G.field.push(o); o.summonedThisTurn = true; }
+          });
+          setMsg("💔 恋狐：恋狐と恋兎を墓地から戦場に出しました。");
+          renderGame();
+        }
+      );
+    });
+  },
+};
+
+// =============== BP3-074 恋兎 ===============
+CARD_EFFECTS["BP3-074"] = {
+  constant_field(obj) {
+    const hasKoiKitsune = G.field.some(o => o.code === "BP3-073");
+    if(!hasKoiKitsune && !obj.koiCheckDone) {
+      obj.koiCheckDone = true;
+      setTimeout(() => {
+        if(!G.field.some(o => o.code === "BP3-073")) {
+          const idx = G.field.indexOf(obj);
+          if(idx >= 0) { G.field.splice(idx, 1); G.grave.push(obj); setMsg("💔 恋兎：恋狐がいないため生贄に捧げられました。"); renderGame(); }
+        }
+        obj.koiCheckDone = false;
+      }, 100);
+    }
+  },
+  activate_field(obj) {
+    const hasKoiKitsune = G.field.some(o => o.code === "BP3-073");
+    if(!hasKoiKitsune) { setMsg("💔 恋兎：恋狐が戦場にいません。"); return; }
+    askChoice("💔 恋兎：どちらの起動効果を使いますか？",
+      [{ label: "①ムーブ→縄張りか道具を夜にする", value: "a" },
+       { label: "②悲恋哀々松崎心中を除外→恋狐と恋兎を生贄", value: "b" }],
+      (choice) => {
+        if(choice === "a") {
+          payMoveCost(obj);
+          pickFromZone("field", { message: "夜にする縄張りか道具を選んでください", count: 1, filter: (o, c) => c && (c.type === "縄張り" || c.type === "道具") },
+            (selected) => { if(selected.length > 0) { selected[0].night = true; renderGame(); } }
+          );
+        } else {
+          const hiren = G.grave.find(o => o.code === "BP2-042");
+          if(!hiren) { setMsg("💔 恋兎：墓地に悲恋哀々松崎心中がありません。"); return; }
+          moveCard(hiren, "grave", "exile");
+          const kitsune = G.field.find(o => o.code === "BP3-073");
+          if(kitsune) moveCard(kitsune, "field", "grave");
+          moveCard(obj, "field", "grave");
+          setMsg("💔 恋兎：恋狐と恋兎を生贄に捧げました。");
+          renderGame();
+        }
+      }
+    );
+  },
+};
+
+// =============== BP3-078 謀叛の血判状 ===============
+CARD_EFFECTS["BP3-078"] = {
+  field_enter(obj) {
+    setMsg("📜 謀叛の血判状：戦場に出ました。相手のATK最大の動物をこちらの戦場に移す効果があります（相手がいないため手動で処理してください）。");
+  },
+};
+
+// =============== BP4-003 崩落 ===============
+CARD_EFFECTS["BP4-003"] = {
+  constant_field(obj) {
+    const cnt = obj.counters?.["高度"] || 0;
+    if(cnt >= 6) {
+      // 動物タイプを得て不壊・突破・ATK+12/DEF+12
+      if(!obj.崩落Buffed) {
+        obj.崩落Buffed = true;
+        if(!obj.keywords) obj.keywords = [];
+        ["不壊","突破"].forEach(kw => { if(!obj.keywords.includes(kw)) obj.keywords.push(kw); });
+        obj.atkMod = (obj.atkMod||0) + 12;
+        obj.defMod = (obj.defMod||0) + 12;
+        setMsg("🏔️ 崩落：高度カウンター6個！動物タイプを得て《不壊》《突破》ATK+12/DEF+12を得ました。");
+      }
+      // 攻撃可能にする
+      obj.isAnimal = true;
+    } else {
+      // まだ動物ではない
+      obj.isAnimal = false;
+      if(obj.崩落Buffed) {
+        obj.崩落Buffed = false;
+        obj.keywords = (obj.keywords||[]).filter(k => k !== "不壊" && k !== "突破");
+        obj.atkMod = Math.max(0, (obj.atkMod||0) - 12);
+        obj.defMod = Math.max(0, (obj.defMod||0) - 12);
+      }
+    }
+  },
+  // 縄張りが出た時にカウンター+1（field_enter_otherで）
+  field_enter_other(obj, triggerObj) {
+    const c = cards.find(c => c.code === triggerObj.code);
+    if(!c || c.type !== "縄張り") return;
+    if(!obj.counters) obj.counters = {};
+    obj.counters["高度"] = (obj.counters["高度"]||0) + 1;
+    setMsg(`🏔️ 崩落：高度カウンター${obj.counters["高度"]}個。`);
+    renderGame();
+  },
+  // 相手に戦闘ダメージを与えた時→特殊勝利
+  on_combat_damage(obj) {
+    const cnt = obj.counters?.["高度"] || 0;
+    if(cnt >= 6) {
+      setMsg("🏔️ 崩落：相手に戦闘ダメージを与えました！特殊勝利！");
+      alert("🏔️ 崩落：特殊勝利！高度カウンター6以上で相手に戦闘ダメージを与えました！");
+    }
+  },
+};
+
+// =============== BP4-006 神鳥ガルダ ===============
+CARD_EFFECTS["BP4-006"] = {
+  field_enter(obj) {
+    // 誘発効果を先に発動
+    const terrain = countTerrain();
+    askChoice("🦅 神鳥ガルダ：着地時効果を選んでください",
+      [{ label: "なし", value: "none" },
+       { label: "●山岳域2以上：全動物と相手に2点ダメージ", value: "a" },
+       { label: "●森林域2以上：カード2枚ドロー", value: "b" }],
+      (choice) => {
+        if(choice === "a") {
+          if((terrain["山"]||0) < 2) { setMsg("🦅 神鳥ガルダ：山岳域が2未満です。"); return; }
+          G.field.forEach(o => { if(o !== obj) dealDamageToCard(o, 2); });
+          G.enemyLife = Math.max(0, G.enemyLife - 2);
+          setMsg("🦅 神鳥ガルダ：全動物と相手に2点ダメージ。");
+        } else if(choice === "b") {
+          if((terrain["森"]||0) < 2) { setMsg("🦅 神鳥ガルダ：森林域が2未満です。"); return; }
+          drawCards(2);
+          setMsg("🦅 神鳥ガルダ：カード2枚ドロー。");
+        }
+        // 固有能力で出た場合は生贄フラグチェック
+        if(obj.gardaSacrificePending) {
+          obj.gardaSacrificePending = false;
+          setTimeout(() => {
+            askYesNo("🦅 神鳥ガルダ：固有能力でプレイしました。これを生贄に捧げますか？",
+              () => { moveCard(obj, "field", "grave"); setMsg("🦅 神鳥ガルダ：生贄に捧げられました。"); renderGame(); }
+            );
+          }, 500);
+        }
+        renderGame();
+      }
+    );
+  },
+};
+
+// =============== BP4-021 ヘビ華族 ===============
+CARD_EFFECTS["BP4-021"] = {
+  constant_field(obj) {
+    // 手札から墓地に置かれる場合は代わりに除外→moveCard内でチェック
+    obj.snakeNobilityActive = true;
+  },
+};
+
+// =============== BP4-047 森の貪食者 ===============
+CARD_EFFECTS["BP4-047"] = {
+  constant_field(obj) {
+    // 木の実トークン生贄カウントに基づくバフ
+    const cnt = G.acornSacrificeCount || 0;
+    // 前回のバフをリセット
+    if(obj.贪食バフ !== undefined) {
+      obj.atkMod = (obj.atkMod||0) - obj.贪食バフ;
+      obj.defMod = (obj.defMod||0) - obj.贪食バフ;
+    }
+    // リスATK+1/DEF+1（常時）
+    G.field.forEach(o => {
+      const c = cards.find(c => c.code === o.code);
+      const isRisu = (c?.tribe||"").includes("リス") || (o.isToken && (o.tokenTribe||"").includes("リス"));
+      if(!isRisu || o === obj) return;
+      if(!o.squirrelBuff1) { o.squirrelBuff1 = true; o.atkMod=(o.atkMod||0)+1; o.defMod=(o.defMod||0)+1; }
+      if(cnt >= 3 && !o.squirrelBuff2) { o.squirrelBuff2 = true; o.atkMod=(o.atkMod||0)+2; o.defMod=(o.defMod||0)+2; }
+      if(cnt >= 5) {
+        if(!o.keywords) o.keywords = [];
+        if(!o.keywords.includes("突破")) o.keywords.push("突破");
+      }
+    });
+    obj.贪食バフ = 0;
+  },
+  activate_field(obj) {
+    payCostTerrain(2, () => {
+      const acorns = G.field.filter(o => o.isToken && o.tokenName === "木の実");
+      if(acorns.length === 0) { setMsg("🐿 森の貪食者：木の実トークンがありません。"); return; }
+      pickFromZone("field", {
+        message: "生贄にする木の実トークンを選んでください（コストX以下の動物を破壊）",
+        count: acorns.length,
+        filter: (o) => o.isToken && o.tokenName === "木の実",
+      }, (selected) => {
+        if(selected.length === 0) return;
+        const x = selected.length;
+        G.acornSacrificeCount = (G.acornSacrificeCount||0) + x;
+        selected.forEach(o => moveCard(o, "field", "grave"));
+        pickFromZone("field", {
+          message: `コスト${x}以下の動物を破壊してください`,
+          count: 1,
+          filter: (o, c) => c && c.type === "動物" && (parseInt(c.cost)||0) <= x,
+        }, (targets) => {
+          if(targets.length > 0) { moveCard(targets[0], "field", "grave"); setMsg(`🐿 森の貪食者：木の実${x}個生贄→コスト${x}以下の動物を破壊。今ターンの木の実生贄合計:${G.acornSacrificeCount}`); }
+          renderGame();
+        });
+      });
+    });
+  },
+};
+
+// =============== BP4-059 時間の圧縮 ===============
+CARD_EFFECTS["BP4-059"] = {
+  can_play() {
+    if(G.phase !== 3) return { ok: false, reason: "戦闘中でないあなたのターンの狩りフェイズ中のみプレイできます" };
+    return { ok: true };
+  },
+  play(obj) {
+    // 狩りフェイズを終了して日没スキップ→夜警フェイズへ
+    G.phase = 5; // 夜警フェイズ
+    setMsg("⏱ 時間の圧縮：狩りフェイズを終了し、日没フェイズをスキップして夜警フェイズになりました。");
+    updatePhase();
+    resetAllDamage();
+    resetTempAbilities();
+    if(G.hand.length >= 7) {
+      setTimeout(() => openDiscardModal(), 300);
+    }
+    renderGame();
+  },
+};
+
+// =============== BP4-060 二つ顔の長老 ===============
+CARD_EFFECTS["BP4-060"] = {
+  // 攻撃・防御不可は常時
+  constant_field(obj) {
+    // 夜になった時《夜》を得て動物タイプ・突破・対空・ATK+1/DEF+1を得る処理はnight状態で管理
+    if(obj.night && !obj.futatsuBuffed) {
+      obj.futatsuBuffed = true;
+      if(!obj.keywords) obj.keywords = [];
+      ["突破","対空"].forEach(kw => { if(!obj.keywords.includes(kw)) obj.keywords.push(kw); });
+      obj.atkMod = (obj.atkMod||0) + 1;
+      obj.defMod = (obj.defMod||0) + 1;
+    } else if(!obj.night && obj.futatsuBuffed) {
+      obj.futatsuBuffed = false;
+      obj.keywords = (obj.keywords||[]).filter(k => k !== "突破" && k !== "対空");
+      obj.atkMod = (obj.atkMod||0) - 1;
+      obj.defMod = (obj.defMod||0) - 1;
+    }
+  },
+  phase_sunset(obj) {
+    // 日没フェイズ開始時：全動物破壊→墓地の動物全員戦場に→ATK+1/DEF+1×破壊数→夜にする
+    const animals = G.field.filter(o => {
+      if(o === obj) return false;
+      const c = cards.find(c => c.code === o.code);
+      return c && c.type === "動物";
+    });
+    if(animals.length === 0) return;
+    askYesNo(`【二つ顔の長老】日没フェイズ：全動物（${animals.length}体）を破壊して墓地から全員戻し、ATK+1/DEF+1×${animals.length}を得て夜になりますか？`,
+      () => {
+        const destroyed = [...animals];
+        destroyed.forEach(o => { moveCard(o, "field", "grave"); });
+        const x = destroyed.length;
+        // 墓地から全員戦場に戻す
+        destroyed.forEach(o => {
+          const idx = G.grave.indexOf(o);
+          if(idx >= 0) { G.grave.splice(idx, 1); G.field.push(o); o.summonedThisTurn = true; }
+        });
+        // ATK+1/DEF+1×破壊数
+        if(!obj.counters) obj.counters = {};
+        obj.counters["ATK+1/DEF+1"] = (obj.counters["ATK+1/DEF+1"]||0) + x;
+        obj.atkMod = (obj.atkMod||0) + x;
+        obj.defMod = (obj.defMod||0) + x;
+        obj.night = true;
+        setMsg(`🦌 二つ顔の長老：${x}体を破壊して戦場に戻しました。ATK+${x}/DEF+${x}を得て夜になりました。`);
+        renderGame();
+      }
+    );
+  },
+};
+
+// =============== BP4-072 獄炎 ===============
+CARD_EFFECTS["BP4-072"] = {
+  can_play() {
+    const cnt = (G.nightClearCount||0) * 2;
+    if(cnt >= 10) return { ok: true, note: "妨害不可" };
+    return { ok: true };
+  },
+  play(obj) {
+    const cnt = G.nightClearCount || 0;
+    const x = cnt * 2;
+    setMsg(`🔥 獄炎：このターンの領土夜明け回数${cnt}×2=${x}点ダメージ。${x >= 10 ? "（妨害不可）" : ""}`);
+    pickFromZone("field", { message: `${x}点ダメージを与える対象を選んでください（または相手ライフへ）`, count: 1 },
+      (selected) => {
+        if(selected.length > 0) {
+          dealDamageToCard(selected[0], x);
+        } else {
+          G.enemyLife = Math.max(0, G.enemyLife - x);
+          setMsg(`🔥 獄炎：相手ライフに${x}点ダメージ。`);
+        }
+        renderGame();
+      }
+    );
   },
 };
