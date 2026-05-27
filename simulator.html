@@ -1252,6 +1252,16 @@ function makeCardEl(obj, opts={}) {
   };
   div.appendChild(img);
 
+  // 行動待機バッジ
+  if(obj.summonedThisTurn) {
+    const wb = document.createElement("div");
+    wb.style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:2;";
+    const label = obj.hasHayawaza ? "早業" : "待機";
+    const color = obj.hasHayawaza ? "#ffcc88" : "#ff8888";
+    wb.innerHTML = `<span style="font-size:8px;color:${color};font-weight:bold;background:rgba(0,0,0,0.7);padding:1px 3px;border-radius:3px;">${label}</span>`;
+    div.appendChild(wb);
+  }
+
   // カウンターバッジ表示
   if(obj.counters && Object.keys(obj.counters).length > 0) {
     const badge = document.createElement("div");
@@ -1424,6 +1434,36 @@ function openMoveModal(obj, from, idx) {
     };
     actRow.appendChild(btn);
   });
+  // 行動待機状態のトグル（戦場のカードのみ）
+  if(from === "field") {
+    // 駿足付与トグル
+    const sfBtn = document.createElement("button");
+    sfBtn.className = "modal-btn";
+    sfBtn.style.cssText = `font-size:11px;padding:6px 8px;min-width:82px;flex:none;background:${obj.hasShunsoku?"#1a4a1a":"#1a2a1a"};color:#88ff88;border:1px solid #4a8a4a;`;
+    sfBtn.textContent = obj.hasShunsoku ? "《駿足》解除" : "《駿足》付与";
+    sfBtn.onclick = () => {
+      obj.hasShunsoku = !obj.hasShunsoku;
+      if(obj.hasShunsoku) obj.summonedThisTurn = false; // 駿足付与で待機解除
+      closeModal("card-info-modal");
+      setMsg(obj.hasShunsoku ? "《駿足》を付与しました。" : "《駿足》を解除しました。");
+      renderGame();
+    };
+    actRow.appendChild(sfBtn);
+
+    // 早業付与トグル
+    const hwBtn = document.createElement("button");
+    hwBtn.className = "modal-btn";
+    hwBtn.style.cssText = `font-size:11px;padding:6px 8px;min-width:82px;flex:none;background:${obj.hasHayawaza?"#4a3a1a":"#2a2a1a"};color:#ffcc88;border:1px solid #8a6a4a;`;
+    hwBtn.textContent = obj.hasHayawaza ? "《早業》解除" : "《早業》付与";
+    hwBtn.onclick = () => {
+      obj.hasHayawaza = !obj.hasHayawaza;
+      closeModal("card-info-modal");
+      setMsg(obj.hasHayawaza ? "《早業》を付与しました。" : "《早業》を解除しました。");
+      renderGame();
+    };
+    actRow.appendChild(hwBtn);
+  }
+
   // コピーボタン（コピー能力持ちカード）
   if(card && hasCopyAbility(obj.code)) {
     const cpBtn = document.createElement("button");
@@ -1508,6 +1548,13 @@ function execMove(from, idx, to) {
   const obj = zones[from].splice(idx,1)[0];
 
   if(to==="rest-toggle"){
+    // 行動待機中は早業でなければムーブ不可
+    if(obj.summonedThisTurn && !obj.hasHayawaza) {
+      G.field.splice(idx, 0, obj); // 元に戻す
+      setMsg("⚠️ 行動待機中のため、このターンはムーブできません。");
+      renderGame();
+      return;
+    }
     obj.rested=!obj.rested;
     G.field.splice(idx,0,obj);
     setMsg(obj.rested?"ムーブしました。":"ウェイクしました。");
@@ -1520,8 +1567,18 @@ function execMove(from, idx, to) {
     zones[to].push(obj);
     const n={field:"戦場",hand:"手札",grave:"墓地",exile:"除外",pile:"パイル"};
     setMsg(`${n[to]}へ移動しました。`);
-    // 戦場着地→誘発（戦場）チェック
-    if(to === "field") setTimeout(()=>checkTriggers("field_enter", obj), 300);
+    // 戦場着地→行動待機フラグを設定
+    if(to === "field") {
+      const card = cards.find(c => c.code === obj.code);
+      const effect = card?.effect || "";
+      // 駿足持ちは行動待機なし
+      obj.hasShunsoku = effect.includes("《駿足》") || (obj.copyFromList?.some(code => cards.find(c=>c.code===code)?.effect?.includes("《駿足》")));
+      // 早業持ちはムーブ可・攻撃不可
+      obj.hasHayawaza = effect.includes("《早業》");
+      // 駿足がなければ行動待機
+      if(!obj.hasShunsoku) obj.summonedThisTurn = true;
+      setTimeout(()=>checkTriggers("field_enter", obj), 300);
+    }
     // 墓地送り→誘発（墓地）チェック
     if(to === "grave") setTimeout(()=>checkTriggers("to_grave", obj), 300);
   }
@@ -2104,9 +2161,10 @@ function nextPhase() {
     G.phase = 0;
     G.turn++;
     G.isFirstTurn = false;
-    // 次ターン起床：全アンムーブ自動
+    // 次ターン起床：全アンムーブ自動＋行動待機リセット
     wakeAllSilent();
-    setMsg(G.turn + "ターン目開始。起床フェイズ：全存在と領土をアンムーブしました。");
+    G.field.forEach(obj => { obj.summonedThisTurn = false; });
+    setMsg(G.turn + "ターン目開始。起床フェイズ：全存在と領土をウェイクしました。");
     updatePhase();
     renderGame();
     return;
