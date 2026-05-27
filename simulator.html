@@ -119,7 +119,7 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 .territory-card.mountain { border-color: #8a4a4a; }
 .territory-card.water { border-color: #4a6a8a; }
 .territory-card.forest { border-color: #4a8a4a; }
-.territory-card.night-territory { border-color: #6644aa; box-shadow: 0 0 6px #6644aa88; }
+.game-card.night-card { border-color: #6644aa; box-shadow: 0 0 6px #6644aa88; }
 .territory-card.night-territory .terr-label { background: rgba(60,20,80,0.8); color: #ddaaff; }
 
 .deck-display {
@@ -1202,21 +1202,23 @@ function confirmMulligan() {
   updatePhase();
 }
 
-// カード要素作成（カウンターバッジ付き）
+// カード要素作成（カウンターバッジ付き・夜対応）
 function makeCardEl(obj, opts={}) {
   const div = document.createElement("div");
   let cls = "game-card";
   if(opts.extraCls) cls += " "+opts.extraCls;
   if(obj.rested && opts.showRest) cls += " rested";
+  if(obj.night) cls += " night-card";
   div.className = cls;
 
   const img = document.createElement("img");
-  img.src = getImg(obj.code);
+  // 夜状態は裏向き画像
+  img.src = obj.night ? "uramuki.JPG" : getImg(obj.code);
   img.onerror = () => {
     img.remove();
     const span = document.createElement("span");
     span.className = "card-label";
-    span.textContent = obj.code;
+    span.textContent = obj.night ? "🌙" : obj.code;
     div.appendChild(span);
   };
   div.appendChild(img);
@@ -1383,13 +1385,64 @@ function openMoveModal(obj, from, idx) {
     };
     actRow.appendChild(btn);
   });
-  // カウンターボタン
-  const cBtn = document.createElement("button");
+  // 固有ボタン（手札のカード対象）
+  if(card && card.effect && from === "hand") {
+    const hasKoyuu = card.effect.includes("【固有】") || card.effect.includes("【固有（戦場）】");
+    if(hasKoyuu) {
+      const kBtn = document.createElement("button");
+      kBtn.className = "modal-btn";
+      kBtn.style.cssText = "font-size:12px;padding:7px 8px;min-width:82px;flex:none;background:#3a2a1a;color:#ffcc88;border:1px solid #aa8844;";
+      kBtn.textContent = "⚡ 固有効果";
+      kBtn.onclick = () => {
+        closeModal("card-info-modal");
+        showKoyuuNotice(obj, card);
+      };
+      actRow.appendChild(kBtn);
+    }
+  }
+
+  // 起動ボタン（そのカード自身の起動効果を通知）
+  if(card && card.effect) {
+    const hasActivate =
+      (from === "field" && card.effect.includes("【起動（戦場）】")) ||
+      (from === "hand"  && card.effect.includes("【起動（手札）】")) ||
+      (from === "grave" && card.effect.includes("【起動（墓地）】"));
+    if(hasActivate) {
+      const aBtn = document.createElement("button");
+      aBtn.className = "modal-btn";
+      aBtn.style.cssText = "font-size:12px;padding:7px 8px;min-width:82px;flex:none;background:#1a3a1a;color:#88ff88;border:1px solid #4a9a4a;";
+      aBtn.textContent = "⚡ 起動効果";
+      aBtn.onclick = () => {
+        const eventType = from === "field" ? "activate_field" : from === "hand" ? "activate_hand" : "activate_grave";
+        closeModal("card-info-modal");
+        checkTriggers(eventType, obj);
+      };
+      actRow.appendChild(aBtn);
+    }
+  }
   cBtn.className = "modal-btn";
   cBtn.style.cssText = "font-size:12px;padding:7px 8px;min-width:82px;flex:none;background:#2a2a5a;color:#aaccff;";
   cBtn.textContent = "🔢 カウンター";
   cBtn.onclick = () => { closeModal("card-info-modal"); openCounterModal(obj); };
   actRow.appendChild(cBtn);
+
+  // 夜コマンド（戦場にいるカード）
+  if(from === "field") {
+    const nightBtn = document.createElement("button");
+    nightBtn.className = "modal-btn";
+    nightBtn.style.cssText = "font-size:12px;padding:7px 8px;min-width:82px;flex:none;background:#2a1a4a;color:#ddaaff;border:1px solid #6644aa;";
+    nightBtn.textContent = obj.night ? "☀️ 夜を解除" : "🌙 夜にする";
+    nightBtn.onclick = () => {
+      obj.night = !obj.night;
+      // ムーブ/ウェイク状態は変えない（元の状態を維持）
+      closeModal("card-info-modal");
+      setMsg(obj.night
+        ? `「${card ? card.name : obj.code}」を${obj.rested ? "ムーブ" : "ウェイク"}状態の夜にしました。`
+        : `「${card ? card.name : obj.code}」の夜を解除しました。`);
+      renderGame();
+    };
+    actRow.appendChild(nightBtn);
+  }
   // キャンセル
   const xBtn = document.createElement("button");
   xBtn.className = "modal-btn cancel";
@@ -1404,15 +1457,203 @@ function openMoveModal(obj, from, idx) {
 function execMove(from, idx, to) {
   const zones={hand:G.hand,field:G.field,grave:G.grave,pile:G.pile,exile:G.exile};
   const obj = zones[from].splice(idx,1)[0];
-  obj.rested = false;
-  if(to==="rest-toggle"){ obj.rested=!obj.rested; G.field.splice(idx,0,obj); setMsg(obj.rested?"ムーブしました。":"アンムーブしました。"); }
+
+  if(to==="rest-toggle"){
+    obj.rested=!obj.rested;
+    G.field.splice(idx,0,obj);
+    setMsg(obj.rested?"ムーブしました。":"ウェイクしました。");
+    if(obj.rested) setTimeout(()=>checkTriggers("move", obj), 300);
+  }
   else if(to==="deck-bottom"){ G.mainDeck.push(obj); setMsg("デッキ下へ送りました。"); }
   else if(to==="deck-top"){ G.mainDeck.unshift(obj); setMsg("デッキ上へ戻しました。"); }
-  else { zones[to].push(obj); const n={field:"戦場",hand:"手札",grave:"墓地",exile:"除外",pile:"パイル"}; setMsg(`${n[to]}へ移動しました。`); }
+  else {
+    obj.rested = false;
+    zones[to].push(obj);
+    const n={field:"戦場",hand:"手札",grave:"墓地",exile:"除外",pile:"パイル"};
+    setMsg(`${n[to]}へ移動しました。`);
+    // 戦場着地→誘発（戦場）チェック
+    if(to === "field") setTimeout(()=>checkTriggers("field_enter", obj), 300);
+    // 墓地送り→誘発（墓地）チェック
+    if(to === "grave") setTimeout(()=>checkTriggers("to_grave", obj), 300);
+  }
   renderGame();
 }
 
-// =============== コスト・条件チェック ===============
+// =============== 誘発・起動通知システム ===============
+
+// ゲームイベント種別と対応する発動条件キーワード
+const TRIGGER_MAP = {
+  // カードが戦場に出た時
+  "field_enter": {
+    label: "戦場に出た時",
+    check: (kw, cond) =>
+      kw === "誘発（戦場）" && (
+        cond.includes("これが戦場に出た時") ||
+        cond.includes("戦場に出た時")
+      )
+  },
+  // カードが墓地に置かれた時
+  "to_grave": {
+    label: "墓地に置かれた時",
+    check: (kw, cond) =>
+      kw === "誘発（墓地）" && cond.includes("墓地に置かれた時")
+  },
+  // 攻撃した時
+  "attack": {
+    label: "攻撃した時",
+    check: (kw, cond) =>
+      kw === "誘発（戦場）" && cond.includes("これが攻撃した時")
+  },
+  // 戦闘ダメージを与えた時
+  "damage": {
+    label: "戦闘ダメージを与えた時",
+    check: (kw, cond) =>
+      kw === "誘発（戦場）" && cond.includes("戦闘ダメージを与えた時")
+  },
+  // ムーブした時
+  "move": {
+    label: "ムーブした時",
+    check: (kw, cond) =>
+      kw === "誘発（戦場）" && cond.includes("これがムーブした時")
+  },
+  // 集団攻撃した時
+  "mass_attack": {
+    label: "集団攻撃した時",
+    check: (kw, cond) =>
+      kw === "誘発（戦場）" && cond.includes("集団攻撃した時")
+  },
+  // 防御した時
+  "defend": {
+    label: "防御した時",
+    check: (kw, cond) =>
+      kw === "誘発（戦場）" && cond.includes("これが防御した時")
+  },
+  // 準備フェイズ開始時
+  "phase_prep": {
+    label: "準備フェイズ開始時",
+    check: (kw, cond) =>
+      kw === "誘発（戦場）" && cond.includes("準備フェイズ開始時")
+  },
+  // 日没フェイズ開始時（自分）
+  "phase_sunset": {
+    label: "日没フェイズ開始時",
+    check: (kw, cond) =>
+      kw === "誘発（戦場）" && cond.includes("日没フェイズ開始時") && !cond.includes("相手の")
+  },
+  // 日没フェイズ開始時（相手）
+  "phase_sunset_opp": {
+    label: "相手の日没フェイズ開始時",
+    check: (kw, cond) =>
+      kw === "誘発（戦場）" && cond.includes("相手の日没フェイズ開始時")
+  },
+  // カードを引いた時
+  "draw": {
+    label: "カードを引いた時",
+    check: (kw, cond) =>
+      kw === "誘発（戦場）" && cond.includes("カード1枚以上を引いた時")
+  },
+  // 起動（戦場）
+  "activate_field": {
+    label: "起動できます（戦場）",
+    check: (kw, cond) => kw === "起動（戦場）"
+  },
+  // 起動（手札）
+  "activate_hand": {
+    label: "起動できます（手札）",
+    check: (kw, cond) => kw === "起動（手札）"
+  },
+  // 起動（墓地）
+  "activate_grave": {
+    label: "起動できます（墓地）",
+    check: (kw, cond) => kw === "起動（墓地）"
+  },
+};
+
+// effectテキストから【キーワード】と発動条件を抽出
+function parseEffectBlocks(effect) {
+  const results = [];
+  const lines = effect.split('\n');
+  for(const line of lines) {
+    const kwMatch = line.match(/^【([^】]+)】/);
+    if(!kwMatch) continue;
+    const kw = kwMatch[1];
+    const rest = line.slice(kwMatch[0].length);
+    // 発動条件は最初の句点/読点で区切った前半
+    const cond = rest.split(/[、。]/)[0] || '';
+    results.push({ kw, cond, text: rest });
+  }
+  return results;
+}
+
+// イベント発生時に該当する誘発・起動を検出
+function checkTriggers(eventType, triggerObj=null) {
+  const rule = TRIGGER_MAP[eventType];
+  if(!rule) return;
+
+  // 検索対象ゾーン（イベント種別によって変える）
+  let searchZones = [];
+  if(eventType === "activate_field") searchZones = G.field;
+  else if(eventType === "activate_hand") searchZones = G.hand;
+  else if(eventType === "activate_grave") searchZones = G.grave;
+  else searchZones = [...G.field, ...G.grave, ...G.hand];
+
+  const found = [];
+  for(const obj of searchZones) {
+    // 自分自身が対象のイベント（着地誘発など）は自分のカードだけ
+    const card = cards.find(c => c.code === obj.code);
+    if(!card || !card.effect) continue;
+
+    const blocks = parseEffectBlocks(card.effect);
+    for(const block of blocks) {
+      if(!rule.check(block.kw, block.cond)) continue;
+      // 「これが」条件は triggerObj と一致するカードのみ
+      if(block.cond.includes("これが") && triggerObj && obj !== triggerObj) continue;
+      found.push({ obj, card, kw: block.kw, cond: block.cond, text: block.text });
+      break; // 1カードにつき1件
+    }
+  }
+
+  if(found.length > 0) showTriggerNotice(found, rule.label);
+}
+
+// 誘発・起動通知モーダル
+function showTriggerNotice(found, eventLabel) {
+  // 既存の通知があれば除去
+  document.querySelectorAll('.trigger-notice').forEach(el => el.remove());
+
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay trigger-notice";
+  overlay.style.cssText = "display:flex;z-index:400;align-items:flex-start;padding-top:30px;";
+
+  const cardsHtml = found.map(f => `
+    <div style="display:flex;align-items:flex-start;gap:10px;background:rgba(0,0,0,0.3);border-radius:8px;padding:8px;margin-bottom:8px;">
+      <img src="${getImg(f.obj.code)}"
+        style="width:56px;height:78px;object-fit:cover;border-radius:6px;border:2px solid #ffdd88;flex-shrink:0;"
+        onerror="this.style.display='none'">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:bold;color:#ffdd88;margin-bottom:3px;">${f.card.name}</div>
+        <div style="font-size:10px;color:#aaccff;margin-bottom:4px;">【${f.kw}】</div>
+        <div style="font-size:11px;color:#e0e8d0;line-height:1.5;">${f.cond || f.text.substring(0,40)}</div>
+      </div>
+    </div>
+  `).join('');
+
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:360px;" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:18px;">⚡</span>
+        <h3 style="margin:0;color:#ffdd88;">誘発・起動通知</h3>
+        <span style="font-size:11px;color:#aaa;margin-left:auto;">${eventLabel}</span>
+      </div>
+      <div style="max-height:50vh;overflow-y:auto;">${cardsHtml}</div>
+      <div class="modal-btn-row" style="margin-top:10px;">
+        <button class="modal-btn confirm" onclick="this.closest('.trigger-notice').remove()">確認</button>
+      </div>
+    </div>`;
+
+  overlay.addEventListener("click", () => overlay.remove());
+  document.body.appendChild(overlay);
+}
 
 // 領土ゾーンの地形カウント（全枚数＋域ボーナス加算）
 function countTerrain() {
@@ -1872,6 +2113,11 @@ function nextPhase() {
   setMsg(msgs[G.phase] || "");
   updatePhase();
   renderGame();
+
+  // 準備フェイズ（phase=1）：準備フェイズ誘発チェック
+  if(G.phase === 1) setTimeout(()=>checkTriggers("phase_prep"), 400);
+  // 日没フェイズ（phase=4）：日没フェイズ誘発チェック
+  if(G.phase === 4) setTimeout(()=>checkTriggers("phase_sunset"), 400);
 }
 
 // ターンエンド（夜警まで一気に進める）
@@ -1950,7 +2196,54 @@ function confirmDiscard() {
   setMsg("夜警フェイズ：手札を捨てました。「次のフェイズ」で次のターンへ。");
   renderGame();
 }
-// =============== デッキサーチ ===============
+// 固有効果表示モーダル
+function showKoyuuNotice(obj, card) {
+  // effectから【固有】【固有（戦場）】のブロックを全抽出
+  const lines = card.effect.split('\n');
+  const koyuuBlocks = lines.filter(l =>
+    l.startsWith('【固有】') || l.startsWith('【固有（戦場）】')
+  );
+  if(koyuuBlocks.length === 0) return;
+
+  const blocksHtml = koyuuBlocks.map(line => {
+    const kwMatch = line.match(/^【([^】]+)】/);
+    const kw = kwMatch ? kwMatch[1] : '固有';
+    const text = line.slice(`【${kw}】`.length);
+    // 発動条件（最初の句点まで）と効果テキストを分離
+    const condEnd = text.search(/[。]/);
+    const cond = condEnd >= 0 ? text.slice(0, condEnd + 1) : text;
+    const effect = condEnd >= 0 ? text.slice(condEnd + 1) : '';
+    return `
+      <div style="background:rgba(60,40,0,0.4);border:1px solid #aa8844;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="font-size:10px;color:#ffcc88;margin-bottom:4px;">【${kw}】</div>
+        <div style="font-size:12px;color:#ffe8a0;font-weight:bold;margin-bottom:4px;line-height:1.5;">${cond}</div>
+        ${effect ? `<div style="font-size:11px;color:#e0e8d0;line-height:1.6;">${effect}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay trigger-notice";
+  overlay.style.cssText = "display:flex;z-index:400;";
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:360px;" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <img src="${getImg(obj.code)}"
+          style="width:56px;height:78px;object-fit:cover;border-radius:6px;border:2px solid #ffcc88;flex-shrink:0;"
+          onerror="this.style.display='none'">
+        <div>
+          <div style="font-size:15px;font-weight:bold;color:#ffcc88;">${card.name}</div>
+          <div style="font-size:11px;color:#aaa;margin-top:3px;">固有効果を確認して条件を満たしてからプレイしてください</div>
+        </div>
+      </div>
+      <div style="max-height:45vh;overflow-y:auto;">${blocksHtml}</div>
+      <div class="modal-btn-row" style="margin-top:10px;">
+        <button class="modal-btn confirm" onclick="this.closest('.trigger-notice').remove()">確認</button>
+      </div>
+    </div>`;
+
+  overlay.addEventListener("click", () => overlay.remove());
+  document.body.appendChild(overlay);
+}
 let searchSelected = null;
 
 function openSearchModal() {
