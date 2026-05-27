@@ -121,6 +121,13 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 .territory-card.water { border-color: #4a6a8a; }
 .territory-card.forest { border-color: #4a8a4a; }
 .game-card.night-card { border-color: #6644aa; box-shadow: 0 0 6px #6644aa88; }
+.game-card.damaged { border-color: #cc4444; }
+.damage-badge {
+  position: absolute; top: 1px; right: 1px;
+  background: rgba(180,0,0,0.85); border-radius: 4px;
+  padding: 1px 3px; font-size: 8px; color: #ffaaaa;
+  font-weight: bold; pointer-events: none; z-index: 2;
+}
 .territory-card.night-territory .terr-label { background: rgba(60,20,80,0.8); color: #ddaaff; }
 
 .deck-display {
@@ -561,6 +568,20 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
   </div>
 </div>
 
+<!-- 攻撃先選択モーダル -->
+<div id="attack-modal" class="modal-overlay" style="display:none;" onclick="closeModal('attack-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3>⚔️ 攻撃先を選択</h3>
+    <div id="attack-attacker-info" style="font-size:12px;color:#ffdd88;margin-bottom:10px;"></div>
+    <div id="attack-target-list" class="modal-card-list" style="max-height:40vh;overflow-y:auto;"></div>
+    <div id="attack-modal-info" style="font-size:11px;color:#ff8888;margin:6px 0;min-height:16px;text-align:center;"></div>
+    <div class="modal-btn-row">
+      <button class="modal-btn" style="background:#5a1a1a;color:#ffaaaa;border:1px solid #aa4444;" onclick="confirmAttack()">⚔️ 攻撃確定</button>
+      <button class="modal-btn cancel" onclick="closeModal('attack-modal')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 <!-- 手札捨て（夜警）モーダル -->
 <div id="discard-modal" class="modal-overlay" style="display:none;">
   <div class="modal-box" onclick="event.stopPropagation()">
@@ -602,16 +623,6 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 </div>
 
 <!-- 攻撃モーダル -->
-<div id="attack-modal" class="modal-overlay" style="display:none;" onclick="closeModal('attack-modal')">
-  <div class="modal-box" onclick="event.stopPropagation()">
-    <h3>⚔️ 攻撃する動物を選ぶ（複数選択可）</h3>
-    <div class="modal-card-list" id="attack-modal-cards"></div>
-    <div class="modal-btn-row">
-      <button class="modal-btn confirm" onclick="confirmAttack()">攻撃！（ムーブ）</button>
-      <button class="modal-btn cancel" onclick="closeModal('attack-modal')">キャンセル</button>
-    </div>
-  </div>
-</div>
 
 <!-- 移動モーダル -->
 <div id="move-modal" class="modal-overlay" style="display:none;" onclick="closeModal('move-modal')">
@@ -899,6 +910,17 @@ function makeCardEl(obj, opts={}) {
   };
   div.appendChild(img);
 
+  // ダメージバッジ表示
+  if(obj.damage && obj.damage > 0) {
+    div.classList.add("damaged");
+    const db = document.createElement("div");
+    db.className = "damage-badge";
+    const card2 = cards.find(c => c.code === obj.code);
+    const def = card2 ? parseInt((card2.stats||'').match(/DEF\s*(\d+)/)?.[1]||0) : 0;
+    db.textContent = `💥${obj.damage}/${def}`;
+    div.appendChild(db);
+  }
+
   // 行動待機バッジ
   if(obj.summonedThisTurn) {
     const wb = document.createElement("div");
@@ -1090,6 +1112,16 @@ function openMoveModal(obj, from, idx) {
     };
     actRow.appendChild(btn);
   });
+  // 攻撃ボタン（戦場のカードのみ・動物タイプのみ）
+  if(from === "field" && card && card.type === "動物") {
+    const atkBtn = document.createElement("button");
+    atkBtn.className = "modal-btn";
+    atkBtn.style.cssText = "font-size:12px;padding:7px 8px;min-width:82px;flex:none;background:#5a1a1a;color:#ffaaaa;border:1px solid #aa4444;";
+    atkBtn.textContent = "⚔️ 攻撃";
+    atkBtn.onclick = () => { closeModal("card-info-modal"); openAttackModal(obj, card); };
+    actRow.appendChild(atkBtn);
+  }
+
   // 行動待機状態のトグル（戦場のカードのみ）
   if(from === "field") {
     // 駿足付与トグル
@@ -1430,6 +1462,140 @@ function showTriggerNotice(found, eventLabel) {
 
   overlay.addEventListener("click", () => overlay.remove());
   document.body.appendChild(overlay);
+}
+
+// =============== 攻撃システム ===============
+
+let attackerObj = null;
+let attackerCard = null;
+let attackTargetIdx = null;
+
+function getATK(card) { return parseInt((card?.stats||'').match(/ATK\s*(\d+)/)?.[1]||0); }
+function getDEF(card) { return parseInt((card?.stats||'').match(/DEF\s*(\d+)/)?.[1]||0); }
+
+function openAttackModal(obj, card) {
+  if(obj.summonedThisTurn && !obj.hasShunsoku) {
+    setMsg("⚠️ 行動待機中のため、このターンは攻撃できません。"); return;
+  }
+  if(obj.hasHayawaza) {
+    setMsg("⚠️ 早業持ちのため攻撃できません。"); return;
+  }
+  attackerObj = obj; attackerCard = card; attackTargetIdx = null;
+  const atk = getATK(card);
+  document.getElementById("attack-attacker-info").textContent = `「${card.name}」ATK:${atk} で攻撃`;
+  document.getElementById("attack-modal-info").textContent = "";
+
+  const list = document.getElementById("attack-target-list");
+  list.innerHTML = "";
+
+  // ダイレクトアタック
+  const directDiv = document.createElement("div");
+  directDiv.style.cssText = "width:100%;padding:10px;background:rgba(100,20,20,0.4);border:2px solid #aa4444;border-radius:8px;cursor:pointer;text-align:center;font-size:13px;color:#ffaaaa;margin-bottom:8px;";
+  directDiv.textContent = "💥 ダイレクトアタック（相手ライフへ）";
+  directDiv.onclick = () => {
+    list.querySelectorAll("[data-atk-target]").forEach(e=>{e.style.borderColor="#6a4a4a";e.style.boxShadow="none";});
+    directDiv.style.borderColor="#ffdd00"; directDiv.style.boxShadow="0 0 10px rgba(255,221,0,0.6)";
+    attackTargetIdx = "direct";
+    document.getElementById("attack-modal-info").textContent = `相手ライフに${atk}ダメージ`;
+  };
+  list.appendChild(directDiv);
+
+  // 戦場の他の動物
+  G.field.forEach((target, i) => {
+    if(target === obj) return;
+    const tCard = cards.find(c => c.code === target.code);
+    if(!tCard || tCard.type !== "動物") return;
+    const def = getDEF(tCard);
+    const curDmg = target.damage || 0;
+    const remaining = def - curDmg;
+    const div = document.createElement("div");
+    div.dataset.atkTarget = i;
+    div.style.cssText = "display:flex;align-items:center;gap:8px;padding:8px;background:rgba(60,20,20,0.4);border:2px solid #6a4a4a;border-radius:8px;cursor:pointer;margin-bottom:6px;";
+    div.innerHTML = `
+      <img src="${getImg(target.code)}" style="width:44px;height:62px;object-fit:cover;border-radius:6px;pointer-events:none;" onerror="this.style.display='none'">
+      <div style="flex:1;">
+        <div style="font-size:13px;color:#e0e8d0;">${tCard.name}</div>
+        <div style="font-size:11px;color:#ffaaaa;">DEF:${def}　残り:${remaining}　ATK:${getATK(tCard)}</div>
+        ${curDmg > 0 ? `<div style="font-size:10px;color:#ff8888;">累積ダメージ:${curDmg}</div>` : ''}
+      </div>`;
+    div.onclick = () => {
+      list.querySelectorAll("[data-atk-target]").forEach(e=>{e.style.borderColor="#6a4a4a";e.style.boxShadow="none";});
+      directDiv.style.borderColor="#aa4444"; directDiv.style.boxShadow="none";
+      div.style.borderColor="#ffdd00"; div.style.boxShadow="0 0 10px rgba(255,221,0,0.6)";
+      attackTargetIdx = i;
+      const dmgAfter = curDmg + atk;
+      document.getElementById("attack-modal-info").textContent = dmgAfter >= def
+        ? `「${tCard.name}」に${atk}ダメージ → 合計${dmgAfter}/${def} 💀墓地送り`
+        : `「${tCard.name}」に${atk}ダメージ → 合計${dmgAfter}/${def}`;
+    };
+    list.appendChild(div);
+  });
+
+  document.getElementById("attack-modal").style.display = "flex";
+}
+
+function confirmAttack() {
+  if(attackTargetIdx === null) {
+    document.getElementById("attack-modal-info").textContent = "⚠️ 攻撃先を選んでください"; return;
+  }
+  const atk = getATK(attackerCard);
+
+  if(attackTargetIdx === "direct") {
+    G.enemyLife = Math.max(0, G.enemyLife - atk);
+    showDamageFloat(atk, "enemy");
+    attackerObj.rested = true;
+    setMsg(`⚔️「${attackerCard.name}」ダイレクトアタック！相手ライフに${atk}ダメージ。`);
+    closeModal("attack-modal");
+    setTimeout(()=>checkTriggers("damage", attackerObj), 300);
+    renderGame(); return;
+  }
+
+  const target = G.field[attackTargetIdx];
+  if(!target) { closeModal("attack-modal"); return; }
+  const tCard = cards.find(c => c.code === target.code);
+  const tDef = getDEF(tCard);
+  const tatk = getATK(tCard);
+
+  target.damage = (target.damage || 0) + atk;
+  attackerObj.damage = (attackerObj.damage || 0) + tatk;
+
+  let msg = `⚔️「${attackerCard.name}」(ATK:${atk})→「${tCard?.name}」(DEF:${tDef})`;
+  showDamageFloat(atk, "enemy");
+
+  // 攻撃先がDEF超えで墓地送り
+  if(target.damage >= tDef) {
+    G.field.splice(attackTargetIdx, 1);
+    target.damage = 0;
+    G.grave.push(target);
+    msg += ` 💀${tCard?.name}墓地へ`;
+    setTimeout(()=>checkTriggers("to_grave", target), 300);
+  }
+
+  // 攻撃側も反撃でDEF超えなら墓地送り
+  const aDef = getDEF(attackerCard);
+  if(attackerObj.damage >= aDef) {
+    const aIdx = G.field.indexOf(attackerObj);
+    if(aIdx >= 0) {
+      G.field.splice(aIdx, 1);
+      attackerObj.damage = 0;
+      G.grave.push(attackerObj);
+      msg += ` 💀${attackerCard.name}も墓地へ（相打ち）`;
+      setTimeout(()=>checkTriggers("to_grave", attackerObj), 300);
+    }
+  } else {
+    attackerObj.rested = true;
+  }
+
+  setMsg(msg);
+  closeModal("attack-modal");
+  setTimeout(()=>checkTriggers("attack", attackerObj), 300);
+  setTimeout(()=>checkTriggers("damage", attackerObj), 300);
+  renderGame();
+}
+
+function resetAllDamage() {
+  G.field.forEach(obj => { obj.damage = 0; });
+  renderGame();
 }
 
 // 領土ゾーンの地形カウント（全枚数＋域ボーナス加算）
@@ -1922,7 +2088,8 @@ function endTurn() {
     }
   }
   G.phase = 5;
-  setMsg("夜警フェイズ：全ダメージ・ターン終了時効果をリセットしてください。");
+  resetAllDamage();
+  setMsg("夜警フェイズ：全ダメージをリセットしました。ターン終了時効果を処理してください。");
   updatePhase();
   renderGame();
   if(G.hand.length >= 7) {
@@ -2124,12 +2291,12 @@ function buildReductionHtml(r) {
 
 // コピー能力持ちカードのcode一覧
 const COPY_CARD_CODES = new Set([
-  'BP4-039',
-  'BP3-022',
-  '蔵馬-ACG-129',
-  'キメサイ-ACG-137',
-  'キメサイ-ACG-143',
-  'BP1-029',
+  'BP4-039',          // ミミックオクトパス
+  // 'BP3-022',       // 芸達者なオウム ← 確認待ち
+  '蔵馬-ACG-129',     // 複製
+  'キメサイ-ACG-137', // 反射石
+  'キメサイ-ACG-143', // 泥の像
+  'BP1-029',          // 九尾
 ]);
 
 let copyTargetObj = null;
