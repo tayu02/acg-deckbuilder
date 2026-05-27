@@ -313,3 +313,91 @@ function searchDeck(filter, count, toZone, options = {}) {
     renderGame();
   });
 }
+
+// ------------------------------------------------------------
+// gainAbility(obj, abilityText, temporary)
+// 「〜を得る」効果の汎用処理
+//
+// abilityText: 得る能力のテキスト
+//   例: "《駿足》" / "ATK+2/DEF+1" / "ATK+X" / "『〜〜』"
+// temporary: true=ターン終了時まで / false=永続（デフォルトfalse）
+//
+// objに以下のフィールドを付与：
+//   obj.keywords[]      キーワード効果リスト（《》）
+//   obj.atkMod          ATK修正値（累積）
+//   obj.defMod          DEF修正値（累積）
+//   obj.gainedEffects[] テキスト能力リスト（「」『』）
+//   obj.tempAbilities[] ターン終了時リセット対象の記録
+// ------------------------------------------------------------
+function gainAbility(obj, abilityText, temporary = false) {
+  if(!obj) return;
+  const text = abilityText.trim();
+
+  // キーワード効果（《》で囲まれたもの）
+  const kwMatches = [...text.matchAll(/《([^》]+)》/g)];
+  for(const m of kwMatches) {
+    const kw = m[1];
+    if(!obj.keywords) obj.keywords = [];
+    if(!obj.keywords.includes(kw)) {
+      obj.keywords.push(kw);
+      if(temporary) recordTemp(obj, "keyword", kw);
+      // 特殊キーワードの即時反映
+      if(kw === "駿足") { obj.hasShunsoku = true; obj.summonedThisTurn = false; }
+      if(kw === "早業") obj.hasHayawaza = true;
+    }
+  }
+
+  // ATK/DEF修正（ATK+X/DEF+X, ATK+X, DEF+X など）
+  const statMatch = text.match(/ATK([+\-]\d+)(?:\/DEF([+\-]\d+))?/);
+  if(statMatch) {
+    const atkDelta = parseInt(statMatch[1]) || 0;
+    const defDelta = parseInt(statMatch[2] || 0) || 0;
+    if(atkDelta) { obj.atkMod = (obj.atkMod||0) + atkDelta; if(temporary) recordTemp(obj, "atkMod", atkDelta); }
+    if(defDelta) { obj.defMod = (obj.defMod||0) + defDelta; if(temporary) recordTemp(obj, "defMod", defDelta); }
+  }
+  const defOnlyMatch = !statMatch && text.match(/DEF([+\-]\d+)/);
+  if(defOnlyMatch) {
+    const defDelta = parseInt(defOnlyMatch[1]);
+    obj.defMod = (obj.defMod||0) + defDelta;
+    if(temporary) recordTemp(obj, "defMod", defDelta);
+  }
+
+  // テキスト能力（「」または『』で囲まれたもの）
+  const textMatches = [...text.matchAll(/[「『]([^」』]+)[」』]/g)];
+  for(const m of textMatches) {
+    const ability = m[1];
+    if(!obj.gainedEffects) obj.gainedEffects = [];
+    obj.gainedEffects.push(ability);
+    if(temporary) recordTemp(obj, "gainedEffect", ability);
+  }
+
+  renderGame();
+  const cardName = cards.find(c=>c.code===obj.code)?.name || obj.code;
+  setMsg(`⚡「${cardName}」が能力を得ました：${text}`);
+}
+
+// ターン終了時リセット用の記録
+function recordTemp(obj, type, value) {
+  if(!obj.tempAbilities) obj.tempAbilities = [];
+  obj.tempAbilities.push({ type, value });
+}
+
+// ターン終了時に一時的な能力をリセット（夜警フェイズで呼ぶ）
+function resetTempAbilities() {
+  [...G.field, ...G.pile, ...G.hand, ...G.grave].forEach(obj => {
+    if(!obj.tempAbilities || obj.tempAbilities.length === 0) return;
+    for(const temp of obj.tempAbilities) {
+      if(temp.type === "keyword") {
+        obj.keywords = (obj.keywords||[]).filter(k => k !== temp.value);
+        if(temp.value === "駿足") obj.hasShunsoku = false;
+        if(temp.value === "早業") obj.hasHayawaza = false;
+      }
+      if(temp.type === "atkMod") obj.atkMod = (obj.atkMod||0) - temp.value;
+      if(temp.type === "defMod") obj.defMod = (obj.defMod||0) - temp.value;
+      if(temp.type === "gainedEffect") {
+        obj.gainedEffects = (obj.gainedEffects||[]).filter(e => e !== temp.value);
+      }
+    }
+    obj.tempAbilities = [];
+  });
+}
