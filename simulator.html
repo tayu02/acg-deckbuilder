@@ -604,7 +604,8 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
         <div id="card-info-meta" style="font-size:11px;color:#aaa;line-height:1.7;"></div>
       </div>
     </div>
-    <div id="card-info-effect" style="font-size:11px;color:#e0e8d0;background:rgba(0,0,0,0.3);border-radius:8px;padding:8px;line-height:1.6;max-height:180px;overflow-y:auto;margin-bottom:10px;white-space:pre-wrap;"></div>
+    <div id="card-info-effect" style="font-size:11px;color:#e0e8d0;background:rgba(0,0,0,0.3);border-radius:8px;padding:8px;line-height:1.6;max-height:180px;overflow-y:auto;margin-bottom:6px;white-space:pre-wrap;"></div>
+    <div id="card-info-gained"></div>
     <div id="card-info-actions" class="modal-btn-row" style="flex-wrap:wrap;gap:6px;"></div>
   </div>
 </div>
@@ -929,6 +930,39 @@ function makeCardEl(obj, opts={}) {
     const color = obj.hasHayawaza ? "#ffcc88" : "#ff8888";
     wb.innerHTML = `<span style="font-size:8px;color:${color};font-weight:bold;background:rgba(0,0,0,0.7);padding:1px 3px;border-radius:3px;">${label}</span>`;
     div.appendChild(wb);
+  }
+
+  // 取得能力バッジ表示
+  if((obj.keywords && obj.keywords.length > 0) ||
+     obj.atkMod || obj.defMod ||
+     (obj.gainedEffects && obj.gainedEffects.length > 0)) {
+    const ab = document.createElement("div");
+    ab.style.cssText = "position:absolute;top:1px;right:1px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;z-index:3;pointer-events:none;";
+    // キーワード
+    (obj.keywords||[]).forEach(kw => {
+      const b = document.createElement("div");
+      b.style.cssText = "background:rgba(0,80,0,0.85);border-radius:3px;padding:1px 3px;font-size:7px;color:#a0ffa0;";
+      b.textContent = `《${kw}》`;
+      ab.appendChild(b);
+    });
+    // ATK/DEF修正
+    if(obj.atkMod || obj.defMod) {
+      const b = document.createElement("div");
+      b.style.cssText = "background:rgba(80,40,0,0.85);border-radius:3px;padding:1px 3px;font-size:7px;color:#ffcc88;";
+      let t = "";
+      if(obj.atkMod) t += `ATK${obj.atkMod>0?"+":""}${obj.atkMod}`;
+      if(obj.defMod) t += ` DEF${obj.defMod>0?"+":""}${obj.defMod}`;
+      b.textContent = t.trim();
+      ab.appendChild(b);
+    }
+    // テキスト能力（件数のみ）
+    if(obj.gainedEffects && obj.gainedEffects.length > 0) {
+      const b = document.createElement("div");
+      b.style.cssText = "background:rgba(60,0,80,0.85);border-radius:3px;padding:1px 3px;font-size:7px;color:#ddaaff;";
+      b.textContent = `能力×${obj.gainedEffects.length}`;
+      ab.appendChild(b);
+    }
+    div.appendChild(ab);
   }
 
   // カウンターバッジ表示
@@ -1279,6 +1313,34 @@ function openMoveModal(obj, from, idx) {
   xBtn.textContent = "閉じる";
   xBtn.onclick = () => closeModal("card-info-modal");
   actRow.appendChild(xBtn);
+
+  // 取得能力の表示
+  const gainedArea = document.getElementById("card-info-gained");
+  if(gainedArea) {
+    const hasGained = (obj.keywords && obj.keywords.length > 0) ||
+                      obj.atkMod || obj.defMod ||
+                      (obj.gainedEffects && obj.gainedEffects.length > 0);
+    if(hasGained) {
+      let html = '<div style="margin-top:8px;padding:6px 8px;background:rgba(0,60,0,0.3);border:1px solid #4a8a4a;border-radius:6px;font-size:11px;">';
+      html += '<div style="color:#88ff88;margin-bottom:4px;">⚡ 取得中の能力</div>';
+      (obj.keywords||[]).forEach(kw => {
+        html += `<div style="color:#a0ffa0;">《${kw}》</div>`;
+      });
+      if(obj.atkMod || obj.defMod) {
+        let t = "";
+        if(obj.atkMod) t += `ATK${obj.atkMod>0?"+":""}${obj.atkMod} `;
+        if(obj.defMod) t += `DEF${obj.defMod>0?"+":""}${obj.defMod}`;
+        html += `<div style="color:#ffcc88;">${t.trim()}</div>`;
+      }
+      (obj.gainedEffects||[]).forEach(e => {
+        html += `<div style="color:#ddaaff;">『${e}』</div>`;
+      });
+      html += '</div>';
+      gainedArea.innerHTML = html;
+    } else {
+      gainedArea.innerHTML = "";
+    }
+  }
 
   document.getElementById("card-info-modal").style.display = "flex";
   } catch(e) {
@@ -2219,7 +2281,8 @@ function endTurn() {
   }
   G.phase = 5;
   resetAllDamage();
-  setMsg("夜警フェイズ：全ダメージをリセットしました。ターン終了時効果を処理してください。");
+  resetTempAbilities();
+  setMsg("夜警フェイズ：全ダメージ・一時能力をリセットしました。ターン終了時効果を処理してください。");
   updatePhase();
   renderGame();
   if(G.hand.length >= 7) {
