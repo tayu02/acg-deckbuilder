@@ -1532,6 +1532,7 @@ function renderGame() {
 
 // カード情報モーダル（画像大表示＋効果＋アクション統合）
 function openMoveModal(obj, from, idx) {
+  try {
   const card = cards.find(c => c.code === obj.code);
   // 画像
   document.getElementById("card-info-img").src = getImg(obj.code);
@@ -1699,6 +1700,9 @@ function openMoveModal(obj, from, idx) {
   actRow.appendChild(xBtn);
 
   document.getElementById("card-info-modal").style.display = "flex";
+  } catch(e) {
+    alert("モーダルエラー: " + e.message);
+  }
 }
 
 function execMove(from, idx, to) {
@@ -1854,12 +1858,23 @@ function checkTriggers(eventType, triggerObj=null) {
   const rule = TRIGGER_MAP[eventType];
   if(!rule) return;
 
-  // 検索対象ゾーン（イベント種別によって変える）
+  // 検索対象ゾーンをイベント種別で絞り込む
   let searchZones = [];
-  if(eventType === "activate_field") searchZones = G.field;
-  else if(eventType === "activate_hand") searchZones = G.hand;
+  if(eventType === "activate_field")    searchZones = G.field;
+  else if(eventType === "activate_hand")  searchZones = G.hand;
   else if(eventType === "activate_grave") searchZones = G.grave;
-  else searchZones = [...G.field, ...G.grave, ...G.hand];
+  else if(eventType === "field_enter")    searchZones = G.field;  // 戦場着地：戦場のみ
+  else if(eventType === "to_grave")       searchZones = [...G.field, ...G.grave]; // 墓地誘発は戦場＋墓地
+  else if(eventType === "move")           searchZones = G.field;  // ムーブ：戦場のみ
+  else if(eventType === "phase_prep")     searchZones = G.field;  // フェイズ誘発：戦場のみ
+  else if(eventType === "phase_sunset")   searchZones = G.field;
+  else if(eventType === "phase_sunset_opp") searchZones = G.field;
+  else if(eventType === "draw")           searchZones = G.field;
+  else if(eventType === "attack")         searchZones = G.field;
+  else if(eventType === "damage")         searchZones = G.field;
+  else if(eventType === "mass_attack")    searchZones = G.field;
+  else if(eventType === "defend")         searchZones = G.field;
+  else searchZones = G.field; // デフォルトは戦場のみ
 
   const found = [];
   for(const obj of searchZones) {
