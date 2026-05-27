@@ -258,7 +258,14 @@ function moveCard(obj, fromZone, toZone) {
 function drawCards(count) {
   for(let i = 0; i < count; i++) {
     if(G.mainDeck.length === 0) { setMsg("⚠️ デッキが空です！"); break; }
-    G.hand.push(G.mainDeck.shift());
+    const top = G.mainDeck.shift();
+    top.fromDeck = true;
+    // デッキ最後の1枚だった場合→on_deck_revealチェック
+    if(G.mainDeck.length === 0) {
+      const eff = typeof CARD_EFFECTS !== "undefined" ? CARD_EFFECTS[top.code] : null;
+      if(eff?.on_deck_reveal) setTimeout(()=>eff.on_deck_reveal(top), 300);
+    }
+    G.hand.push(top);
   }
 }
 
@@ -561,4 +568,55 @@ function removeYouko(obj, amount, caller = null) {
   }
 
   return actual;
+}
+
+// ------------------------------------------------------------
+// equipCard(equipObj, targetObj)
+// 装備カードを動物に装備させる
+// ------------------------------------------------------------
+function equipCard(equipObj, targetObj) {
+  // フィールドから装備カードを特定
+  equipObj.isEquipped = true;
+  equipObj.equippedTo = targetObj.id;
+  // 装備カードのATK/DEF効果を対象に付与
+  const eqCard = cards.find(c => c.code === equipObj.code);
+  const atkMatch = (eqCard?.effect||"").match(/ATK\+(\d+)/);
+  const defMatch = (eqCard?.effect||"").match(/DEF\+(\d+)/);
+  if(atkMatch) targetObj.atkMod = (targetObj.atkMod||0) + parseInt(atkMatch[1]);
+  if(defMatch) targetObj.defMod = (targetObj.defMod||0) + parseInt(defMatch[1]);
+  setMsg(`⚙️「${eqCard?.name||equipObj.code}」を「${cards.find(c=>c.code===targetObj.code)?.name||targetObj.code}」に装備しました。`);
+  renderGame();
+}
+
+// ------------------------------------------------------------
+// getEquippedCount(obj)
+// 動物に装備されているカードの数を返す
+// ------------------------------------------------------------
+function getEquippedCount(obj) {
+  return G.field.filter(e => e.isEquipped && e.equippedTo === obj.id).length;
+}
+
+// ------------------------------------------------------------
+// ターン中のプレイ追跡（山岳カウント用）
+// ------------------------------------------------------------
+// G.turnPlayLog = [{code, type, condition}] でターン中のプレイを記録
+function logPlay(obj) {
+  const card = cards.find(c => c.code === obj.code);
+  if(!card) return;
+  if(!G.turnPlayLog) G.turnPlayLog = [];
+  G.turnPlayLog.push({
+    code: obj.code,
+    name: card.name,
+    type: card.type,
+    condition: card.condition || "",
+    isMountain: (card.condition||"").includes("山"),
+  });
+}
+
+// ------------------------------------------------------------
+// countMountainPlays()
+// このターン中に山岳カードをプレイして相手を対象にした回数
+// ------------------------------------------------------------
+function countMountainPlays() {
+  return (G.turnPlayLog||[]).filter(p => p.isMountain).length;
 }
