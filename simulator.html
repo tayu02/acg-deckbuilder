@@ -1441,12 +1441,12 @@ function renderGame() {
 
   // パイル
   const pz = document.getElementById("pile-zone"); pz.innerHTML = "";
-  G.pile.forEach((obj,i) => { const el=makeCardEl(obj); el.addEventListener("click",()=>openMoveModal(obj,"pile",i)); pz.appendChild(el); });
+  G.pile.forEach((obj,i) => { const el=makeCardEl(obj); const h=(e)=>{e.preventDefault();openMoveModal(obj,"pile",i);}; el.addEventListener("click",h); el.addEventListener("touchend",h,{passive:false}); pz.appendChild(el); });
   document.getElementById("pile-count").textContent = G.pile.length;
 
   // 戦場
   const fz = document.getElementById("field-zone"); fz.innerHTML = "";
-  G.field.forEach((obj,i) => { const el=makeCardEl(obj,{showRest:true}); el.addEventListener("click",()=>openMoveModal(obj,"field",i)); fz.appendChild(el); });
+  G.field.forEach((obj,i) => { const el=makeCardEl(obj,{showRest:true}); const h=(e)=>{e.preventDefault();openMoveModal(obj,"field",i);}; el.addEventListener("click",h); el.addEventListener("touchend",h,{passive:false}); fz.appendChild(el); });
   document.getElementById("field-count").textContent = G.field.length;
 
   // 領土（画像表示・夜対応）
@@ -1501,7 +1501,7 @@ function renderGame() {
 
   // 墓地・除外
   const gz = document.getElementById("grave-zone"); gz.innerHTML = "";
-  G.grave.forEach((obj,i) => { const el=makeCardEl(obj,{extraCls:"in-grave"}); el.addEventListener("click",()=>openMoveModal(obj,"grave",i)); gz.appendChild(el); });
+  G.grave.forEach((obj,i) => { const el=makeCardEl(obj,{extraCls:"in-grave"}); const h=(e)=>{e.preventDefault();openMoveModal(obj,"grave",i);}; el.addEventListener("click",h); el.addEventListener("touchend",h,{passive:false}); gz.appendChild(el); });
   document.getElementById("grave-count").textContent = G.grave.length;
 
   const ez = document.getElementById("exile-zone"); ez.innerHTML = "";
@@ -1511,7 +1511,15 @@ function renderGame() {
   // 手札
   const hz = document.getElementById("hand-panel-inner"); hz.innerHTML = "";
   document.getElementById("hand-count").textContent = G.hand.length;
-  G.hand.forEach((obj,i) => { const el=makeCardEl(obj,{extraCls:"hand-card-item"}); el.style.flexShrink="0"; el.addEventListener("click",()=>openMoveModal(obj,"hand",i)); hz.appendChild(el); });
+  G.hand.forEach((obj,i) => {
+    const el = makeCardEl(obj, {extraCls:"hand-card-item"});
+    el.style.flexShrink = "0";
+    el.style.cursor = "pointer";
+    const handler = (e) => { e.preventDefault(); openMoveModal(obj,"hand",i); };
+    el.addEventListener("click", handler);
+    el.addEventListener("touchend", handler, {passive:false});
+    hz.appendChild(el);
+  });
 
   document.getElementById("deck-count").textContent = G.mainDeck.length;
   document.getElementById("terr-deck-count").textContent = G.territoryDeck.length;
