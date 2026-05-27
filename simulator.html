@@ -1256,7 +1256,7 @@ function renderSideScreen() {
     row.className = "side-card-row";
     row.innerHTML = `
       <div class="side-card-img"><img src="${getImg(code)}" onerror="this.parentNode.style.background='#2a3a4a'"></div>
-      <div class="side-card-name">${code}</div>
+      <div class="side-card-name">${cards.find(c=>c.code===code)?.name || code}</div>
       <div class="side-card-cnt">×${cnt}</div>
       <button class="side-btn to-side" onclick="moveCard('${code}','toSide')">→サイド</button>`;
     ml.appendChild(row);
@@ -1271,7 +1271,7 @@ function renderSideScreen() {
     row.className = "side-card-row";
     row.innerHTML = `
       <div class="side-card-img"><img src="${getImg(code)}" onerror="this.parentNode.style.background='#2a3a4a'"></div>
-      <div class="side-card-name">${code}</div>
+      <div class="side-card-name">${cards.find(c=>c.code===code)?.name || code}</div>
       <div class="side-card-cnt">×${cnt}</div>
       <button class="side-btn to-main" onclick="moveCard('${code}','toMain')">→メイン</button>`;
     sl.appendChild(row);
@@ -1380,12 +1380,14 @@ function confirmMulligan() {
 
 // カード要素作成（カウンターバッジ付き・夜対応）
 function makeCardEl(obj, opts={}) {
-  const div = document.createElement("div");
+  const div = document.createElement("button"); // divではなくbuttonで確実にタップ受付
+  div.type = "button";
   let cls = "game-card";
   if(opts.extraCls) cls += " "+opts.extraCls;
   if(obj.rested && opts.showRest) cls += " rested";
   if(obj.night) cls += " night-card";
   div.className = cls;
+  div.style.cssText += ";background:none;padding:0;border:2px solid #4a8a4a;cursor:pointer;";
 
   const img = document.createElement("img");
   img.style.pointerEvents = "none"; // タップをdivに届かせる
