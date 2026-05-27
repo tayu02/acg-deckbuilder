@@ -658,3 +658,130 @@ function clearNight(obj) {
   }
   renderGame();
 }
+
+// ------------------------------------------------------------
+// revealAndPick(count, options, callback)
+// デッキ上からcount枚を公開して選択・振り分けする
+//
+// options: {
+//   message: string,          表示メッセージ
+//   pickCount: number,        選ぶ枚数（デフォルト1）
+//   filter: fn(obj, card),    選択可能な絞り込み条件（省略で全て選択可）
+//   pickTo: string,           選んだカードの行き先（デフォルト"hand"）
+//   remainTo: string,         残りの行き先（デフォルト"deck-bottom"）
+//   canPickNone: bool,        1枚も選ばなくてもOKか（デフォルトfalse）
+// }
+// callback(picked[], remain[]) で結果を返す（省略可）
+// ------------------------------------------------------------
+function revealAndPick(count, options = {}, callback = null) {
+  const actual = Math.min(count, G.mainDeck.length);
+  if(actual === 0) { setMsg("デッキが空です。"); return; }
+
+  // デッキ上からcount枚を取り出す
+  const revealed = G.mainDeck.splice(0, actual);
+  const pickCount = options.pickCount || 1;
+  const pickTo = options.pickTo || "hand";
+  const remainTo = options.remainTo || "deck-bottom";
+  const filter = options.filter || (() => true);
+  const message = options.message || `デッキ上${actual}枚を公開。${pickCount}枚選んでください`;
+  const canPickNone = options.canPickNone || false;
+
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay trigger-notice";
+  overlay.style.cssText = "display:flex;z-index:500;align-items:flex-start;padding-top:20px;";
+
+  const selected = new Set();
+
+  const zoneLabel = { hand:"手札", field:"戦場", grave:"墓地", "deck-top":"デッキ上", "deck-bottom":"デッキ下", exile:"除外" };
+
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:400px;" onclick="event.stopPropagation()">
+      <p style="font-size:13px;color:#e0e8d0;margin-bottom:4px;">${message}</p>
+      <p style="font-size:11px;color:#aaa;margin-bottom:10px;">
+        残り→${zoneLabel[remainTo]||remainTo}　選択：<span id="rap-count">0</span>/${pickCount}枚
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;" id="rap-list"></div>
+      <div id="rap-info" style="font-size:11px;color:#ffdd88;min-height:16px;text-align:center;margin-bottom:8px;"></div>
+      <div class="modal-btn-row">
+        <button class="modal-btn confirm" id="rap-ok">決定</button>
+        <button class="modal-btn cancel" id="rap-cancel">キャンセル（全部${zoneLabel[remainTo]||remainTo}へ）</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const list = document.getElementById("rap-list");
+
+  revealed.forEach((obj, i) => {
+    const card = cards.find(c => c.code === obj.code);
+    const selectable = filter(obj, card);
+    const div = document.createElement("div");
+    div.style.cssText = `position:relative;width:56px;cursor:${selectable?"pointer":"default"};opacity:${selectable?1:0.4};`;
+    div.dataset.idx = i;
+    const img = document.createElement("img");
+    img.src = getImg(obj.code);
+    img.style.cssText = "width:56px;height:78px;object-fit:cover;border-radius:6px;border:2px solid #4a8a4a;pointer-events:none;display:block;";
+    img.onerror = () => { img.style.display="none"; };
+    div.appendChild(img);
+    const lbl = document.createElement("div");
+    lbl.style.cssText = "font-size:6px;color:#e0e8d0;text-align:center;margin-top:2px;line-height:1.2;pointer-events:none;";
+    lbl.textContent = card?.name || obj.code;
+    div.appendChild(lbl);
+
+    if(selectable) {
+      div.addEventListener("click", () => {
+        if(selected.has(i)) {
+          selected.delete(i);
+          img.style.border = "2px solid #4a8a4a";
+        } else {
+          if(selected.size >= pickCount) return; // 上限
+          selected.add(i);
+          img.style.border = "2px solid #ffdd00";
+          img.style.boxShadow = "0 0 8px rgba(255,221,0,0.6)";
+        }
+        if(!selected.has(i)) img.style.boxShadow = "";
+        document.getElementById("rap-count").textContent = selected.size;
+        const names = [...selected].map(idx => cards.find(c=>c.code===revealed[idx].code)?.name||revealed[idx].code).join("、");
+        document.getElementById("rap-info").textContent = selected.size > 0 ? `選択中：${names}` : "";
+      });
+    }
+    list.appendChild(div);
+  });
+
+  const sendTo = (zone, obj) => {
+    if(zone === "hand") G.hand.push(obj);
+    else if(zone === "field") { G.field.push(obj); obj.summonedThisTurn = true; }
+    else if(zone === "grave") G.grave.push(obj);
+    else if(zone === "deck-top") G.mainDeck.unshift(obj);
+    else if(zone === "deck-bottom") G.mainDeck.push(obj);
+    else if(zone === "exile") G.exile.push(obj);
+  };
+
+  const confirm = () => {
+    if(!canPickNone && selected.size === 0) {
+      document.getElementById("rap-info").textContent = "⚠️ カードを選んでください";
+      return;
+    }
+    const picked = [];
+    const remain = [];
+    revealed.forEach((obj, i) => {
+      if(selected.has(i)) picked.push(obj);
+      else remain.push(obj);
+    });
+    picked.forEach(obj => sendTo(pickTo, obj));
+    remain.forEach(obj => sendTo(remainTo, obj));
+    const pickNames = picked.map(o=>cards.find(c=>c.code===o.code)?.name||o.code).join("、");
+    setMsg(`${pickNames ? `「${pickNames}」を${zoneLabel[pickTo]||pickTo}へ。` : ""}残り${remain.length}枚を${zoneLabel[remainTo]||remainTo}へ。`);
+    overlay.remove();
+    renderGame();
+    callback && callback(picked, remain);
+  };
+
+  document.getElementById("rap-ok").onclick = confirm;
+  document.getElementById("rap-cancel").onclick = () => {
+    revealed.forEach(obj => sendTo(remainTo, obj));
+    setMsg(`全${actual}枚を${zoneLabel[remainTo]||remainTo}へ戻しました。`);
+    overlay.remove();
+    renderGame();
+    callback && callback([], revealed);
+  };
+}
