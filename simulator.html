@@ -688,7 +688,7 @@ function getTerritoryClass(code) {
 let G = {
   playerLife: 20, enemyLife: 20,
   mainDeck: [], hand: [], field: [], grave: [], exile: [], pile: [], territory: [], territoryDeck: [],
-  turn: 1, phase: 0, isFirstTurn: true, isFirst: true,
+  turn: 1, phase: 0, isFirstTurn: true, isFirst: true, huntTriggered: false,
 };
 
 // 域ボーナス（効果による追加条件カウンター）
@@ -1438,6 +1438,12 @@ const TRIGGER_MAP = {
     label: "防御した時",
     check: (kw, cond) =>
       kw === "誘発（戦場）" && cond.includes("これが防御した時")
+  },
+  // 狩りフェイズ開始時（最初の1回のみ）
+  "phase_hunt": {
+    label: "狩りフェイズ開始時",
+    check: (kw, cond) =>
+      kw === "誘発（戦場）" && cond.includes("狩りフェイズ開始時")
   },
   // 準備フェイズ開始時
   "phase_prep": {
@@ -2190,10 +2196,18 @@ function nextPhase() {
     G.phase = 0;
     G.turn++;
     G.isFirstTurn = false;
-    // 次ターン起床：全アンムーブ自動＋行動待機リセット
+    G.huntTriggered = false;
+
+    // 1. すべての存在と領土の夜を明ける
+    [...G.field, ...G.territory].forEach(obj => { obj.night = false; });
+
+    // 2. すべての存在と領土をウェイクする
     wakeAllSilent();
+
+    // 3. 動物から行動待機を取り除く
     G.field.forEach(obj => { obj.summonedThisTurn = false; });
-    setMsg(G.turn + "ターン目開始。起床フェイズ：全存在と領土をウェイクしました。");
+
+    setMsg(G.turn + "ターン目開始。起床フェイズ：夜を明け、全存在と領土をウェイクしました。");
     updatePhase();
     renderGame();
     return;
@@ -2232,24 +2246,30 @@ function nextPhase() {
     return;
   }
 
-  // 夜警フェイズ（phase=5）：手札超過チェック
+  // 夜警フェイズ（phase=5）
   if(G.phase === 5) {
-    setMsg("夜警フェイズ：全ダメージ・ターン終了時効果をリセットしてください。");
+    // 1. すべてのダメージとターン終了時までの効果を取り除く
+    resetAllDamage();
+    resetTempAbilities();
     updatePhase();
     renderGame();
+    // 2. 手札7枚以上なら捨て札
     if(G.hand.length >= 7) {
+      setMsg("夜警フェイズ：ダメージとターン終了時効果をリセットしました。手札が7枚以上あります。6枚になるよう捨ててください。");
       setTimeout(() => openDiscardModal(), 300);
+    } else {
+      setMsg("夜警フェイズ：ダメージとターン終了時効果をリセットしました。");
     }
     return;
   }
 
   const msgs = [
-    "起床フェイズ：全アンムーブボタンを押してください。",
-    "準備フェイズ：準備フェイズ限定カードや優先券をもらった相手のプレイタイミングです。",
+    "起床フェイズ：夜を明け、全存在と領土をウェイクし、行動待機を取り除きます。",
+    "準備フェイズ：ターンプレイヤーが優先権を得ます。",
     "",
-    "狩りフェイズ：カードのプレイや効果・攻撃を行います。",
-    "日没フェイズ：日没限定カードや優先券をもらった相手のプレイタイミングです。",
-    "夜警フェイズ：ダメージリセット・ターン終了時効果を処理してください。"
+    "狩りフェイズ：カードのプレイや攻撃を行います。パイルが空の時のみカードをプレイできます。",
+    "日没フェイズ：ターンプレイヤーが優先権を得ます。",
+    "夜警フェイズ：ダメージとターン終了時効果をリセットします。"
   ];
   setMsg(msgs[G.phase] || "");
   updatePhase();
@@ -2257,6 +2277,11 @@ function nextPhase() {
 
   // 準備フェイズ（phase=1）：準備フェイズ誘発チェック
   if(G.phase === 1) setTimeout(()=>checkTriggers("phase_prep"), 400);
+  // 狩りフェイズ（phase=3）：最初の1回のみ誘発チェック
+  if(G.phase === 3 && !G.huntTriggered) {
+    G.huntTriggered = true;
+    setTimeout(()=>checkTriggers("phase_hunt"), 400);
+  }
   // 日没フェイズ（phase=4）：日没フェイズ誘発チェック
   if(G.phase === 4) setTimeout(()=>checkTriggers("phase_sunset"), 400);
 }
