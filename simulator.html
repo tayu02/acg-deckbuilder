@@ -3092,7 +3092,12 @@ function shuffleDeck() {
 
 // =============== カウンター管理 ===============
 const COUNTER_PRESETS = [
-  { key: "弱", label: "ATK-1/DEF-1", color: "#ff8888" },
+  { key: "強", label: "ATK+1/DEF+1", color: "#ffdd44", atkMod: 1,  defMod: 1  },
+  { key: "弱", label: "ATK-1/DEF-1", color: "#ff8888", atkMod: -1, defMod: -1 },
+  { key: "A+", label: "ATK+1",        color: "#ffaa44", atkMod: 1,  defMod: 0  },
+  { key: "A-", label: "ATK-1",        color: "#ff6644", atkMod: -1, defMod: 0  },
+  { key: "D+", label: "DEF+1",        color: "#44ddff", atkMod: 0,  defMod: 1  },
+  { key: "D-", label: "DEF-1",        color: "#4488ff", atkMod: 0,  defMod: -1 },
   { key: "防", label: "防護",         color: "#88ccff" },
   { key: "成", label: "成長",         color: "#88ff88" },
   { key: "眠", label: "睡眠",         color: "#ccaaff" },
@@ -3174,8 +3179,20 @@ function addCustomCounter() {
 function changeCounter(key, delta) {
   if(!counterTarget) return;
   if(!counterTarget.counters) counterTarget.counters = {};
-  counterTarget.counters[key] = Math.max(0, (counterTarget.counters[key]||0) + delta);
+  const prev = counterTarget.counters[key] || 0;
+  counterTarget.counters[key] = Math.max(0, prev + delta);
   if(counterTarget.counters[key] === 0) delete counterTarget.counters[key];
+
+  // ATK/DEFに影響するプリセットカウンターの連動処理
+  const preset = COUNTER_PRESETS.find(p => p.key === key);
+  if(preset && (preset.atkMod || preset.defMod)) {
+    const actualDelta = counterTarget.counters[key] !== undefined
+      ? delta  // 増減した分だけ
+      : -prev; // 0になった場合は元の値分だけ戻す
+    if(preset.atkMod) counterTarget.atkMod = (counterTarget.atkMod||0) + preset.atkMod * actualDelta;
+    if(preset.defMod) counterTarget.defMod = (counterTarget.defMod||0) + preset.defMod * actualDelta;
+  }
+
   renderCounterModal();
   renderGame();
 }
