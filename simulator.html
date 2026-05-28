@@ -715,11 +715,15 @@ let G = {
   playerLife: 20, enemyLife: 20,
   mainDeck: [], hand: [], field: [], grave: [], exile: [], pile: [], territory: [], territoryDeck: [],
   turn: 1, phase: 0, isFirstTurn: true, isFirst: true, huntTriggered: false, hinshinFlag: false,
-  noSearchThisTurn: false,    // 見猿：このターンサーチ不可
-  noTriggerThisTurn: false,   // 聞猿：このターン誘発・起動不可（通知）
-  noTargetWarning: false,     // 言猿：対象を取る時に警告
-  nightClearCount: 0,         // 獄炎：このターンの領土夜明け回数
-  acornSacrificeCount: 0,     // 森の貪食者：木の実トークン生贄カウント
+  noSearchThisTurn: false,
+  noTriggerThisTurn: false,
+  noTargetWarning: false,
+  nightClearCount: 0,
+  acornSacrificeCount: 0,
+  noDamageToPlayer: false,
+  damageBonus: 0,
+  extraTurn: false,
+  turnGraveyardLog: [],
 };
 
 // 域ボーナス（効果による追加条件カウンター）
@@ -1523,6 +1527,8 @@ function execMove(from, idx, to) {
     // 墓地送り→誘発（墓地）チェック＋effects.jsのto_grave
     if(to === "grave") {
       obj.diedThisTurn = true;
+      G.turnGraveyardLog = G.turnGraveyardLog || [];
+      G.turnGraveyardLog.push(obj);
       setTimeout(()=>checkTriggers("to_grave", obj), 300);
       setTimeout(()=>{ const eff=CARD_EFFECTS[obj.code]; if(eff?.to_grave) eff.to_grave(obj); }, 500);
       // デッキから来た場合はon_deck_revealを呼ぶ
@@ -1928,11 +1934,12 @@ function confirmAttack() {
   const attackerCount = groupAttackers.length;
 
   if(attackTargetIdx === "direct") {
-    G.enemyLife = Math.max(0, G.enemyLife - totalAtk);
+    let dmg = totalAtk + (G.damageBonus||0);
+    if(G.noDamageToPlayer) dmg = 0;
+    G.enemyLife = Math.max(0, G.enemyLife - dmg);
     groupAttackers.forEach(o => { o.rested = true; });
-    // 統治する猟犬フック
-    setTimeout(() => { G.field.forEach(o => { const eff=CARD_EFFECTS[o.code]; if(eff?.on_enemy_damage) eff.on_enemy_damage(o, totalAtk); }); }, 200);
-    setMsg(attackMode==="group" ? `👥 集団攻撃ダイレクト！${attackerCount}体 合計ATK:${totalAtk}` : `⚔️「${attackerCard.name}」ダイレクトアタック！相手ライフに${totalAtk}ダメージ。`);
+    setTimeout(() => { G.field.forEach(o => { const eff=CARD_EFFECTS[o.code]; if(eff?.on_enemy_damage) eff.on_enemy_damage(o, dmg); }); }, 200);
+    setMsg(attackMode==="group" ? `👥 集団攻撃ダイレクト！${attackerCount}体 合計ATK:${dmg}` : `⚔️「${attackerCard.name}」ダイレクトアタック！相手ライフに${dmg}ダメージ。`);
     closeModal("attack-modal");
     if(attackMode==="group") setTimeout(()=>triggerGroupAttack(groupAttackers,attackerCount),300);
     setTimeout(()=>checkTriggers("damage",attackerObj),300);
@@ -2153,6 +2160,30 @@ function triggerCardEffect(obj, triggerType) {
 
 function checkPlayable(card) {
   if(!card) return { ok: true, reason: "" };
+
+  // 冬：冬毛を持たない動物は出せない
+  const fuyu = G.field.find(o => o.code === "ユキ-ACG-032");
+  if(fuyu && card.type === "動物" && !(card.effect||"").includes("《冬毛》") && card.code !== "ユキ-ACG-031") {
+    return { ok: false, reason: "「冬」の効果：《冬毛》を持たない動物は戦場に出せません" };
+  }
+
+  // 悪夢：このターンのプレイ数分コスト増加
+  const akumu = G.field.find(o => o.code === "蔵馬-ACG-124");
+  if(akumu) {
+    const playCount = (G.turnPlayLog||[]).length;
+    if(playCount > 0) {
+      const extraCost = playCount;
+      // koyuuReductionで相殺（表示のみ、実際のコストチェックはここで追加）
+      const baseCost = parseInt(card.cost)||0;
+      const adjustedCost = baseCost + extraCost - (window.koyuuReduction||0);
+      const terrain = countTerrain();
+      // 簡易チェック（領土合計と比較）
+      const totalTerrain = terrain["合計"]||0;
+      if(adjustedCost > totalTerrain) {
+        return { ok: false, reason: `悪夢の効果でコストが${extraCost}増加（合計コスト:${adjustedCost}）` };
+      }
+    }
+  }
 
   // 常時効果によるプレイ制限チェック
   const ext = CARD_EFFECTS[card.code];
@@ -2476,6 +2507,14 @@ function nextPhase() {
     G.noTargetWarning = false;
     G.nightClearCount = 0;
     G.acornSacrificeCount = 0;
+    G.noDamageToPlayer = false;
+    G.damageBonus = 0;
+    G.turnGraveyardLog = [];
+    // extraTurnチェック
+    if(G.extraTurn) {
+      G.extraTurn = false;
+      setMsg(`⏱ 追加ターン発動！${G.turn}ターン目（追加）開始。`);
+    }
     // playedThisTurnフラグをリセット
     [...G.field, ...G.pile, ...G.hand, ...G.grave, ...G.exile].forEach(o => { o.playedThisTurn = false; });
 

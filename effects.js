@@ -3489,3 +3489,833 @@ CARD_EFFECTS["BP4-072"] = {
     );
   },
 };
+
+
+// ============================================================
+// ACG カード効果実装
+// ============================================================
+
+// =============== うさカス-ACG-004 夜の使者 ===============
+CARD_EFFECTS["うさカス-ACG-004"] = {
+  field_enter(obj) {
+    pickFromZone("field", { message: "夜にする存在を選んでください", count: 1, filter: (o) => o !== obj },
+      (selected) => { if(selected.length > 0) { selected[0].night = true; setMsg("🌙 夜の使者：存在を夜にしました。"); renderGame(); } }
+    );
+  },
+  // 夜牢カウンター：起床フェイズで夜を明ける代わりにカウンターを取り除く
+  constant_field(obj) {
+    const cnt = obj.counters?.["夜牢"] || 0;
+    if(cnt > 0 && obj.night) {
+      // 夜を明けようとした時にカウンターを消費（フェイズ処理でチェック）
+      obj.nightJailActive = true;
+    } else {
+      obj.nightJailActive = false;
+    }
+  },
+  activate_hand(obj) {
+    const idx = G.hand.indexOf(obj);
+    if(idx >= 0) G.hand.splice(idx, 1);
+    G.exile.push(obj);
+    // 除外→夜牢カウンター1個付き夜状態で戦場に出す
+    setTimeout(() => {
+      G.exile.splice(G.exile.indexOf(obj), 1);
+      obj.night = true;
+      if(!obj.counters) obj.counters = {};
+      obj.counters["夜牢"] = 1;
+      G.field.push(obj);
+      obj.summonedThisTurn = true;
+      setMsg("🌙 夜の使者：夜牢カウンター1個付き夜状態で戦場に出ました。");
+      renderGame();
+    }, 300);
+  },
+};
+
+// =============== うさカス-ACG-011 黄昏の神隠し ===============
+CARD_EFFECTS["うさカス-ACG-011"] = {
+  play(obj) {
+    pickFromZone("field", { message: "対象のコスト1以下の動物を選んでください", count: 1, filter: (o, c) => c && c.type === "動物" && (parseInt(c.cost)||0) <= 1 },
+      (selected) => {
+        if(selected.length === 0) return;
+        const target = selected[0];
+        // 除外→戦場に戻す→黄昏を除外
+        moveCard(target, "field", "exile");
+        setTimeout(() => {
+          G.exile.splice(G.exile.indexOf(target), 1);
+          G.field.push(target);
+          target.summonedThisTurn = true;
+          setMsg(`🌅 黄昏の神隠し：「${cards.find(c=>c.code===target.code)?.name}」を除外して戦場に戻しました。`);
+          setTimeout(() => triggerCardEffect(target, "field_enter"), 300);
+          // 黄昏を除外
+          const pileIdx = G.pile.indexOf(obj);
+          if(pileIdx >= 0) { G.pile.splice(pileIdx, 1); G.exile.push(obj); }
+          renderGame();
+        }, 500);
+      }
+    );
+  },
+  activate_grave(obj) {
+    payCostTerrain(4, () => {
+      const graveIdx = G.grave.indexOf(obj);
+      if(graveIdx >= 0) {
+        G.grave.splice(graveIdx, 1);
+        // コストと条件を無視してプレイ
+        G.pile.push(obj);
+        setMsg("🌅 黄昏の神隠し：墓地からコスト・条件無視でプレイします。効果を発動してください。");
+        setTimeout(() => { const eff = CARD_EFFECTS[obj.code]; if(eff?.play) eff.play(obj); }, 300);
+        renderGame();
+      }
+    });
+  },
+};
+
+// =============== うさカス-ACG-015 ペンギンフォース ===============
+CARD_EFFECTS["うさカス-ACG-015"] = {
+  can_play() {
+    const played = (G.turnPlayLog||[]).filter(p => p.code === "うさカス-ACG-015");
+    if(played.length >= 1) return { ok: false, reason: "1ターンに1度しかプレイできません" };
+    return { ok: true };
+  },
+  play(obj) {
+    // 全領土をムーブ
+    G.territory.forEach(o => { o.rested = true; });
+    setMsg("🐧 ペンギンフォース：全領土をムーブ。動物プレイ以外のプレイを妨害します。");
+    // 妨害対象を選ぶ
+    askYesNo("対象のプレイを妨害しますか？（動物プレイ以外）", () => {
+      setMsg("🐧 ペンギンフォース：妨害しました（手動で対象プレイを無効にしてください）。");
+    });
+    renderGame();
+  },
+};
+
+// =============== うさクズ-ACG-019 象教皇 ===============
+CARD_EFFECTS["うさクズ-ACG-019"] = {
+  // 常時（戦場）：防御できない
+  constant_field(obj) { obj.cannotDefend = true; },
+  activate_grave(obj) {
+    // 墓地のこれを除外して手札のATK7動物を公開→コスト②軽減
+    const graveIdx = G.grave.indexOf(obj);
+    if(graveIdx < 0) return;
+    const atk7 = G.hand.filter(o => { const c = cards.find(c=>c.code===o.code); return c && getATK(c) === 7; });
+    if(atk7.length === 0) { setMsg("🐘 象教皇：手札にATK7の動物がありません。"); return; }
+    pickFromZone("hand", { message: "公開するATK7の動物を選んでください", count: 1, filter: (o, c) => c && getATK(c) === 7 },
+      (selected) => {
+        if(selected.length === 0) return;
+        G.grave.splice(graveIdx, 1); G.exile.push(obj);
+        selected[0].publicDisplay = true;
+        window.koyuuReduction = (window.koyuuReduction||0) + 2;
+        setMsg(`🐘 象教皇：「${cards.find(c=>c.code===selected[0].code)?.name}」を公開。ターン終了時までコスト②軽減。`);
+        renderGame();
+      }
+    );
+  },
+  activate_exile(obj) {
+    payCostTerrain(3, () => {
+      const atk7Grave = G.grave.filter(o => { const c=cards.find(c=>c.code===o.code); return c && getATK(c) === 7; });
+      if(atk7Grave.length < 3) { setMsg(`🐘 象教皇：墓地のATK7動物が${atk7Grave.length}枚です（3枚必要）。`); return; }
+      pickFromZone("grave", { message: "除外するATK7の動物を3枚選んでください", count: 3, filter: (o, c) => c && getATK(c) === 7 },
+        (selected) => {
+          if(selected.length < 3) return;
+          selected.forEach(o => moveCard(o, "grave", "exile"));
+          if(!obj.counters) obj.counters = {};
+          obj.counters["脱出"] = 1;
+          setMsg("🐘 象教皇：除外の象教皇に脱出カウンター1個を置きました。");
+          renderGame();
+        }
+      );
+    });
+  },
+};
+
+// =============== ユキ-ACG-032 冬 ===============
+CARD_EFFECTS["ユキ-ACG-032"] = {
+  field_enter(obj) {
+    // 全存在を生贄→冬毛カードをサーチ
+    const targets = G.field.filter(o => o !== obj);
+    targets.forEach(o => moveCard(o, "field", "grave"));
+    setMsg(`❄️ 冬：戦場の${targets.length}体を生贄に捧げました。デッキから《冬毛》持ちカードをサーチします。`);
+    searchDeck(card => (card.effect||"").includes("《冬毛》"), 1, "hand", { message: "デッキから《冬毛》を持つカードを手札に加えてください" });
+    renderGame();
+  },
+};
+
+// =============== ユキ-ACG-033 貯め瓶 ===============
+CARD_EFFECTS["ユキ-ACG-033"] = {
+  // プレイ時に治癒カウンター+1
+  on_play_reaction(obj) {
+    if(!obj.counters) obj.counters = {};
+    obj.counters["治癒"] = (obj.counters["治癒"]||0) + 1;
+    setMsg(`🫙 貯め瓶：治癒カウンター${obj.counters["治癒"]}個。`);
+    // 4個で自動発動
+    if(obj.counters["治癒"] >= 4) {
+      obj.counters["治癒"] = 0;
+      moveCard(obj, "field", "grave");
+      G.playerLife += 4;
+      drawCards(1);
+      setMsg("🫙 貯め瓶：治癒カウンター4個！4点回復して1枚ドロー。");
+    }
+    renderGame();
+  },
+};
+
+// =============== ユキ-ACG-034 鉄檻 ===============
+CARD_EFFECTS["ユキ-ACG-034"] = {
+  // 全動物攻撃不可→constant_field
+  constant_field(obj) { obj.tetsuOriActive = true; },
+  phase_prep(obj) {
+    if(!obj.counters) obj.counters = {};
+    obj.counters["補修"] = (obj.counters["補修"]||0) + 2;
+    const cnt = obj.counters["補修"];
+    setMsg(`⛓ 鉄檻：補修カウンター${cnt}個。コスト${cnt}を支払わなければ破壊されます。`);
+    payCostTerrain(cnt, () => {
+      setMsg(`⛓ 鉄檻：コスト${cnt}を支払いました。維持します。`);
+      renderGame();
+    });
+    // 支払えない場合は自動破壊
+    const terrain = countTerrain();
+    if((terrain["合計"]||0) < cnt) {
+      moveCard(obj, "field", "grave");
+      setMsg("⛓ 鉄檻：コストを支払えないため破壊されました。");
+    }
+    renderGame();
+  },
+};
+
+// =============== ユキ-ACG-043 イルカミネーション ===============
+CARD_EFFECTS["ユキ-ACG-043"] = {
+  can_play() {
+    const playedCount = (G.turnPlayLog||[]).filter(p => p.code === "ユキ-ACG-043").length;
+    if(playedCount > 0) return { ok: false, reason: `イルカミネーションのコストが3×${playedCount+1}増加しています` };
+    return { ok: true };
+  },
+  play(obj) {
+    askNumber("🐬 イルカミネーション：相手のプレイ枚数分コスト軽減します。相手の今ターンのプレイ枚数は？", 0, 10, (x) => {
+      setMsg(`🐬 イルカミネーション：${x}コスト軽減でプレイ。コスト2以下のプレイを妨害します。`);
+      askYesNo("対象のコスト2以下のプレイを妨害しますか？", () => {
+        setMsg("🐬 イルカミネーション：妨害しました。このターン中、イルカミネーションのコストは3増加します。");
+      });
+      renderGame();
+    });
+  },
+};
+
+// =============== ユキ-ACG-045 森の中へ ===============
+CARD_EFFECTS["ユキ-ACG-045"] = {
+  play(obj) {
+    G.noDamageToPlayer = true;
+    setMsg("🌲 森の中へ：このターン中、プレイヤーへのダメージは0になります。");
+    renderGame();
+  },
+};
+
+// =============== 野良-ACG-047 猟犬 ===============
+CARD_EFFECTS["野良-ACG-047"] = {
+  can_play() {
+    const played = (G.turnPlayLog||[]).filter(p => p.code === "野良-ACG-047");
+    if(played.length >= 1) return { ok: false, reason: "1ターンに1度しかプレイできません" };
+    return { ok: true };
+  },
+  constant_field(obj) { obj.cannotDefend = true; },
+  // プレイヤーがダメージを受けた時（自分・相手問わず）
+  on_self_damage(obj, amount) {
+    if(amount > 0) {
+      obj.atkMod = (obj.atkMod||0) + 1;
+      obj.defMod = (obj.defMod||0) + 1;
+      setMsg(`🐕 猟犬：プレイヤーがダメージを受けました！ATK+1/DEF+1を得ます。`);
+      renderGame();
+    }
+  },
+  on_enemy_damage(obj, amount) {
+    if(amount > 0) {
+      obj.atkMod = (obj.atkMod||0) + 1;
+      obj.defMod = (obj.defMod||0) + 1;
+      setMsg(`🐕 猟犬：プレイヤーがダメージを受けました！ATK+1/DEF+1を得ます。`);
+      renderGame();
+    }
+  },
+};
+
+// =============== 野良-ACG-056 貰い火 ===============
+CARD_EFFECTS["野良-ACG-056"] = {
+  can_play() {
+    const played = (G.turnPlayLog||[]).filter(p => p.code === "野良-ACG-056");
+    if(played.length >= 1) return { ok: false, reason: "1ターンに1度しかプレイできません" };
+    return { ok: true };
+  },
+  play(obj) {
+    G.damageBonus = (G.damageBonus||0) + 1;
+    // 回復不可フラグも
+    G.noHealThisTurn = true;
+    pickFromZone("field", { message: "対象を選んでください（ターン終了時まで回復不可＋ダメージ+1）", count: 1 },
+      (selected) => {
+        if(selected.length > 0) {
+          selected[0].noHeal = true;
+          const name = cards.find(c=>c.code===selected[0].code)?.name||selected[0].code;
+          setMsg(`🔥 貰い火：「${name}」はターン終了時まで回復不可、受けるダメージ+1。全体ダメージも+1。`);
+        }
+        renderGame();
+      }
+    );
+  },
+};
+
+// =============== ライ太-ACG-067 今生の獅子 ===============
+CARD_EFFECTS["ライ太-ACG-067"] = {
+  field_enter(obj) {
+    pickFromZone("field", { message: "破壊する存在を選んでください", count: 1, filter: (o) => o !== obj },
+      (selected) => {
+        if(selected.length === 0) return;
+        const target = selected[0];
+        if(target.indestructible) { setMsg("💀 今生の獅子：対象は効果で破壊されません。"); return; }
+        moveCard(target, "field", "grave");
+        setMsg(`🦁 今生の獅子：「${cards.find(c=>c.code===target.code)?.name||target.code}」を破壊しました。`);
+        renderGame();
+      }
+    );
+  },
+  to_grave(obj) {
+    revealAndPick(1, { message: "デッキ上1枚を公開。動物なら手札へ、それ以外はデッキ下へ。",
+      pickCount: 1, filter: (o, c) => c && c.type === "動物", pickTo: "hand", remainTo: "deck-bottom", canPickNone: true },
+      null
+    );
+  },
+};
+
+// =============== ライ太-ACG-068 獅子王 ===============
+CARD_EFFECTS["ライ太-ACG-068"] = {
+  // デッキからライオンが墓地に置かれた時→field_enter_otherで対応
+  field_enter_other(obj, triggerObj) {
+    if(!triggerObj.fromDeck) return;
+    const c = cards.find(c=>c.code===triggerObj.code);
+    if(!c || c.type !== "動物" || !(c.tribe||"").includes("ライオン")) return;
+    askYesNo(`🦁 獅子王：ライオン動物がデッキから墓地へ。②払って存在1つを破壊しますか？`,
+      () => payCostTerrain(2, () => {
+        pickFromZone("field", { message: "破壊する存在を選んでください", count: 1 },
+          (sel) => { if(sel.length > 0 && !sel[0].indestructible) { moveCard(sel[0], "field", "grave"); setMsg("🦁 獅子王：破壊しました。"); renderGame(); } }
+        );
+      })
+    );
+  },
+  activate_grave(obj) {
+    const atk7Grave = G.grave.filter(o => { const c=cards.find(c=>c.code===o.code); return c && getATK(c) === 7 && o !== obj; });
+    if(atk7Grave.length === 0) { setMsg("🦁 獅子王：墓地にATK7動物がいません。"); return; }
+    payCostTerrain(4, () => {
+      pickFromZone("field", { message: "破壊する存在を選んでください", count: 1 },
+        (sel) => { if(sel.length > 0 && !sel[0].indestructible) { moveCard(sel[0], "field", "grave"); setMsg("🦁 獅子王：墓地から発動、破壊しました。"); renderGame(); } }
+      );
+    });
+  },
+};
+
+// =============== ライ太-ACG-071 ライオンの嵐 ===============
+CARD_EFFECTS["ライ太-ACG-071"] = {
+  play(obj) {
+    const lionCount = (G.turnGraveyardLog||[]).filter(o => {
+      const c = cards.find(c=>c.code===o.code);
+      return c && c.type === "動物" && (c.tribe||"").includes("ライオン");
+    }).length;
+    const x = lionCount;
+    if(x === 0) { setMsg("🦁 ライオンの嵐：このターン中にライオン動物が墓地に置かれていません。"); return; }
+    for(let i=0; i<x; i++) {
+      G.field.push({
+        id: "token_lion_"+Date.now()+"_"+i, code: "TOKEN_LION", isToken: true,
+        tokenName: `${x}/1 平野ライオン動物トークン`, tokenStats: `ATK ${x}／DEF 1`,
+        tokenType: "動物", tokenTribe: "ライオン",
+        keywords: ["駿足"], gainedEffects: [], damage: 0, rested: false, night: false, summonedThisTurn: false,
+      });
+    }
+    setMsg(`🦁 ライオンの嵐：${x}/1の平野ライオン動物トークン${x}体を生成しました。`);
+    renderGame();
+  },
+};
+
+// =============== パン田-ACG-092 隻腕の大将バッファロー ===============
+CARD_EFFECTS["パン田-ACG-092"] = {
+  constant_field(obj) { obj.cannotTakeBattleDamage = true; },
+  // 攻撃時に集団防御されるか確認
+  group_attack(obj, count) {
+    askYesNo("🦬 隻腕の大将バッファロー：集団防御されましたか？",
+      () => {
+        askNumber("防御している動物の数を入力してください", 1, 10, (x) => {
+          obj.atkMod = (obj.atkMod||0) + (obj.baseATK||0) * (x - 1);
+          setMsg(`🦬 隻腕の大将バッファロー：集団防御${x}体！ATKが${x}倍になります。`);
+          renderGame();
+        });
+      }
+    );
+  },
+  activate_field(obj) {
+    const graveHonor = G.grave.filter(o => (cards.find(c=>c.code===o.code)?.name||"").includes("勲章"));
+    if(graveHonor.length === 0) { setMsg("🦬 隻腕の大将バッファロー：墓地に勲章カードがありません。"); return; }
+    pickFromZone("grave", { message: "除外する勲章カードを選んでください", count: 1, filter: (o, c) => (c?.name||"").includes("勲章") },
+      (selected) => {
+        if(selected.length === 0) return;
+        moveCard(selected[0], "grave", "exile");
+        pickFromZone("field", { message: "必ず防御する常時を与える動物を選んでください", count: 1, filter: (o, c) => c && c.type === "動物" },
+          (targets) => {
+            if(targets.length === 0) return;
+            gainAbility(targets[0], "『これは必ず防御する』", true);
+            setMsg(`🦬 隻腕の大将バッファロー：「${cards.find(c=>c.code===targets[0].code)?.name}」は必ず防御します。`);
+            renderGame();
+          }
+        );
+      }
+    );
+  },
+};
+
+// =============== パン田-ACG-099 襲撃 ===============
+CARD_EFFECTS["パン田-ACG-099"] = {
+  play(obj) {
+    const terrain = countTerrain();
+    const x = terrain["山"] || 0;
+    if(x === 0) { setMsg("⚔️ 襲撃：山岳域がありません。"); return; }
+    const candidates = G.hand.filter(o => {
+      const c = cards.find(c=>c.code===o.code);
+      if(!c || c.type !== "動物") return false;
+      const cost = parseInt(c.cost)||0;
+      const condCount = (c.condition||"").replace(/[^山水森平夜無]/g,"").length;
+      return cost <= x && condCount <= x;
+    });
+    if(candidates.length === 0) { setMsg(`⚔️ 襲撃：山岳域${x}以下のコスト・条件の動物が手札にありません。`); return; }
+    pickFromZone("hand", { message: `手札のコスト${x}以下・条件数${x}以下の山岳動物を選んでください（コスト・条件無視で展開）`,
+      count: 1, filter: (o, c) => c && c.type === "動物" && (parseInt(c.cost)||0) <= x && ((c.condition||"").replace(/[^山水森平夜無]/g,"").length) <= x },
+      (selected) => {
+        if(selected.length === 0) return;
+        moveCard(selected[0], "hand", "field");
+        gainAbility(selected[0], "《駿足》", true);
+        selected[0].summonedThisTurn = false;
+        setMsg(`⚔️ 襲撃：「${cards.find(c=>c.code===selected[0].code)?.name}」をコスト・条件無視で展開し《駿足》を付与。`);
+        setTimeout(() => triggerCardEffect(selected[0], "field_enter"), 300);
+        renderGame();
+      }
+    );
+  },
+};
+
+// =============== 蔵馬-ACG-124 悪夢 ===============
+CARD_EFFECTS["蔵馬-ACG-124"] = {
+  // コストチェックはcheckPlayableに統合済み
+  // 3枚以上プレイで自動生贄
+  on_play_reaction(obj) {
+    const cnt = (G.turnPlayLog||[]).length;
+    if(cnt >= 3) {
+      moveCard(obj, "field", "grave");
+      setMsg("😱 悪夢：このターン3枚目以上のプレイが発生したため生贄に捧げられました。");
+      renderGame();
+    }
+  },
+};
+
+// =============== 蔵馬-ACG-126 足枷 ===============
+CARD_EFFECTS["蔵馬-ACG-126"] = {
+  constant_field(obj) {
+    // 誘発・起動発動前にコスト①支払い（checkTriggers内で通知）
+    obj.ashikagiActive = true;
+  },
+};
+
+// =============== 蔵馬-ACG-130 城砦 ===============
+CARD_EFFECTS["蔵馬-ACG-130"] = {
+  // ダメージ置き換えはdealDamageToPlayer内で処理済み
+  phase_prep(obj) {
+    // 準備フェイズ：手札1枚捨てなければ生贄
+    askYesNo("🏰 城砦：手札1枚を捨てますか？捨てないとこれを生贄に捧げます。",
+      () => {
+        pickFromZone("hand", { message: "捨てるカードを選んでください", count: 1 },
+          (selected) => { if(selected.length > 0) { moveCard(selected[0], "hand", "grave"); setMsg("🏰 城砦：維持しました。"); renderGame(); } }
+        );
+      },
+      () => { moveCard(obj, "field", "grave"); setMsg("🏰 城砦：生贄に捧げられました。"); renderGame(); }
+    );
+  },
+};
+
+// =============== キメサイ-ACG-138 亜音速カジキ ===============
+CARD_EFFECTS["キメサイ-ACG-138"] = {
+  can_play() { return { ok: true }; },
+  play(obj) {
+    const gunjyo = G.field.filter(o => o.code === "キメサイ-ACG-136");
+    if(gunjyo.length >= 4) {
+      askYesNo(`🐟 亜音速カジキ：戦場の群泳カジキ4つを除外してコスト⑧軽減しますか？（現在${gunjyo.length}体）`,
+        () => {
+          pickFromZone("field", { message: "除外する群泳カジキを4体選んでください", count: 4, filter: (o) => o.code === "キメサイ-ACG-136" },
+            (selected) => {
+              if(selected.length < 4) return;
+              selected.forEach(o => moveCard(o, "field", "exile"));
+              const x = selected.length;
+              // 除外したX体分の対象を選んで除外
+              pickFromZone("field", { message: `戦場・墓地・領地から最大${x}つを選んで除外してください`, count: x },
+                (targets) => {
+                  targets.forEach(o => {
+                    if(G.field.includes(o)) moveCard(o, "field", "exile");
+                    else if(G.grave.includes(o)) moveCard(o, "grave", "exile");
+                    else if(G.territory.includes(o)) { G.territory.splice(G.territory.indexOf(o),1); G.exile.push(o); }
+                  });
+                  G.field.push(obj); obj.summonedThisTurn = true;
+                  setMsg(`🐟 亜音速カジキ：群泳カジキ4体を除外、${targets.length}つを除外して戦場に出ました。`);
+                  renderGame();
+                }
+              );
+            }
+          );
+        }
+      );
+    } else {
+      G.field.push(obj); obj.summonedThisTurn = true;
+      setMsg("🐟 亜音速カジキ：戦場に出ました。");
+      renderGame();
+    }
+  },
+  constant_field(obj) {
+    const hasGunjyo = G.exile.some(o => o.code === "キメサイ-ACG-136");
+    if(hasGunjyo) {
+      if(!(obj.keywords||[]).includes("駿足")) { if(!obj.keywords) obj.keywords=[]; obj.keywords.push("駿足"); obj.hasShunsoku=true; }
+      if(!(obj.keywords||[]).includes("突破")) obj.keywords.push("突破");
+    }
+  },
+};
+
+// =============== キメサイ-ACG-139 命削りの運び屋 ===============
+CARD_EFFECTS["キメサイ-ACG-139"] = {
+  activate_field(obj) {
+    payMoveCost(obj);
+    askNumber("🦫 命削りの運び屋：支払うライフを入力してください（最大ライフ-1まで）", 1, G.playerLife - 1, (x) => {
+      G.playerLife = Math.max(1, G.playerLife - x);
+      revealAndPick(x, { message: `デッキ上${x}枚を確認。任意の順でデッキ上に戻してください`, pickCount: 0, canPickNone: true, pickTo: "deck-top", remainTo: "deck-top" });
+      setMsg(`🦫 命削りの運び屋：ライフ${x}点を消費してデッキ上${x}枚を確認しました。`);
+      renderGame();
+    });
+  },
+  activate_hand(obj) {
+    moveCard(obj, "hand", "grave");
+    const overlay = document.createElement("div");
+    overlay.className="modal-overlay trigger-notice"; overlay.style.cssText="display:flex;z-index:500;";
+    overlay.innerHTML=`<div class="modal-box" style="max-width:300px;" onclick="event.stopPropagation()">
+      <p style="font-size:13px;color:#e0e8d0;margin-bottom:10px;">🦫 命削りの運び屋：カード名を宣言してください</p>
+      <input id="beaver-name" type="text" style="width:100%;padding:8px;background:#1a2a3a;border:1px solid #4a8a4a;border-radius:8px;color:#e0e8d0;font-size:14px;margin-bottom:10px;">
+      <div class="modal-btn-row"><button class="modal-btn confirm" id="beaver-ok">宣言</button><button class="modal-btn cancel" onclick="this.closest('.trigger-notice').remove()">キャンセル</button></div></div>`;
+    document.body.appendChild(overlay);
+    document.getElementById("beaver-ok").onclick = () => {
+      const name = document.getElementById("beaver-name").value.trim();
+      if(!name) return;
+      overlay.remove();
+      if(G.mainDeck.length === 0) { setMsg("🦫 命削りの運び屋：デッキが空です。"); return; }
+      const top = G.mainDeck[0];
+      const topCard = cards.find(c=>c.code===top.code);
+      if((topCard?.name||top.code) === name) {
+        drawCards(1);
+        setMsg(`🦫 命削りの運び屋：「${name}」を宣言→デッキ上が「${topCard?.name}」！1枚ドロー。`);
+      } else {
+        setMsg(`🦫 命削りの運び屋：「${name}」を宣言→デッキ上は「${topCard?.name||top.code}」でした。`);
+      }
+      renderGame();
+    };
+  },
+};
+
+// =============== キメサイ-ACG-141 希望漁り ===============
+CARD_EFFECTS["キメサイ-ACG-141"] = {
+  field_enter(obj) {
+    // 宣言する場面カード名を記録
+    const overlay = document.createElement("div");
+    overlay.className="modal-overlay trigger-notice"; overlay.style.cssText="display:flex;z-index:500;";
+    overlay.innerHTML=`<div class="modal-box" style="max-width:300px;" onclick="event.stopPropagation()">
+      <p style="font-size:13px;color:#e0e8d0;margin-bottom:10px;">🦎 希望漁り：場面カードのカード名を宣言してください</p>
+      <input id="hope-name" type="text" style="width:100%;padding:8px;background:#1a2a3a;border:1px solid #4a8a4a;border-radius:8px;color:#e0e8d0;font-size:14px;margin-bottom:10px;">
+      <div class="modal-btn-row"><button class="modal-btn confirm" id="hope-ok">宣言</button></div></div>`;
+    document.body.appendChild(overlay);
+    document.getElementById("hope-ok").onclick = () => {
+      obj.hopeDeclared = document.getElementById("hope-name").value.trim();
+      overlay.remove();
+      setMsg(`🦎 希望漁り：「${obj.hopeDeclared}」を宣言しました。ライフ1点の時コスト無視でプレイ可能。`);
+      renderGame();
+    };
+  },
+  on_life_one(obj) {
+    setMsg(`🦎 希望漁り：ライフが1点になりました！「${obj.hopeDeclared||"宣言カード"}」をコスト無視でプレイできます。`);
+  },
+  phase_sunset(obj) {
+    if(G.playerLife !== 1) return;
+    askYesNo(`🦎 希望漁り：ライフ1点。「${obj.hopeDeclared||"宣言カード"}」をデッキ・墓地・除外から手札に加えますか？`,
+      () => {
+        const name = obj.hopeDeclared;
+        const allZones = [...G.mainDeck, ...G.grave, ...G.exile];
+        const found = allZones.find(o => (cards.find(c=>c.code===o.code)?.name||o.code) === name);
+        if(!found) { setMsg("🦎 希望漁り：宣言カードが見つかりません。"); return; }
+        if(G.mainDeck.includes(found)) { G.mainDeck.splice(G.mainDeck.indexOf(found),1); }
+        else if(G.grave.includes(found)) { G.grave.splice(G.grave.indexOf(found),1); }
+        else if(G.exile.includes(found)) { G.exile.splice(G.exile.indexOf(found),1); }
+        G.hand.push(found);
+        setMsg(`🦎 希望漁り：「${name}」を手札に加えました。`);
+        renderGame();
+      }
+    );
+  },
+};
+
+// =============== キメサイ-ACG-142 断崖を背に ===============
+CARD_EFFECTS["キメサイ-ACG-142"] = {
+  play(obj) {
+    pickFromZone("grave", { message: "手札に加えるカードを選んでください", count: 1 },
+      (selected) => {
+        if(selected.length > 0) { moveCard(selected[0], "grave", "hand"); }
+        G.extraTurn = true;
+        // このカードを除外
+        const pileIdx = G.pile.indexOf(obj);
+        if(pileIdx >= 0) { G.pile.splice(pileIdx,1); G.exile.push(obj); }
+        setMsg("⛰ 断崖を背に：カードを手札に加えました。このターン終了後、追加ターンが発生します。");
+        renderGame();
+      }
+    );
+  },
+};
+
+// =============== キメサイ-ACG-146 道標 ===============
+CARD_EFFECTS["キメサイ-ACG-146"] = {
+  play(obj) {
+    const michi = obj;
+    const revealed = [];
+    let found = false;
+    // 道標が出るまでデッキを捲る
+    while(G.mainDeck.length > 0 && !found) {
+      const top = G.mainDeck.shift();
+      const topCard = cards.find(c=>c.code===top.code);
+      // 運命の帰郷チェック（デッキ最後の1枚）
+      if(G.mainDeck.length === 0 && topCard?.name === "運命の帰郷") {
+        setMsg("🌟 運命の帰郷：デッキの最後の1枚！特殊勝利！");
+        alert("🌟 運命の帰郷：特殊勝利！");
+        G.exile.push(top);
+        break;
+      }
+      if((topCard?.name||top.code) === "道標") {
+        found = true;
+        // 最後に除外したカードをコスト・条件無視でプレイ
+        const lastExiled = revealed[revealed.length - 1];
+        if(lastExiled) {
+          setMsg(`🗺 道標：「道標」が出ました！最後に除外した「${cards.find(c=>c.code===lastExiled.code)?.name||lastExiled.code}」をコスト無視でプレイします。`);
+          setTimeout(() => {
+            const eff = CARD_EFFECTS[lastExiled.code];
+            if(eff?.play) eff.play(lastExiled);
+            else setMsg(`🗺 道標：「${cards.find(c=>c.code===lastExiled.code)?.name||lastExiled.code}」をプレイしました（手動で効果を処理してください）。`);
+          }, 500);
+        }
+        G.exile.push(top);
+      } else {
+        top.fromDeck = true;
+        G.exile.push(top);
+        revealed.push(top);
+      }
+    }
+    // 除外したカードをデッキ上に戻してシャッフル
+    if(!found) setMsg("🗺 道標：デッキが尽きました。「道標」は見つかりませんでした。");
+    revealed.forEach(o => { G.exile.splice(G.exile.indexOf(o),1); G.mainDeck.unshift(o); });
+    shuffleDeck();
+    // この道標を除外
+    const pileIdx = G.pile.indexOf(michi);
+    if(pileIdx >= 0) { G.pile.splice(pileIdx,1); G.exile.push(michi); }
+    renderGame();
+  },
+};
+
+// =============== キメサイ-ACG-148 暗がりの保管庫 ===============
+CARD_EFFECTS["キメサイ-ACG-148"] = {
+  // デッキから公開されて非公開に戻ろうとした時→除外（revealAndPick内でフック）
+  on_deck_return(obj) {
+    // デッキに戻る代わりに除外
+    const idx = G.mainDeck.indexOf(obj);
+    if(idx >= 0) G.mainDeck.splice(idx, 1);
+    G.exile.push(obj);
+    setMsg("📦 暗がりの保管庫：デッキに戻る代わりに除外されました。");
+    askYesNo("📦 暗がりの保管庫：誘発（除外）：手札1枚を捨てて戦場に出しますか？",
+      () => {
+        pickFromZone("hand", { message: "捨てるカードを選んでください", count: 1 },
+          (selected) => {
+            if(selected.length === 0) return;
+            moveCard(selected[0], "hand", "grave");
+            G.exile.splice(G.exile.indexOf(obj),1);
+            G.field.push(obj); obj.summonedThisTurn = true;
+            setMsg("📦 暗がりの保管庫：戦場に出ました。");
+            renderGame();
+          }
+        );
+      }
+    );
+    renderGame();
+  },
+  activate_field(obj) {
+    payMoveCost(obj);
+    payCostTerrain(1, () => {
+      const handCards = [...G.hand];
+      pickFromZone("hand", { message: "デッキ上に置くカードを選んでください（複数可）", count: G.hand.length, canPickNone: true },
+        (selected) => {
+          selected.forEach(o => { G.hand.splice(G.hand.indexOf(o),1); G.mainDeck.unshift(o); });
+          shuffleDeck();
+          drawCards(selected.length);
+          setMsg(`📦 暗がりの保管庫：${selected.length}枚をデッキ上に→シャッフル→${selected.length}枚ドロー。`);
+          renderGame();
+        }
+      );
+    });
+  },
+  activate_hand(obj) {
+    // 公開してデッキ上に置く
+    const idx = G.hand.indexOf(obj);
+    if(idx >= 0) G.hand.splice(idx,1);
+    obj.publicDisplay = true;
+    G.mainDeck.unshift(obj);
+    setMsg("📦 暗がりの保管庫：公開してデッキ上に置きました。");
+    renderGame();
+  },
+};
+
+// =============== キメサイ-ACG-149 等価な検索網 ===============
+CARD_EFFECTS["キメサイ-ACG-149"] = {
+  constant_field(obj) {
+    // 戦場から墓地に置かれる代わりに除外
+    obj.netExileInstead = true;
+  },
+  to_grave(obj) {
+    // 常時効果で除外
+    G.grave.splice(G.grave.indexOf(obj),1);
+    G.exile.push(obj);
+    setMsg("🕸 等価な検索網：戦場から墓地の代わりに除外されました。");
+    renderGame();
+  },
+  // プレイへの割り込み（confirmPlay後にフック）
+  on_play_reaction(obj) {
+    if(G.hand.length > 0) return; // 手札が0枚の時のみ
+    const lastPlayed = G.pile[G.pile.length-1];
+    if(!lastPlayed) return;
+    const lc = cards.find(c=>c.code===lastPlayed.code);
+    revealAndPick(1, { message: "デッキ上1枚を公開。プレイと同コストなら手札に戻せます", pickCount: 1, canPickNone: true,
+      filter: (o, c) => c && (parseInt(c.cost)||0) === (parseInt(lc?.cost)||0), pickTo: "hand", remainTo: "deck-top" },
+      (picked) => {
+        if(picked.length > 0) {
+          // プレイを手札に戻してコントローラーは領土をウェイク
+          const pileIdx = G.pile.indexOf(lastPlayed);
+          if(pileIdx >= 0) { G.pile.splice(pileIdx,1); G.hand.push(lastPlayed); }
+          const x = parseInt(lc?.cost)||0;
+          // 領土Xつをウェイク
+          const rested = G.territory.filter(o => o.rested).slice(0, x);
+          rested.forEach(o => { o.rested = false; });
+          setMsg(`🕸 等価な検索網：「${lc?.name}」を手札に戻し、領土${rested.length}つをウェイクしました。`);
+          renderGame();
+        }
+      }
+    );
+  },
+  activate_grave(obj) {
+    if(G.hand.length > 0) { setMsg("🕸 等価な検索網：手札が0枚の時のみ起動できます。"); return; }
+    payCostTerrain(1, () => {
+      G.exile.splice(G.exile.indexOf(obj),1);
+      G.field.push(obj); obj.summonedThisTurn = true;
+      drawCards(1);
+      // このターンカードをプレイできない
+      G.noPlayThisTurn = true;
+      setMsg("🕸 等価な検索網：戦場に出て1枚ドロー。このターン中カードをプレイできません。");
+      renderGame();
+    });
+  },
+};
+
+// =============== キメサイ-ACG-161 鉄鴉 ===============
+CARD_EFFECTS["キメサイ-ACG-161"] = {
+  field_enter(obj) {
+    // このターン中に墓地に置かれた道具カードの数×ATK+1/DEF+1
+    const toolCount = (G.turnGraveyardLog||[]).filter(o => {
+      const c = cards.find(c=>c.code===o.code);
+      return c && c.type === "道具";
+    }).length;
+    if(toolCount > 0) {
+      if(!obj.counters) obj.counters = {};
+      obj.counters["ATK+1/DEF+1"] = (obj.counters["ATK+1/DEF+1"]||0) + toolCount;
+      obj.atkMod = (obj.atkMod||0) + toolCount;
+      obj.defMod = (obj.defMod||0) + toolCount;
+      setMsg(`🐦 鉄鴉：このターン${toolCount}枚の道具が墓地へ→ATK+${toolCount}/DEF+${toolCount}カウンターを置きました。`);
+    }
+    renderGame();
+  },
+  activate_field(obj) {
+    payMoveCost(obj);
+    const atk = getATK(cards.find(c=>c.code===obj.code)) + (obj.atkMod||0);
+    G.enemyLife = Math.max(0, G.enemyLife - atk);
+    setMsg(`🐦 鉄鴉：相手に${atk}点ダメージ。`);
+    setTimeout(() => { G.field.forEach(o => { const eff=CARD_EFFECTS[o.code]; if(eff?.on_enemy_damage) eff.on_enemy_damage(o, atk); }); }, 200);
+    renderGame();
+  },
+};
+
+// =============== キメサイ-ACG-163 此岸色のカメレオン ===============
+CARD_EFFECTS["キメサイ-ACG-163"] = {
+  field_enter(obj) {
+    const kameCatGrave = G.grave.filter(o => {
+      const c = cards.find(c=>c.code===o.code);
+      return c && (c.tribe||"").includes("カメレオン") && c.type === "動物" && o !== obj;
+    });
+    if(kameCatGrave.length === 0) return;
+    askYesNo("🦎 此岸色のカメレオン：墓地のカメレオン動物を除外して複製トークンを相手戦場に出しますか？",
+      () => {
+        pickFromZone("grave", { message: "除外するカメレオン動物を選んでください", count: 1, filter: (o, c) => c && (c.tribe||"").includes("カメレオン") && c.type === "動物" && o !== obj },
+          (selected) => {
+            if(selected.length === 0) return;
+            const src = selected[0];
+            const srcCard = cards.find(c=>c.code===src.code);
+            moveCard(src, "grave", "exile");
+            // 複製トークンを生成（相手戦場→簡易：自分戦場に出して通知）
+            G.field.push({
+              id: "token_kame_"+Date.now(), code: src.code, isToken: true,
+              tokenName: srcCard?.name+"（複製）", tokenStats: srcCard?.stats||"",
+              tokenType: "動物", tokenTribe: srcCard?.tribe||"カメレオン",
+              keywords: [], gainedEffects: ["これは相手の戦場にいます"], damage: 0, rested: false, night: false, summonedThisTurn: true,
+              isOpponentToken: true,
+            });
+            setMsg(`🦎 此岸色のカメレオン：「${srcCard?.name}」の複製トークンを相手の戦場に出しました。`);
+            renderGame();
+          }
+        );
+      }
+    );
+  },
+  to_grave(obj) {
+    // 戦場から離れた時、相手戦場のカメレオントークンをこちらに移す
+    const opponentToken = G.field.find(o => o.isToken && o.isOpponentToken && (cards.find(c=>c.code===o.code)?.tribe||o.tokenTribe||"").includes("カメレオン"));
+    if(opponentToken) {
+      opponentToken.isOpponentToken = false;
+      opponentToken.gainedEffects = (opponentToken.gainedEffects||[]).filter(e => e !== "これは相手の戦場にいます");
+      setMsg("🦎 此岸色のカメレオン：相手戦場のカメレオントークンをこちらの戦場に移しました。");
+      renderGame();
+    }
+  },
+};
+
+// =============== キメサイ-ACG-164 彼岸色のカメレオン ===============
+CARD_EFFECTS["キメサイ-ACG-164"] = {
+  constant_field(obj) {
+    // ATK+X：戦場のトークン以外の存在の条件数の最大値の合計
+    let total = 0;
+    G.field.forEach(o => {
+      if(o === obj || o.isToken) return;
+      const c = cards.find(c=>c.code===o.code);
+      if(!c) return;
+      const condCount = (c.condition||"").replace(/[^山水森平夜無]/g,"").length;
+      total += condCount;
+    });
+    if(obj.higanbuff !== undefined) obj.atkMod = (obj.atkMod||0) - obj.higanbuff;
+    obj.higanbuff = total;
+    obj.atkMod = (obj.atkMod||0) + total;
+  },
+  phase_sunset(obj) {
+    if(!obj.counters) obj.counters = {};
+    const cnt = obj.counters["彼岸"] || 0;
+    if(cnt >= 1) {
+      // 強制敗北
+      setMsg("💀 彼岸色のカメレオン：彼岸カウンターが2個！敗北します。");
+      alert("💀 彼岸色のカメレオン：強制敗北！彼岸カウンターが2個になりました。");
+    } else {
+      obj.counters["彼岸"] = cnt + 1;
+      setMsg(`🦎 彼岸色のカメレオン：彼岸カウンター${cnt+1}個。`);
+    }
+    renderGame();
+  },
+};
+

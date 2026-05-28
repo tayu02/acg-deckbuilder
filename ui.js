@@ -273,11 +273,49 @@ function drawCards(count) {
 // dealDamageToCard(obj, amount)
 // カードにダメージを与え、DEF超えで自動墓地送り
 // ------------------------------------------------------------
+// プレイヤーへのダメージ処理（森の中へ・城砦・貰い火対応）
+function dealDamageToPlayer(amount, isEnemy = false) {
+  let dmg = amount + (G.damageBonus || 0);
+  if(G.noDamageToPlayer) dmg = 0;
+
+  if(isEnemy) {
+    G.enemyLife = Math.max(0, G.enemyLife - dmg);
+    setTimeout(() => { G.field.forEach(o => { const eff=CARD_EFFECTS[o.code]; if(eff?.on_enemy_damage) eff.on_enemy_damage(o, dmg); }); }, 200);
+    setMsg(`相手に${dmg}点ダメージ。`);
+  } else {
+    // 城砦チェック
+    const castle = G.field.find(o => o.code === "蔵馬-ACG-130");
+    if(castle) {
+      if(!castle.counters) castle.counters = {};
+      castle.counters["補修"] = (castle.counters["補修"]||0) + dmg;
+      setMsg(`🏰 城砦：${dmg}点ダメージを補修カウンターに置き換えました（合計${castle.counters["補修"]}個）。`);
+      // 10個以上で生贄
+      if(castle.counters["補修"] >= 10) {
+        moveCard(castle, "field", "grave");
+        setMsg("🏰 城砦：補修カウンターが10個以上になったため生贄に捧げられました。");
+      }
+    } else {
+      G.playerLife = Math.max(0, G.playerLife - dmg);
+      // 猟犬チェック
+      G.field.forEach(o => { const eff=CARD_EFFECTS[o.code]; if(eff?.on_self_damage) eff.on_self_damage(o, dmg); });
+      // 希望漁りチェック
+      if(G.playerLife === 1) {
+        G.field.forEach(o => { const eff=CARD_EFFECTS[o.code]; if(eff?.on_life_one) eff.on_life_one(o); });
+      }
+      setMsg(`自分に${dmg}点ダメージ。残りライフ:${G.playerLife}`);
+    }
+  }
+  renderGame();
+}
+
 function dealDamageToCard(obj, amount) {
+  // 不壊チェック
+  if(obj.indestructible) { setMsg(`💪「${cards.find(c=>c.code===obj.code)?.name||obj.code}」は効果で破壊されません。`); return; }
   const card = cards.find(c => c.code === obj.code);
-  const def = getDEF(card);
+  const baseDefVal = getDEF(card);
+  const totalDef = baseDefVal + (obj.defMod||0);
   obj.damage = (obj.damage || 0) + amount;
-  if(obj.damage >= def) {
+  if(obj.damage >= totalDef) {
     const idx = G.field.indexOf(obj);
     if(idx >= 0) {
       G.field.splice(idx, 1);
@@ -285,6 +323,7 @@ function dealDamageToCard(obj, amount) {
       G.grave.push(obj);
       setMsg(`💀「${card?.name || obj.code}」が墓地へ送られました。`);
       setTimeout(() => checkTriggers("to_grave", obj), 300);
+      setTimeout(() => { const eff=CARD_EFFECTS[obj.code]; if(eff?.to_grave) eff.to_grave(obj); }, 500);
     }
   }
   renderGame();
