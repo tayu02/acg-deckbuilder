@@ -290,25 +290,25 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 
   /* カードサイズを拡大 */
   .game-card {
-    width: 60px;
-    height: 84px;
+    width: 180px;
+    height: 252px;
   }
 
   .territory-card {
-    width: 54px;
-    height: 76px;
+    width: 162px;
+    height: 227px;
   }
 
   .deck-display {
-    width: 60px;
-    height: 84px;
-    font-size: 12px;
+    width: 180px;
+    height: 252px;
+    font-size: 14px;
   }
   .deck-display .deck-cnt { font-size: 16px; }
 
   /* 戦場ゾーンを広く */
   .field-zone {
-    min-height: 100px;
+    min-height: 280px;
     flex-wrap: wrap;
   }
 
@@ -342,8 +342,8 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 
   /* 手札カードも大きく */
   .hand-card-item {
-    width: 60px;
-    height: 84px;
+    width: 180px;
+    height: 252px;
   }
 
   /* モーダル内カード選択も大きく */
@@ -1034,8 +1034,8 @@ function makeCardEl(obj, opts={}) {
   return div;
 }
 
-function getCardW() { return window.innerWidth >= 768 ? 90 : 56; }
-function getCardH() { return window.innerWidth >= 768 ? 126 : 78; }
+function getCardW() { return window.innerWidth >= 768 ? 180 : 56; }
+function getCardH() { return window.innerWidth >= 768 ? 252 : 78; }
 
 function renderGame() {
   // 常時効果の適用（effects.jsのconstant_field）
