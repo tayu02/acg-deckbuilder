@@ -270,9 +270,9 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
     flex-wrap: wrap;
     overflow-x: visible;
     overflow-y: auto;
-    max-height: 240px;
+    max-height: 600px;
     min-height: auto;
-    gap: 6px;
+    gap: 8px;
   }
 
   /* アクションボタンを縦並びに */
@@ -351,6 +351,15 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
     width: 64px;
     height: 90px;
   }
+
+  /* マリガンカードをPC用に拡大 */
+  .mulligan-card {
+    width: 160px;
+    height: 224px;
+  }
+  .mulligan-card .card-label { font-size: 11px; }
+  .mulligan-card.selected::after { font-size: 48px; }
+  .mulligan-cards { gap: 16px; }
 }
 
 /* タブレット向け（480px〜767px） */
@@ -420,7 +429,10 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 
 <!-- マリガン画面 -->
 <div id="screen-mulligan" class="screen">
-  <div class="sim-header"><h1>🃏 初手確認</h1></div>
+  <div class="sim-header" style="display:flex;align-items:center;justify-content:space-between;">
+    <h1>🃏 初手確認</h1>
+    <button onclick="if(confirm('デッキ作成画面に戻りますか？')){window.location.href='index.html';}" style="padding:4px 10px;background:#1a3a5a;border:1px solid #4a8aaa;border-radius:8px;color:#88ccff;font-size:11px;cursor:pointer;">📋 デッキ作成へ</button>
+  </div>
   <div style="padding:12px;flex:1;overflow-y:auto;">
     <h2 style="color:#ffdd88;font-size:15px;margin-bottom:6px;text-align:center;">2枚選んでデッキ下へ</h2>
     <p style="color:#a0c0a0;font-size:12px;text-align:center;margin-bottom:12px;">選んだ2枚はデッキの一番下に戻ります。残り5枚が手札になります。</p>
@@ -432,7 +444,7 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 
 <!-- ゲーム画面 -->
 <div id="screen-game" class="screen">
-  <div id="game-header">
+  <div id="game-header" style="display:flex;align-items:center;gap:8px;">
     <div class="life-edit-row">
       <button class="life-edit-btn minus" onclick="changeLife('enemy',-1)">−</button>
       <div style="text-align:center;">
@@ -453,7 +465,7 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
       </div>
       <button class="life-edit-btn plus" onclick="changeLife('player',1)">＋</button>
     </div>
-
+    <button onclick="if(confirm('デッキ作成画面に戻りますか？（ゲームの進行状況はリセットされます）')){window.location.href='index.html';}" style="padding:4px 10px;background:#1a3a5a;border:1px solid #4a8aaa;border-radius:8px;color:#88ccff;font-size:11px;cursor:pointer;white-space:nowrap;">📋 デッキ作成へ</button>
   </div>
 
   <div id="game-columns">
