@@ -201,6 +201,11 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
   position: fixed; inset: 0; background: rgba(0,0,0,0.85);
   display: flex; align-items: flex-end; justify-content: center; z-index: 200; padding: 12px;
 }
+/* マリガン画面・スタート画面ではモーダルを強制非表示 */
+body.screen-mulligan-active .modal-overlay,
+body.screen-start-active .modal-overlay {
+  display: none !important;
+}
 .modal-box {
   background: #1a2a30; border: 2px solid #4a8a4a; border-radius: 16px;
   padding: 14px; width: 100%; max-width: 480px; max-height: 80vh; overflow-y: auto;
@@ -333,20 +338,25 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 
   /* 各ゾーン：横並びで並べる */
   .field-zone {
-    min-height: 150px;
-    min-width: 200px;
+    min-height: 300px;
+    min-width: 400px;
     flex-wrap: wrap;
     align-content: flex-start;
   }
 
   .pile-zone {
-    min-width: 110px;
+    min-width: 120px;
     flex-wrap: wrap;
   }
 
   .territory-zone-area {
     flex-wrap: wrap;
-    min-width: 200px;
+    min-width: 300px;
+  }
+
+  /* ゲームボード内の各セクションを横並び */
+  #game-body > div {
+    flex-shrink: 0;
   }
 
   /* モーダル */
@@ -3255,7 +3265,21 @@ function changeCounter(key, delta) {
 
 function setMsg(m){ document.getElementById("message-area").innerHTML=m; }
 function closeModal(id){ document.getElementById(id).style.display="none"; }
-function showScreen(name) { document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); const el=document.getElementById("screen-"+name); if(el) el.classList.add("active"); }
+function showScreen(name) {
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  const el=document.getElementById("screen-"+name);
+  if(el) el.classList.add("active");
+  // bodyクラスでモーダル制御
+  document.body.className = document.body.className.replace(/screen-\S+-active/g, "").trim();
+  document.body.classList.add("screen-" + name + "-active");
+  // マリガン・スタート画面では全モーダルを閉じる
+  if(name === "mulligan" || name === "start") {
+    document.querySelectorAll(".modal-overlay").forEach(m => {
+      if(m.style.display !== "none") m.style.display = "none";
+    });
+    document.querySelectorAll(".trigger-notice").forEach(el => el.remove());
+  }
+}
 
 init();
 </script>
