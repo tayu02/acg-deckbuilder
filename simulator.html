@@ -244,29 +244,56 @@ body.screen-start-active .modal-overlay {
 
   /* 上段：盤面全体（横並び・画面いっぱいに） */
   #game-body {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: stretch;
-    gap: 8px;
-    padding: 8px 12px;
+    display: grid;
+    grid-template-columns: 1fr 110px;
+    grid-template-rows: 1fr auto auto auto;
+    grid-template-areas:
+      "field  decks"
+      "terr   decks"
+      "bottom bottom"
+      "domain domain";
+    gap: 4px;
+    padding: 6px 10px;
     flex: 1;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: hidden;
     min-height: 0;
   }
 
+  #gb-field     { grid-area: field;  display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+  #gb-decks     { grid-area: decks;  display:flex; flex-direction:column; align-items:center; gap:4px; padding:4px; border-left:1px solid #3a5a3a; }
+  #gb-territory { grid-area: terr;   display:flex; flex-direction:column; max-height:155px; border-top:1px solid #3a5a3a; padding-top:4px; }
+  #gb-bottom    { grid-area: bottom; display:flex; flex-direction:row; gap:4px; height:130px; border-top:1px solid #3a5a3a; padding-top:4px; }
+  #gb-domain    { grid-area: domain; display:flex; flex-direction:row; align-items:center; gap:6px; padding:3px 6px; background:rgba(40,60,20,0.3); border-radius:6px; border-top:1px solid #3a5a3a; }
+  #gb-grave     { flex:1; display:flex; flex-direction:column; min-width:100px; }
+  #gb-exile     { flex:1; display:flex; flex-direction:column; min-width:100px; }
+  #gb-pile      { flex:2; display:flex; flex-direction:column; min-width:150px; }
+
   /* 各ゾーンのセクションを縦方向に伸ばす */
-  #game-body > div {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
+  #game-body > div { flex-shrink: 0; }
+
+  .field-zone {
+    flex: 1;
+    min-height: 0;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    overflow-y: auto;
   }
 
-  /* 戦場を最大限広げる */
-  #game-body > div:has(#field-zone) {
+  .territory-zone-area {
     flex: 1;
-    min-width: 0;
+    flex-wrap: wrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .grave-zone, .exile-zone, .pile-zone {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 3px;
   }
 
   /* 下段：手札+アクション */
@@ -488,53 +515,51 @@ body.screen-start-active .modal-overlay {
 
   <div id="game-columns">
   <div id="game-body">
-    <div>
-      <div class="zone-label">パイル <span class="zone-count" id="pile-count">0</span></div>
-      <div class="pile-zone" id="pile-zone"></div>
-    </div>
-    <div>
+    <!-- 戦場 -->
+    <div id="gb-field">
       <div class="zone-label">戦場 <span class="zone-count" id="field-count">0</span></div>
       <div class="zone field-zone" id="field-zone"></div>
     </div>
-    <div>
-      <div class="zone-label">領土 <span class="zone-count" id="territory-count">0</span> <span style="font-size:10px;color:#88dd88;">タップでムーブ/ウェイク</span></div>
-      <div class="territory-zone-area" id="territory-zone"></div>
-    </div>
-    <!-- 域ボーナスパネル -->
-    <div style="background:rgba(40,60,20,0.4);border:1px solid #4a6a2a;border-radius:8px;padding:6px 8px;">
-      <div style="font-size:10px;color:#88dd88;margin-bottom:5px;">⚡ 域ボーナス（効果による追加条件）</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="domain-bonus-row"></div>
-    </div>
-    <div style="display:none;"><!-- 領土ゾーン終わり -->
-    </div>
-    <div class="grave-exile-row">
-      <div style="flex:1;">
-        <div class="zone-label">墓地 <span class="zone-count" id="grave-count">0</span></div>
-        <div class="grave-zone" id="grave-zone"></div>
-      </div>
-      <div style="flex:1;">
-        <div class="zone-label">除外 <span class="zone-count" id="exile-count">0</span></div>
-        <div class="exile-zone" id="exile-zone"></div>
-      </div>
-    </div>
-    <div>
+    <!-- デッキ+領土デッキ -->
+    <div id="gb-decks">
       <div class="zone-label">デッキ</div>
       <div class="deck-display" onclick="drawCard()">
         <span>📚</span>
         <span class="deck-cnt" id="deck-count">0</span>
         <span style="font-size:8px;">ドロー</span>
       </div>
-    </div>
-    <div>
-      <div class="zone-label">領土デッキ <span class="zone-count" id="terr-deck-count">0</span></div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <div class="deck-display" onclick="drawTerritory()" style="background:linear-gradient(135deg,#2a3a1a,#1a2a0f);border-color:#4a8a4a;">
-          <span>🌍</span>
-          <span class="deck-cnt" id="terr-deck-count-num">0</span>
-          <span style="font-size:8px;">置く</span>
-        </div>
-        <span style="font-size:11px;color:#6a8a6a;">タップで領土を1枚置く</span>
+      <div class="zone-label" style="margin-top:6px;">領土デッキ <span class="zone-count" id="terr-deck-count">0</span></div>
+      <div class="deck-display" onclick="drawTerritory()" style="background:linear-gradient(135deg,#2a3a1a,#1a2a0f);border-color:#4a8a4a;">
+        <span>🌍</span>
+        <span class="deck-cnt" id="terr-deck-count-num">0</span>
+        <span style="font-size:8px;">置く</span>
       </div>
+      <div style="font-size:9px;color:#6a8a6a;margin-top:2px;">タップで領土を1枚置く</div>
+    </div>
+    <!-- 領土 -->
+    <div id="gb-territory">
+      <div class="zone-label">領土 <span class="zone-count" id="territory-count">0</span> <span style="font-size:10px;color:#88dd88;">タップでムーブ/ウェイク</span></div>
+      <div class="territory-zone-area" id="territory-zone"></div>
+    </div>
+    <!-- 墓地・除外・パイル -->
+    <div id="gb-bottom">
+      <div id="gb-grave">
+        <div class="zone-label">墓地 <span class="zone-count" id="grave-count">0</span></div>
+        <div class="grave-zone" id="grave-zone"></div>
+      </div>
+      <div id="gb-exile">
+        <div class="zone-label">除外 <span class="zone-count" id="exile-count">0</span></div>
+        <div class="exile-zone" id="exile-zone"></div>
+      </div>
+      <div id="gb-pile">
+        <div class="zone-label">パイル <span class="zone-count" id="pile-count">0</span></div>
+        <div class="pile-zone" id="pile-zone"></div>
+      </div>
+    </div>
+    <!-- 域ボーナス -->
+    <div id="gb-domain">
+      <div style="font-size:10px;color:#88dd88;margin-bottom:3px;">⚡ 域ボーナス</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;" id="domain-bonus-row"></div>
     </div>
   </div>
 
