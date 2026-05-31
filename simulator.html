@@ -9,7 +9,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24; color: #e0e8d0; min-height: 100vh; }
 
-.screen { display: none; min-height: 100vh; flex-direction: column; }
+.screen { display: none; min-height: 100vh; flex-direction: column; position: fixed; inset: 0; background: #0f1a24; z-index: 10; overflow-y: auto; }
 .screen.active { display: flex; }
 
 .sim-header {
@@ -233,10 +233,8 @@ body.screen-start-active .modal-overlay {
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
-    display: flex;
   }
 
-  /* game-columnsを縦方向に：上=盤面、下=手札+アクション */
   #game-columns {
     display: flex;
     flex-direction: column;
@@ -244,12 +242,12 @@ body.screen-start-active .modal-overlay {
     overflow: hidden;
   }
 
-  /* 上段：盤面全体（横並び・スクロールなし） */
+  /* 上段：盤面全体（横並び・画面いっぱいに） */
   #game-body {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 8px;
     padding: 8px 12px;
     flex: 1;
@@ -258,28 +256,41 @@ body.screen-start-active .modal-overlay {
     min-height: 0;
   }
 
-  /* 下段：手札+アクションパネル横並び */
+  /* 各ゾーンのセクションを縦方向に伸ばす */
+  #game-body > div {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 戦場を最大限広げる */
+  #game-body > div:has(#field-zone) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* 下段：手札+アクション */
   #action-panel {
     position: relative;
     border-top: 2px solid #4a8a4a;
     border-left: none;
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
     gap: 10px;
-    padding: 8px 12px;
+    padding: 6px 12px;
     flex-shrink: 0;
+    height: 200px;
     overflow-x: auto;
-    overflow-y: visible;
-    height: 220px;
+    overflow-y: hidden;
   }
 
-  /* 手札：横一列、アクションパネルの左側に広く */
   #hand-panel {
     flex: 1;
     min-width: 0;
     border-bottom: none;
     margin-bottom: 0;
+    overflow: hidden;
   }
 
   #hand-panel-inner {
@@ -290,17 +301,16 @@ body.screen-start-active .modal-overlay {
     min-height: auto;
     gap: 6px;
     padding-bottom: 4px;
-  }
-
-  /* アクションボタン群：右側に固定 */
-  #action-panel > *:not(#hand-panel) {
-    flex-shrink: 0;
+    height: 170px;
+    align-items: center;
   }
 
   .action-row {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 4px;
+    flex-shrink: 0;
+    align-content: center;
   }
 
   .action-btn {
@@ -336,27 +346,23 @@ body.screen-start-active .modal-overlay {
   }
   .deck-display .deck-cnt { font-size: 15px; }
 
-  /* 各ゾーン：横並びで並べる */
+  /* 戦場ゾーン：縦横いっぱいに */
   .field-zone {
-    min-height: 300px;
-    min-width: 400px;
+    flex: 1;
+    min-width: 300px;
+    min-height: 0;
     flex-wrap: wrap;
     align-content: flex-start;
   }
 
   .pile-zone {
-    min-width: 120px;
+    min-width: 110px;
     flex-wrap: wrap;
   }
 
   .territory-zone-area {
     flex-wrap: wrap;
-    min-width: 300px;
-  }
-
-  /* ゲームボード内の各セクションを横並び */
-  #game-body > div {
-    flex-shrink: 0;
+    min-width: 200px;
   }
 
   /* モーダル */
@@ -367,11 +373,8 @@ body.screen-start-active .modal-overlay {
   #card-info-img { width: 130px; height: 182px; }
   .modal-select-card { width: 64px; height: 90px; }
 
-  /* マリガンカードをPC用に拡大 */
-  .mulligan-card {
-    width: 160px;
-    height: 224px;
-  }
+  /* マリガンカード */
+  .mulligan-card { width: 160px; height: 224px; }
   .mulligan-card .card-label { font-size: 11px; }
   .mulligan-card.selected::after { font-size: 48px; }
   .mulligan-cards { gap: 16px; }
