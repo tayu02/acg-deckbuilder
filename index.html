@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>デッキビルダー</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #0f1a24 url('https://tayu02.github.io/acg-deckbuilder/%E8%83%8C%E6%99%AF.jpeg') center center / cover fixed; color: #e0e8d0; min-height: 100vh; }
@@ -1071,6 +1071,46 @@ function copyDeckURLAndClose() {
 // → Base64URLデコード → zlib(deflate)で解凍 → JSON.parse
 // → { m: [カード番号, 枚数, カード番号, 枚数, ...] } を取得
 // → convertCardId で各番号を cards.js のコードに変換 → deck に追加
+
+// CDN取得失敗に備えた動的スクリプト読込（フォールバック）
+function _loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error("CDN読込失敗: " + src));
+    document.head.appendChild(s);
+  });
+}
+async function _ensureLibraries() {
+  // jsQR がない場合のフォールバック先（順番に試す）
+  if (typeof jsQR !== "function") {
+    const fallbacks = [
+      "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js",
+      "https://unpkg.com/jsqr@1.4.0/dist/jsQR.js",
+      "https://cdn.jsdelivr.net/gh/cozmo/jsQR@1.4.0/dist/jsQR.js"
+    ];
+    for (const url of fallbacks) {
+      try { await _loadScript(url); if (typeof jsQR === "function") break; }
+      catch (e) { console.warn(e); }
+    }
+  }
+  // pako のフォールバック
+  if (typeof pako === "undefined") {
+    const fallbacks = [
+      "https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js",
+      "https://unpkg.com/pako@2.1.0/dist/pako.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"
+    ];
+    for (const url of fallbacks) {
+      try { await _loadScript(url); if (typeof pako !== "undefined") break; }
+      catch (e) { console.warn(e); }
+    }
+  }
+  if (typeof jsQR !== "function") throw new Error("jsQRライブラリの読み込みに失敗しました（ネットワーク状況をご確認ください）");
+  if (typeof pako === "undefined") throw new Error("pakoライブラリの読み込みに失敗しました（ネットワーク状況をご確認ください）");
+}
+
 function convertCardId(id) {
   if (id >= 1 && id <= 164)      return `ACG-${String(id).padStart(3,"0")}`;
   if (id >= 5001 && id < 5100)   return `BP1-${String(id-5000).padStart(3,"0")}`;
@@ -1144,6 +1184,8 @@ async function _readQRCodeFromImage(file) {
 
 async function importDeckFromQRFile(file) {
   try {
+    // 0. ライブラリの存在チェック（不在ならフォールバックCDNから動的読込）
+    await _ensureLibraries();
     // 1. QR読み取り
     const qrText = await _readQRCodeFromImage(file);
     // 2. deckencdata 抽出
