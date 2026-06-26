@@ -51,7 +51,8 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 .mulligan-confirm-btn:disabled { background: #2a3a2a; color: #5a7a5a; cursor: not-allowed; }
 
 /* ゲーム画面 */
-#screen-game { overflow: hidden; height: 100vh; }
+#screen-game { overflow: hidden; height: 100vh; display: none; flex-direction: column; }
+#screen-game.active { display: flex; }
 #game-header { background: linear-gradient(to right, #1f2f1f, #1a2a3a); padding: 6px 10px; border-bottom: 2px solid #4a8a4a; display: flex; align-items: center; gap: 8px; }
 .life-edit-row { display: flex; align-items: center; gap: 4px; }
 .life-edit-btn { width: 26px; height: 26px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -63,11 +64,16 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 .life-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
 
 
-#game-body { flex: 1; overflow-y: auto; padding: 6px 8px 200px; display: flex; flex-direction: column; gap: 6px; }
-#game-columns { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+#game-body { flex: 1; overflow-y: auto; padding: 6px 8px 10px; display: flex; flex-direction: column; gap: 6px; min-height: 0; -webkit-overflow-scrolling: touch; }
+#game-columns { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
 
 .zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 3px; display: flex; align-items: center; gap: 4px; }
 .zone-count { background: rgba(0,0,0,0.4); padding: 0 4px; border-radius: 6px; font-size: 10px; color: #aaa; }
+
+/* スマホ：デッキと領土デッキを横並びに */
+#gb-decks { display: flex; flex-direction: row; gap: 14px; align-items: flex-start; padding: 4px 2px; }
+.deck-block { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.deck-block .deck-hint { font-size: 9px; color: #6a8a6a; margin-top: 2px; }
 .zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 6px; border-radius: 8px; min-height: 70px; align-items: flex-start; }
 .field-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
 .hand-zone-area { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); min-height: 80px; }
@@ -157,7 +163,7 @@ body { font-family: 'Hiragino Sans', 'Segoe UI', sans-serif; background: #0f1a24
 .deck-display .deck-cnt { font-size: 14px; }
 
 #action-panel {
-  position: fixed; bottom: 0; left: 0; right: 0;
+  position: relative; flex-shrink: 0;
   background: rgba(15,26,36,0.97); border-top: 2px solid #4a8a4a;
   padding: 6px 10px; z-index: 50;
 }
@@ -260,7 +266,8 @@ body.screen-start-active .modal-overlay {
   }
 
   #gb-field     { grid-area: field;  display:flex; flex-direction:column; min-height:0; overflow:hidden; }
-  #gb-decks     { grid-area: decks;  display:flex; flex-direction:column; align-items:center; gap:4px; padding:4px; border-left:1px solid #3a5a3a; }
+  #gb-decks     { grid-area: decks;  display:flex; flex-direction:column; align-items:center; gap:8px; padding:4px; border-left:1px solid #3a5a3a; }
+  #gb-decks .deck-block { align-items:center; }
   #gb-territory { grid-area: terr;   display:flex; flex-direction:column; max-height:155px; border-top:1px solid #3a5a3a; padding-top:4px; }
   #gb-bottom    { grid-area: bottom; display:flex; flex-direction:row; gap:4px; height:130px; border-top:1px solid #3a5a3a; padding-top:4px; }
   #gb-domain    { grid-area: domain; display:flex; flex-direction:row; align-items:center; gap:6px; padding:3px 6px; background:rgba(40,60,20,0.3); border-radius:6px; border-top:1px solid #3a5a3a; }
@@ -424,7 +431,8 @@ body.screen-start-active .modal-overlay {
     max-height: 80vh;
   }
 }
-}
+/* エラー画面 */
+.error-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; min-height:100vh; text-align:center; }
 .error-screen h2 { color: #ff8888; font-size: 18px; margin-bottom: 12px; }
 .error-screen p { color: #a0c0a0; font-size: 14px; margin-bottom: 20px; line-height: 1.7; }
 .back-btn { padding: 12px 24px; background: #2a4a2a; border: 1px solid #4a8a4a; border-radius: 10px; color: #a8e0a8; font-size: 14px; cursor: pointer; }
@@ -520,21 +528,26 @@ body.screen-start-active .modal-overlay {
       <div class="zone-label">戦場 <span class="zone-count" id="field-count">0</span></div>
       <div class="zone field-zone" id="field-zone"></div>
     </div>
-    <!-- デッキ+領土デッキ -->
+    <!-- デッキ+領土デッキ（横並び・スマホ） -->
     <div id="gb-decks">
-      <div class="zone-label">デッキ</div>
-      <div class="deck-display" onclick="drawCard()">
-        <span>📚</span>
-        <span class="deck-cnt" id="deck-count">0</span>
-        <span style="font-size:8px;">ドロー</span>
+      <div class="deck-block">
+        <div class="zone-label">デッキ</div>
+        <div class="deck-display" onclick="drawCard()">
+          <span>📚</span>
+          <span class="deck-cnt" id="deck-count">0</span>
+          <span style="font-size:8px;">ドロー</span>
+        </div>
+        <div class="deck-hint">タップで1枚ドロー</div>
       </div>
-      <div class="zone-label" style="margin-top:6px;">領土デッキ <span class="zone-count" id="terr-deck-count">0</span></div>
-      <div class="deck-display" onclick="drawTerritory()" style="background:linear-gradient(135deg,#2a3a1a,#1a2a0f);border-color:#4a8a4a;">
-        <span>🌍</span>
-        <span class="deck-cnt" id="terr-deck-count-num">0</span>
-        <span style="font-size:8px;">置く</span>
+      <div class="deck-block">
+        <div class="zone-label">領土デッキ <span class="zone-count" id="terr-deck-count">0</span></div>
+        <div class="deck-display" onclick="drawTerritory()" style="background:linear-gradient(135deg,#2a3a1a,#1a2a0f);border-color:#4a8a4a;">
+          <span>🌍</span>
+          <span class="deck-cnt" id="terr-deck-count-num">0</span>
+          <span style="font-size:8px;">置く</span>
+        </div>
+        <div class="deck-hint">タップで領土を1枚置く</div>
       </div>
-      <div style="font-size:9px;color:#6a8a6a;margin-top:2px;">タップで領土を1枚置く</div>
     </div>
     <!-- 領土 -->
     <div id="gb-territory">
@@ -721,9 +734,13 @@ body.screen-start-active .modal-overlay {
 const FIREBASE_URL = "https://acg-original-default-rtdb.firebaseio.com";
 const PHASES = ["起床フェイズ","準備フェイズ","補充フェイズ","狩りフェイズ","日没フェイズ","夜警フェイズ"];
 
-// codeから画像URLを生成（acgtcg.com優先）
+// codeから画像URLを生成（acgtcg.com優先 / BP5はGitHub優先）
 function getImg(code) {
   if (!code) return "";
+  // BP5は GitHub の BT5 フォルダから直接（acgtcg.com に画像なし）
+  if (code.startsWith("BP5-")) {
+    return `https://raw.githubusercontent.com/tayu02/acg-deckbuilder/main/BT5/${code}.png`;
+  }
   // ACGカード（日本語プレフィックスを除去してACG-XXXを抽出）
   const mACG = code.match(/ACG-(\d+)/);
   if (mACG) return `https://acgtcg.com/img/ACG-${mACG[1]}`;
