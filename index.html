@@ -846,7 +846,6 @@ function renderDeckView() {
         <button onclick="copyDeckURL()" style="padding:6px 12px; background:#1a3a5a; border:1px solid #4a8aaa; border-radius:8px; color:#88ccff; font-size:13px; cursor:pointer; margin-right:8px;">🔗 URL</button>
         <button onclick="document.getElementById('qrFileInput').click()" style="padding:6px 12px; background:#3a2a5a; border:1px solid #8a6aaa; border-radius:8px; color:#cc99ff; font-size:13px; cursor:pointer; margin-right:8px;">📷 QR</button>
         <input type="file" id="qrFileInput" accept="image/*" style="display:none;" onchange="if(this.files&&this.files[0]){importDeckFromQRFile(this.files[0]);this.value='';}">
-        <button onclick="goToSimulator()" style="padding:6px 12px; background:#2a4a1a; border:1px solid #5a9a3a; border-radius:8px; color:#a8ff88; font-size:13px; cursor:pointer; margin-right:8px;">🎮 試遊</button>
         <button onclick="resetDeck()" style="padding:6px 12px; background:#5a1a1a; border:1px solid #aa4444; border-radius:8px; color:#ffaaaa; font-size:14px; cursor:pointer;">🗑</button>
       </div>
 
@@ -1205,44 +1204,103 @@ async function importDeckFromQRFile(file) {
     }
     // 5. JSON.parse
     const data = JSON.parse(jsonStr);
-    if (!data.m || !Array.isArray(data.m)) throw new Error("デッキデータ形式が不正です (m配列なし)");
-    // 6. m配列処理
-    const results = [];
-    const errors = [];
-    // デッキをクリア
+    console.log("[QR] デコード結果:", data);
+    console.log("[QR] トップレベルキー:", Object.keys(data));
+
+    // 配列フィールドを自動検出（複数キーパターンに対応）
+    // 想定パターン: m=メイン, s=サイド, t/r=領土, side, territory, land, sub など
+    const allKeys = Object.keys(data);
+    const arrayKeys = allKeys.filter(k => Array.isArray(data[k]) && data[k].length > 0);
+    console.log("[QR] 配列キー:", arrayKeys);
+    if (arrayKeys.length === 0) throw new Error("デッキデータ形式が不正です（配列キーなし）");
+
+    // キー名から「サイド/領土」を判定
+    // メインデッキ:  m, main, deck, d
+    // サイドデッキ:  s, side, sub
+    // 領土デッキ:    t, r, l, territory, land
+    function classifyKey(key) {
+      const k = key.toLowerCase();
+      if (["s", "side", "sub"].includes(k)) return "side";
+      if (["t", "r", "l", "territory", "land"].includes(k)) return "territory";
+      return "main"; // m, main, deck, d, その他
+    }
+
+    // 6. デッキをクリア
     for (const k in deck) delete deck[k];
     for (const k in sideDeck) delete sideDeck[k];
     if (typeof deckSide === "object") for (const k in deckSide) delete deckSide[k];
-    for (let i = 0; i < data.m.length; i += 2) {
-      const id = Number(data.m[i]);
-      const cnt = Number(data.m[i + 1]) || 0;
-      if (cnt <= 0) continue;
-      const code = convertCardId(id);
-      if (!code) { errors.push(`不明な番号: ${id}`); continue; }
-      // cards.js からマッチするカードを検索
-      // ACG-XXX は cards.js では「<プレフィックス>-ACG-XXX」形式で登録されているため、
-      // 完全一致が無ければ末尾一致でフォールバック検索する
-      let card = cards.find(c => c.code === code);
-      if (!card && code.startsWith("ACG-")) {
-        const suffix = "-" + code; // 例: code="ACG-001" → suffix="-ACG-001"
-        card = cards.find(c => c.code.endsWith(suffix));
+
+    const results = [];
+    const errors = [];
+    const keyStats = {}; // 各キーが何枚読み込めたか
+
+    // 各配列キーを処理
+    for (const key of arrayKeys) {
+      const kind = classifyKey(key);
+      const arr = data[key];
+      keyStats[key] = { kind, total: 0, count: 0 };
+      for (let i = 0; i < arr.length; i += 2) {
+        const id = Number(arr[i]);
+        const cnt = Number(arr[i + 1]) || 0;
+        if (cnt <= 0) continue;
+        const code = convertCardId(id);
+        if (!code) { errors.push(`不明な番号 (key=${key}): ${id}`); continue; }
+        // cards.js からマッチするカードを検索（ACG-XXXは suffix マッチでフォールバック）
+        let card = cards.find(c => c.code === code);
+        if (!card && code.startsWith("ACG-")) {
+          const suffix = "-" + code;
+          card = cards.find(c => c.code.endsWith(suffix));
+        }
+        if (!card) { errors.push(`カード未収録 (key=${key}): ${code}`); continue; }
+        const realCode = card.code;
+
+        // 配置先を決定
+        // 領土タイプのカード or キーが領土用の場合 → 領土デッキ扱い
+        // キーがサイド用の場合 → サイドデッキ
+        // それ以外 → メインデッキ
+        let placed = "main";
+        if (kind === "side") {
+          sideDeck[realCode] = (sideDeck[realCode] || 0) + cnt;
+          placed = "side";
+        } else if (kind === "territory" || card.type === "領土") {
+          deck[realCode] = (deck[realCode] || 0) + cnt;
+          if (typeof deckSide === "object") deckSide[realCode] = "territory";
+          placed = "territory";
+        } else {
+          deck[realCode] = (deck[realCode] || 0) + cnt;
+          placed = "main";
+        }
+        keyStats[key].total += cnt;
+        keyStats[key].count++;
+        results.push({ code: realCode, name: card.name, count: cnt, placed });
       }
-      if (!card) { errors.push(`カード未収録: ${code}`); continue; }
-      const realCode = card.code; // 実際のキー（プレフィックス付きを含む）
-      deck[realCode] = (deck[realCode] || 0) + cnt;
-      if (card.type === "領土") {
-        if (typeof deckSide === "object") deckSide[realCode] = "territory";
-      }
-      results.push({ code: realCode, name: card.name, count: cnt });
     }
+
     // デッキ名（あれば）
     if (data.n) { deckName = String(data.n); }
+    else if (data.name) { deckName = String(data.name); }
+    // デッキ名の input にも反映
+    const nameInput = document.getElementById("deckNameInput");
+    if (nameInput && deckName) nameInput.value = deckName;
+
     // 表示更新
     updateDeckTotal();
     if (typeof showTab === "function") showTab("deck");
+
     // ユーザーへの通知
-    const totalCards = results.reduce((a, r) => a + r.count, 0);
-    let msg = `✅ QRからデッキを読み込みました\n\n${results.length}種類 / 合計${totalCards}枚`;
+    const totalMain = results.filter(r => r.placed === "main").reduce((a,r) => a+r.count, 0);
+    const totalSide = results.filter(r => r.placed === "side").reduce((a,r) => a+r.count, 0);
+    const totalTerr = results.filter(r => r.placed === "territory").reduce((a,r) => a+r.count, 0);
+    let msg = `✅ QRからデッキを読み込みました\n\n`;
+    msg += `メイン: ${totalMain}枚\n`;
+    msg += `領土: ${totalTerr}枚\n`;
+    msg += `サイド: ${totalSide}枚\n`;
+    msg += `（${results.length}種類）`;
+
+    // デバッグ情報（JSONキーが m 以外もあれば表示）
+    const keyDetail = Object.entries(keyStats).map(([k, v]) => `${k}(${v.kind}): ${v.total}枚`).join(" / ");
+    msg += `\n\n[読込内訳] ${keyDetail}`;
+
     if (errors.length) {
       msg += `\n\n⚠ ${errors.length}件のエラー:\n` + errors.slice(0, 8).join("\n");
       if (errors.length > 8) msg += `\n（他 ${errors.length - 8} 件）`;
