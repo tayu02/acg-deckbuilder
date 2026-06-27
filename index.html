@@ -1215,13 +1215,14 @@ async function importDeckFromQRFile(file) {
     if (arrayKeys.length === 0) throw new Error("デッキデータ形式が不正です（配列キーなし）");
 
     // キー名から「サイド/領土」を判定
-    // メインデッキ:  m, main, deck, d
-    // サイドデッキ:  s, side, sub
-    // 領土デッキ:    t, r, l, territory, land
+    // メインデッキ:    m, main, deck, d
+    // サイドデッキ系:  s=side, r=reserve(予備), sub, p=preliminary
+    // 領土デッキ系:    t=territory, l=land
+    // 実証: ACG Builder の QRデータは m(メイン40枚) / t(領土10枚) / r(予備15枚) の構造
     function classifyKey(key) {
       const k = key.toLowerCase();
-      if (["s", "side", "sub"].includes(k)) return "side";
-      if (["t", "r", "l", "territory", "land"].includes(k)) return "territory";
+      if (["s", "side", "sub", "r", "reserve", "p", "preliminary"].includes(k)) return "side";
+      if (["t", "l", "territory", "land"].includes(k)) return "territory";
       return "main"; // m, main, deck, d, その他
     }
 
