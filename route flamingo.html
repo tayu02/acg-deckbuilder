@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>紅鶴ルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #ffb3d1; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #3a6a4a; border-radius: 12px; padding: 7px; position: relative; }
+
+.zone-label { font-size: 10px; color: #6a8a6a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(80,180,80,0.1); border: 1px solid rgba(80,180,80,0.3); }
+.pile-zone {
+  background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.grave-zone {
+  background: rgba(60,40,20,0.3); border: 1px solid rgba(120,80,40,0.5);
+  border-radius: 6px; padding: 5px; margin-bottom: 4px;
+  min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start;
+}
+
+.card-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+.card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a8a4a; background: #1a2a3a;
+  position: relative; flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.token { border-color: #cc77aa; border-style: dashed; }
+
+.token-label {
+  font-size: 9px; font-weight: bold; color: #ffccdd;
+  background: rgba(140,30,90,0.8); border-radius: 6px;
+  padding: 1px 5px; white-space: nowrap;
+}
+
+.hand-card {
+  width: 40px; height: 56px; border-radius: 4px; overflow: hidden;
+  border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0;
+}
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.territory-card {
+  width: 34px; height: 22px; border-radius: 4px;
+  background: #2a4a2a; border: 1px solid #4a8a4a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #a8e0a8; font-weight: bold;
+}
+.territory-card.muted { opacity: 0.5; background: #3a3a2a; border-color: #8a8a4a; color: #cccc99; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#description {
+  background: rgba(0,0,0,0.65); border: 1px solid #4a8a4a;
+  border-radius: 10px; padding: 12px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.75; min-height: 64px;
+}
+#step-title { color: #ffb3d1; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d0e8d0; }
+
+#loop-badge {
+  display: none; font-size: 13px; font-weight: bold; padding: 5px 14px;
+  border-radius: 20px; margin-top: 8px; text-align: center;
+}
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #3a6a3a; color: #a8e0a8; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+
+/* ナビメニュー */
+#nav-menu {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  padding: 8px; background: rgba(0,0,0,0.5);
+  border: 1px solid #3a6a4a; border-radius: 10px; margin-bottom: 8px;
+}
+.nav-btn {
+  padding: 4px 8px; border: none; border-radius: 6px;
+  font-size: 11px; cursor: pointer; font-weight: bold; flex-shrink: 0;
+}
+.nav-btn.intro  { background: #5a1a3a; color: #ffbbdd; }
+.nav-btn.loop   { background: #3a1a5a; color: #ddaaff; }
+.nav-btn.accel  { background: #3a3a0a; color: #ffff88; }
+.nav-btn.matome { background: #2a4a2a; color: #a8e0a8; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🦩 紅鶴ルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
+
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+
+    <div class="zone-label">墓地</div>
+    <div class="grave-zone" id="grave-area"></div>
+
+    <div class="zone-label">領土</div>
+    <div class="territory-zone" id="territory-area"></div>
+  </div>
+
+  <div id="nav-menu">
+    <button class="nav-btn intro"  onclick="jumpTo(0)">🦩 導入</button>
+    <button class="nav-btn loop"   onclick="jumpTo(3)">🔁 ループ</button>
+    <button class="nav-btn accel"  onclick="jumpTo(9)">⚡ 加速</button>
+    <button class="nav-btn matome" onclick="jumpTo(10)">✅ まとめ</button>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+// BP5カードは GitHub の BT5 フォルダ、他弾も同じ GitHub リポジトリの弾フォルダから取得（ビルダーと同一ソース）
+const BASE = "https://raw.githubusercontent.com/tayu02/acg-deckbuilder/main";
+const BT5 = BASE + "/BT5";
+const IMAGES = {
+  "小さき紅鶴":       BT5 + "/BP5-006.png",
+  "強襲するフラミンゴ": BT5 + "/BP5-007.png",
+  "休息するフラミンゴ": BT5 + "/BP5-008.png",
+  "疾風の紅鶴":       BT5 + "/BP5-009.png",
+  "赤い湖畔":         BT5 + "/BP5-011.png",
+  "紅鶴の号令":       BT5 + "/BP5-012.png",
+  "横取り鼠の大巣穴": BT5 + "/BP5-036.png",
+  "虚構の栄華":       BASE + "/BT3/BP3-076.png",
+};
+
+// state.field = [{name, muted, token, entering}]
+// state.hand = [{name}]  /  state.pile = [string]
+// state.territories = [{name, muted}]
+
+const T_PLAIN = () => [{name:"平",muted:false},{name:"水",muted:false},{name:"平",muted:false},{name:"水",muted:false}];
+const T_MOVE  = () => [{name:"平",muted:true},{name:"水",muted:true},{name:"平",muted:true},{name:"水",muted:true}];
+const nezumi  = (n) => Array.from({length:n}, () => ({name:"駿足ネズミ", token:true}));
+
+function initState() {
+  return { enemyLife: 20, field: [], hand: [], grave: [], pile: [], territories: T_PLAIN(), route: "" };
+}
+
+const BADGE = "🔁 ループ！紅鶴ルート";
+
+const steps = [
+  // ===== 導入 =====
+  {
+    section: "intro",
+    title: "━━ 紅鶴ルート ━━",
+    text: "種族「フラミンゴ」と《横取り鼠の大巣穴》で、<b>駿足2/1の平野ネズミトークン</b>を1ターンに大量生産し、駿足の一斉攻撃で押し切るループ。<br>核は<b>疾風の紅鶴の自己バウンス</b>です。",
+    action: s => {
+      s.field = [];
+      s.hand = [{name:"赤い湖畔"},{name:"横取り鼠の大巣穴"},{name:"紅鶴の号令"},{name:"疾風の紅鶴"}];
+      s.pile = []; s.territories = T_PLAIN(); s.enemyLife = 20;
+      return s;
+    },
+  },
+  {
+    section: "intro",
+    title: "準備：赤い湖畔で小さき紅鶴を場に出す",
+    text: "赤い湖畔(0)を設置。登場効果で<b>デッキのコスト0フラミンゴ＝小さき紅鶴を場に出す</b>（手札サーチではなく直接場に出す）。",
+    action: s => {
+      s.field = [{name:"赤い湖畔",muted:false},{name:"小さき紅鶴",muted:false,entering:true}];
+      s.hand = [{name:"横取り鼠の大巣穴"},{name:"紅鶴の号令"},{name:"疾風の紅鶴"}];
+      s.pile = []; s.territories = T_PLAIN();
+      return s;
+    },
+    highlight: ["赤い湖畔","小さき紅鶴"],
+  },
+  {
+    section: "intro",
+    title: "コンボターン：大巣穴を設置＋号令で常駐フラミンゴ2体",
+    text: "横取り鼠の大巣穴(2)を設置（<b>設置ターンから機能</b>／日没で自壊するので同一ターンで完結させる）。<br>紅鶴の号令(1)で②を追加払い→<b>強襲・休息の2体</b>を場に。常駐フラミンゴ2体が揃いました。",
+    action: s => {
+      s.field = [
+        {name:"横取り鼠の大巣穴",muted:false},
+        {name:"赤い湖畔",muted:false},
+        {name:"強襲するフラミンゴ",muted:false,entering:true},
+        {name:"休息するフラミンゴ",muted:false,entering:true},
+      ];
+      s.hand = [{name:"小さき紅鶴"},{name:"疾風の紅鶴"}];
+      s.pile = []; s.territories = T_PLAIN();
+      return s;
+    },
+    highlight: ["強襲するフラミンゴ","休息するフラミンゴ","横取り鼠の大巣穴"],
+  },
+
+  // ===== ループ =====
+  {
+    section: "loop",
+    title: "② 小さき紅鶴をプレイ（場のフラミンゴ3体に）",
+    text: "手札の小さき紅鶴(0)をプレイして登場。<br>常駐2体（強襲・休息）＋小さき紅鶴で<b>場のフラミンゴが3体</b>になりました（疾風の手札誘発の条件）。",
+    action: s => {
+      s.field = [
+        {name:"横取り鼠の大巣穴",muted:false},
+        {name:"強襲するフラミンゴ",muted:false},
+        {name:"休息するフラミンゴ",muted:false},
+        {name:"小さき紅鶴",muted:false,entering:true},
+      ];
+      s.hand = [{name:"疾風の紅鶴"}];
+      s.pile = []; s.territories = T_PLAIN();
+      return s;
+    },
+    highlight: ["小さき紅鶴"],
+  },
+  {
+    section: "loop",
+    title: "③ 大巣穴が誘発（パイルへ）",
+    text: "横取り鼠の大巣穴：トークン以外の動物が出た時、それを対象に〔破壊＋駿足2/1ネズミトークン生成〕を<b>パイルに積む</b>。<br>→ 小さき紅鶴を対象にパイルへ。",
+    action: s => {
+      s.field = [
+        {name:"横取り鼠の大巣穴",muted:false},
+        {name:"強襲するフラミンゴ",muted:false},
+        {name:"休息するフラミンゴ",muted:false},
+        {name:"小さき紅鶴",muted:false},
+      ];
+      s.hand = [{name:"疾風の紅鶴"}];
+      s.pile = ["大巣穴：小さき紅鶴を破壊＋駿足ネズミ生成"];
+      s.territories = T_PLAIN();
+      return s;
+    },
+    highlight: ["横取り鼠の大巣穴","小さき紅鶴"],
+  },
+  {
+    section: "loop",
+    title: "④ 疾風【起動（手札）】で割り込み",
+    text: "パイル解決前に疾風の紅鶴の手札誘発。<b>領地の全領土をムーブ状態</b>にし、フラミンゴ1体（小さき紅鶴）をバウンス→疾風が登場。<br>疾風の登場でも大巣穴が<b>再誘発</b>→パイルにもう1件。",
+    action: s => {
+      s.field = [
+        {name:"横取り鼠の大巣穴",muted:false},
+        {name:"強襲するフラミンゴ",muted:false},
+        {name:"休息するフラミンゴ",muted:false},
+        {name:"疾風の紅鶴",muted:false,entering:true},
+      ];
+      s.hand = [{name:"小さき紅鶴"}];
+      s.pile = ["大巣穴：小さき紅鶴を破壊＋駿足ネズミ生成","大巣穴：疾風を破壊＋駿足ネズミ生成"];
+      s.territories = T_MOVE();
+      return s;
+    },
+    highlight: ["疾風の紅鶴"],
+    badge: BADGE,
+  },
+  {
+    section: "loop",
+    title: "⑤ 疾風の登場効果で自己バウンス",
+    text: "疾風の紅鶴の登場効果：コスト4以下1体を対象に、2以下なら破壊／3以上ならバウンス。<br>→ <b>自分（コスト3）を対象に取り、自己バウンス</b>して手札へ戻す。",
+    action: s => {
+      s.field = [
+        {name:"横取り鼠の大巣穴",muted:false},
+        {name:"強襲するフラミンゴ",muted:false},
+        {name:"休息するフラミンゴ",muted:false},
+      ];
+      s.hand = [{name:"小さき紅鶴"},{name:"疾風の紅鶴"}];
+      s.pile = ["大巣穴：小さき紅鶴を破壊＋駿足ネズミ生成","大巣穴：疾風を破壊＋駿足ネズミ生成"];
+      s.territories = T_MOVE();
+      return s;
+    },
+    highlight: ["疾風の紅鶴"],
+    badge: BADGE,
+  },
+  {
+    section: "loop",
+    title: "⑥ パイル解決：トークン2体だけ残る",
+    text: "パイルの大巣穴効果×2が解決。<b>駿足ネズミトークンを2体生成</b>。破壊は対象（小さき紅鶴・疾風）が既にバウンス済みで<b>不発</b>。<br>「バウンスで破壊を空振りさせ、生成物だけ残す」——これがループの要。",
+    action: s => {
+      s.field = [
+        {name:"横取り鼠の大巣穴",muted:false},
+        {name:"強襲するフラミンゴ",muted:false},
+        {name:"休息するフラミンゴ",muted:false},
+        {name:"駿足ネズミ",token:true,entering:true},
+        {name:"駿足ネズミ",token:true,entering:true},
+      ];
+      s.hand = [{name:"小さき紅鶴"},{name:"疾風の紅鶴"}];
+      s.pile = []; s.territories = T_MOVE();
+      return s;
+    },
+    highlight: [],
+    badge: BADGE,
+  },
+  {
+    section: "loop",
+    title: "⑦ 1周完了 → ②へ戻ってループ",
+    text: "解決後：大巣穴＋駿足ネズミ2体、領土は全てムーブ、手札に小さき紅鶴・疾風。<br>②〜⑥を繰り返すごとに<b>駿足ネズミが+2体</b>。倒し切れる数まで増やして一斉攻撃！",
+    action: s => {
+      s.field = [
+        {name:"横取り鼠の大巣穴",muted:false},
+        {name:"強襲するフラミンゴ",muted:false},
+        {name:"休息するフラミンゴ",muted:false},
+        ...nezumi(2),
+      ];
+      s.hand = [{name:"小さき紅鶴"},{name:"疾風の紅鶴"}];
+      s.pile = []; s.territories = T_MOVE();
+      return s;
+    },
+    badge: BADGE,
+  },
+
+  // ===== 加速 =====
+  {
+    section: "accel",
+    title: "⚡ 加速（オマケ）",
+    text: "<b>足跡の発火</b>：動物が登場するたびバーン。ループの登場回数ぶんダメージが積む。<br><b>虚構の栄華</b>：トークンに+1/+1。駿足ネズミの打点が伸びる。<br>どちらかがあると、より早く押し切れます。",
+    action: s => {
+      s.field = [
+        {name:"横取り鼠の大巣穴",muted:false},
+        {name:"虚構の栄華",muted:false,entering:true},
+        {name:"強襲するフラミンゴ",muted:false},
+        {name:"休息するフラミンゴ",muted:false},
+        ...nezumi(4),
+      ];
+      s.hand = [{name:"小さき紅鶴"},{name:"疾風の紅鶴"}];
+      s.pile = []; s.territories = T_MOVE(); s.enemyLife = 14;
+      return s;
+    },
+    highlight: ["虚構の栄華"],
+  },
+
+  // ===== まとめ =====
+  {
+    section: "matome",
+    title: "✅ まとめ：紅鶴ルート",
+    text: "① 大巣穴は<b>設置ターンから機能</b>し日没で自壊＝コンボは同一ターンで完結。<br>② 疾風の手札誘発は<b>場のフラミンゴ3体以上</b>が条件＝常駐2体＋小さき紅鶴。<br>③ ⑥の裁定：対象がバウンス済みでも大巣穴の<b>トークン生成は行われる</b>（破壊だけ不発）＝ループの生命線。<br>→ 駿足ネズミを増やして一斉攻撃。足跡の発火・虚構の栄華で加速。",
+    action: s => {
+      s.field = [
+        {name:"横取り鼠の大巣穴",muted:false},
+        {name:"強襲するフラミンゴ",muted:false},
+        {name:"休息するフラミンゴ",muted:false},
+        ...nezumi(6),
+      ];
+      s.hand = [{name:"小さき紅鶴"},{name:"疾風の紅鶴"}];
+      s.pile = []; s.territories = T_MOVE(); s.enemyLife = 0;
+      return s;
+    },
+  },
+];
+
+let currentStep = 0;
+let state = initState();
+
+function getImg(name) {
+  return Object.keys(IMAGES).find(k => name.includes(k));
+}
+
+function makeFieldCard(card, highlighted) {
+  const wrap = document.createElement("div");
+  wrap.className = "card-wrap";
+
+  const div = document.createElement("div");
+  div.className = "card" + (card.muted ? " muted" : "") + (card.token ? " token" : "") + (highlighted ? " highlighted" : "");
+  if (card.entering) div.classList.add("entering");
+
+  const imgKey = getImg(card.name);
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => {
+      div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:7px;color:#ddd;text-align:center;padding:2px;";
+      div.textContent = card.name;
+    };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:8px;color:#ffccdd;text-align:center;padding:2px;background:#3a1a2a;";
+    div.textContent = card.name;
+  }
+  wrap.appendChild(div);
+
+  if (card.token) {
+    const label = document.createElement("div");
+    label.className = "token-label";
+    label.textContent = "駿足 2/1";
+    wrap.appendChild(label);
+  }
+  return wrap;
+}
+
+function makeSimpleCard(name, isGrave) {
+  const div = document.createElement("div");
+  div.className = "hand-card" + (isGrave ? " grave" : "");
+  const imgKey = getImg(name);
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => {
+      div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:7px;color:#ddd;text-align:center;padding:2px;";
+      div.textContent = name;
+    };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:8px;color:#ffccdd;text-align:center;padding:2px;background:#3a1a2a;";
+    div.textContent = name;
+  }
+  return div;
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const highlights = step.highlight || [];
+
+  document.getElementById("enemy-life-num").textContent = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-bar").style.width = (Math.max(0, s.enemyLife) / 20 * 100) + "%";
+
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  (s.field || []).forEach(card => {
+    const isHighlighted = highlights.some(h => card.name.includes(h));
+    pf.appendChild(makeFieldCard(card, isHighlighted));
+  });
+
+  const pa = document.getElementById("pile-area");
+  pa.innerHTML = "";
+  (s.pile || []).forEach(eff => {
+    const el = document.createElement("div");
+    el.style.cssText = "background:rgba(80,70,0,0.7);border:1px solid #aa9900;border-radius:6px;padding:3px 6px;font-size:10px;color:#ffee88;";
+    el.textContent = "▶ " + eff;
+    pa.appendChild(el);
+  });
+
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  (s.hand || []).forEach(c => ha.appendChild(makeSimpleCard(c.name, false)));
+
+  const ga = document.getElementById("grave-area");
+  ga.innerHTML = "";
+  (s.grave || []).forEach(c => ga.appendChild(makeSimpleCard(c.name, true)));
+
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  (s.territories || []).forEach(t => {
+    const card = document.createElement("div");
+    card.className = "territory-card" + (t.muted ? " muted" : "");
+    card.textContent = t.muted ? t.name + "↷" : t.name;
+    ta.appendChild(card);
+  });
+
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+
+  const badge = document.getElementById("loop-badge");
+  if (step.badge) {
+    badge.style.cssText = "display:block;background:#3a1a5a;color:#ffbbee;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #cc55cc;";
+    badge.textContent = step.badge;
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function deepCopy(s) {
+  return {
+    ...s,
+    field: (s.field || []).map(c => ({...c})),
+    hand: (s.hand || []).map(c => ({...c})),
+    grave: (s.grave || []).map(c => ({...c})),
+    pile: [...(s.pile || [])],
+    territories: (s.territories || []).map(t => ({...t})),
+  };
+}
+
+function applyStep(idx) {
+  const step = steps[idx];
+  state = step.action(deepCopy(state));
+  render();
+}
+
+function jumpTo(idx) {
+  stopPlay();
+  currentStep = idx;
+  applyStep(currentStep);
+}
+
+function nextStep() {
+  stopPlay();
+  if (currentStep < steps.length - 1) { currentStep++; applyStep(currentStep); }
+}
+
+function prevStep() {
+  stopPlay();
+  if (currentStep > 0) { currentStep--; applyStep(currentStep); }
+}
+
+function resetAll() {
+  stopPlay();
+  currentStep = 0;
+  state = initState();
+  applyStep(0);
+}
+
+let playTimer = null;
+const PLAY_INTERVAL = 2600;
+
+function togglePlay() {
+  if (playTimer) { stopPlay(); } else { startPlay(); }
+}
+
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止";
+  btn.classList.add("playing");
+  playTimer = setInterval(() => {
+    if (currentStep < steps.length - 1) { currentStep++; applyStep(currentStep); }
+    else { stopPlay(); }
+  }, PLAY_INTERVAL);
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById("playBtn");
+  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
+}
+
+applyStep(0);
+</script>
+</body>
+</html>
