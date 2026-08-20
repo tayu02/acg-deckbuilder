@@ -261,10 +261,17 @@ function populateDropdown() {
   });
 }
 
-// ルート表示順（決めた並び）。ここに無いルートは自動で末尾に追加される。
-const ROUTE_ORDER = ["九尾ルート","咆哮ルート","獅子舞ルート","カジキルート","断崖ルート","帰郷ルート","鉄鴉ルート","赤猫ルート","狐ルート","崩落ルート","禁止区狼ルート","赤狼ルート","繁殖ルート","モグラルート","アルマジロルート","フェニックスルート","ガラクタルート","カメレオンルート","ガルダルート","バッファロールート"];
+// ルート表示順のルール：固定7 → 漢字ルート（決めた順＋追加順）→ カタカナルート（五十音順）
+// ※並び順は仕様。勝手にソートしないこと。新ルールに沿って新規ルートは自動で正しい区画に入る。
+const FIXED_ROUTES = ["九尾ルート","咆哮ルート","獅子舞ルート","カジキルート","断崖ルート","帰郷ルート","鉄鴉ルート"];
+const KANJI_ORDER  = ["赤猫ルート","狐ルート","崩落ルート","禁止区狼ルート","赤狼ルート","繁殖ルート","紅鶴ルート","鷲ルート","門出ルート","禁術ルート"];
 
-// ルート絞り込みプルダウンを cards.js の route_search から生成（「〜ルート」のみ・ROUTE_ORDER順、未登録は末尾）
+// ルート名（「ルート」を除いた部分）がカタカナ主体かどうか
+function isKatakanaRoute(name) {
+  return /^[\u30A0-\u30FF]+$/.test(name.replace(/ルート$/, ""));
+}
+
+// ルート絞り込みプルダウンを cards.js の route_search から生成（「〜ルート」のみ）
 function populateRouteDropdown() {
   const dropdown = document.getElementById("searchRoute");
   dropdown.innerHTML = '<option value="">キメサイ系ルート</option>';
@@ -274,8 +281,17 @@ function populateRouteDropdown() {
       if (typeof r === "string" && r.endsWith("ルート")) found.add(r);
     });
   });
-  const ordered = ROUTE_ORDER.filter(r => found.has(r));
-  found.forEach(r => { if (!ROUTE_ORDER.includes(r)) ordered.push(r); });
+  const ordered = [];
+  const placed = new Set();
+  // 1) 固定7（固定順）
+  FIXED_ROUTES.forEach(r => { if (found.has(r) && !placed.has(r)) { ordered.push(r); placed.add(r); } });
+  // 2) 漢字ルート：KANJI_ORDER順 → 未登録の漢字ルートは末尾に追加（データ出現順）
+  KANJI_ORDER.forEach(r => { if (found.has(r) && !placed.has(r)) { ordered.push(r); placed.add(r); } });
+  [...found].forEach(r => { if (!placed.has(r) && !isKatakanaRoute(r)) { ordered.push(r); placed.add(r); } });
+  // 3) カタカナルート：五十音順
+  const kata = [...found].filter(r => !placed.has(r) && isKatakanaRoute(r));
+  kata.sort((a, b) => a.localeCompare(b, "ja"));
+  kata.forEach(r => { ordered.push(r); placed.add(r); });
   ordered.forEach(routeName => {
     const option = document.createElement("option");
     option.value = routeName;
