@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鷲ルート解説</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1a24; color: #e0e8d0; font-family: 'Hiragino Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 12px; }
+#stage { width: 100%; max-width: 680px; }
+
+#life-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.life-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 13px; color: #ffdd88; font-weight: bold; }
+.life-bar { width: 120px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+.life-fill { height: 100%; border-radius: 6px; transition: width 0.6s; }
+.life-fill.player { background: #4caf50; }
+.life-fill.enemy { background: #c85a5a; }
+#title-center { text-align: center; color: #d8c088; font-size: 14px; flex: 1; }
+
+#field { background: rgba(0,0,0,0.5); border: 2px solid #6a5a3a; border-radius: 12px; padding: 7px; position: relative; }
+
+.zone-label { font-size: 10px; color: #8a7a5a; margin-bottom: 2px; }
+.zone { display: flex; gap: 5px; flex-wrap: wrap; padding: 5px; border-radius: 8px; margin-bottom: 4px; align-items: flex-start; }
+.player-zone { background: rgba(120,100,50,0.1); border: 1px solid rgba(120,100,50,0.3); }
+.pile-zone { background: rgba(60,60,20,0.25); border: 1px dashed rgba(200,180,50,0.5); border-radius: 6px; padding: 5px; margin-bottom: 4px; min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start; }
+.territory-zone { display: flex; gap: 4px; padding: 4px 6px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+.hand-zone { background: rgba(80,80,180,0.1); border: 1px solid rgba(80,80,180,0.3); }
+.grave-zone { background: rgba(60,40,20,0.3); border: 1px solid rgba(120,80,40,0.5); border-radius: 6px; padding: 5px; margin-bottom: 4px; min-height: 12px; display: flex; gap: 5px; flex-wrap: wrap; align-items: flex-start; }
+
+.card-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+.card { width: 40px; height: 56px; border-radius: 4px; overflow: hidden; border: 2px solid #8a7a4a; background: #1a2a3a; position: relative; flex-shrink: 0; transition: transform 0.3s, opacity 0.3s, box-shadow 0.3s; }
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card.muted { opacity: 0.45; transform: rotate(90deg); }
+.card.highlighted { box-shadow: 0 0 12px 3px #ffdd00; border-color: #ffdd00; }
+.card.entering { animation: slideIn 0.35s ease; }
+.card.token { border-color: #b89a55; border-style: dashed; }
+
+.token-label { font-size: 9px; font-weight: bold; color: #ffe8b0; background: rgba(110,90,30,0.85); border-radius: 6px; padding: 1px 5px; white-space: nowrap; }
+
+.hand-card { width: 40px; height: 56px; border-radius: 4px; overflow: hidden; border: 2px solid #4a6a9a; background: #1a2a3a; flex-shrink: 0; }
+.hand-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.territory-card { width: 34px; height: 22px; border-radius: 4px; background: #2a3a2a; border: 1px solid #6a7a4a; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #c0d0a0; font-weight: bold; }
+.territory-card.muted { opacity: 0.5; background: #3a3a2a; border-color: #8a8a4a; color: #cccc99; }
+
+@keyframes slideIn { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: translateY(0); } }
+
+#description { background: rgba(0,0,0,0.65); border: 1px solid #6a5a3a; border-radius: 10px; padding: 12px 14px; margin-top: 8px; font-size: 13px; line-height: 1.75; min-height: 64px; }
+#step-title { color: #e8d090; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+#step-text { color: #d8e0c8; }
+
+#loop-badge { display: none; font-size: 13px; font-weight: bold; padding: 5px 14px; border-radius: 20px; margin-top: 8px; text-align: center; }
+
+#controls { display: flex; gap: 8px; margin-top: 8px; justify-content: center; align-items: center; }
+.ctrl-btn { padding: 9px 0; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; flex: 1; max-width: 120px; }
+.ctrl-btn.prev { background: #3a3a5a; color: #aaccff; }
+.ctrl-btn.close-btn { background: #3a3a3a; color: #cccccc; }
+.ctrl-btn.next { background: #5a4a2a; color: #e8d090; }
+#sub-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; }
+.ctrl-btn.play-btn { background: #1a4a5a; color: #88ddff; font-size: 12px; padding: 4px 12px; flex: none; }
+.ctrl-btn.play-btn.playing { background: #4a2a1a; color: #ffaa66; }
+.ctrl-btn.reset { background: #4a1a1a; color: #ffaaaa; font-size: 11px; padding: 4px 12px; flex: none; }
+#step-counter { color: #888; font-size: 13px; }
+
+#nav-menu { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid #6a5a3a; border-radius: 10px; margin-bottom: 8px; }
+.nav-btn { padding: 4px 8px; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
+.nav-btn.intro  { background: #3a3a1a; color: #e8e0a0; }
+.nav-btn.ohwashi{ background: #4a3a1a; color: #ffdd99; }
+.nav-btn.bake   { background: #2a1a3a; color: #ccaaff; }
+.nav-btn.matome { background: #2a4a2a; color: #a8e0a8; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="life-area">
+    <div class="life-bar-wrap">
+      <span>相手 ❤️ <span id="enemy-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill enemy" id="enemy-life-bar" style="width:100%"></div></div>
+    </div>
+    <div id="title-center">🦅 鷲ルート解説</div>
+    <div class="life-bar-wrap">
+      <span>自分 ❤️ <span id="player-life-num">20</span></span>
+      <div class="life-bar"><div class="life-fill player" id="player-life-bar" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div id="field">
+    <div class="zone-label">自分の戦場</div>
+    <div class="zone player-zone" id="player-field"></div>
+    <div class="zone-label">パイル</div>
+    <div class="pile-zone" id="pile-area"></div>
+    <div class="zone-label">手札</div>
+    <div class="zone hand-zone" id="hand-area"></div>
+    <div class="zone-label">墓地</div>
+    <div class="grave-zone" id="grave-area"></div>
+    <div class="zone-label">領土</div>
+    <div class="territory-zone" id="territory-area"></div>
+  </div>
+
+  <div id="nav-menu">
+    <button class="nav-btn intro"   onclick="jumpTo(0)">🦅 導入</button>
+    <button class="nav-btn ohwashi" onclick="jumpTo(1)">🦅 王鷲ルート</button>
+    <button class="nav-btn bake"    onclick="jumpTo(6)">👹 化け鷲ルート</button>
+    <button class="nav-btn matome"  onclick="jumpTo(14)">✅ まとめ</button>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn prev" onclick="prevStep()">◀ 前へ</button>
+    <button class="ctrl-btn close-btn" onclick="history.back()">✕ 閉じる</button>
+    <button class="ctrl-btn next" onclick="nextStep()">次へ ▶</button>
+  </div>
+  <div id="sub-controls">
+    <span id="step-counter"></span>
+    <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()">▶ 再生</button>
+    <button class="ctrl-btn reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <div id="loop-badge"></div>
+
+  <div id="description">
+    <div id="step-title"></div>
+    <div id="step-text"></div>
+  </div>
+</div>
+
+<script>
+// 鷲ルートの使用カードは全て acgtcg.com（各カードの image フィールドと同一＝ビルダーと同ソース）
+const IMAGES = {
+  "王鷲":       "https://acgtcg.com/img/BP3-053",
+  "戦列の鷲":   "https://acgtcg.com/img/ACG-079",
+  "化け鷲":     "https://acgtcg.com/img/ACG-081",
+  "反射石":     "https://acgtcg.com/img/ACG-137",
+  "暗がりの保管庫": "https://acgtcg.com/img/ACG-148",
+  "鷲の卵":     "https://acgtcg.com/img/ACG-076",
+  "縄張り":     "https://acgtcg.com/img/ACG-113",
+  "足跡の発火": "https://acgtcg.com/img/ACG-085",
+};
+
+const T_FOREST = () => [{name:"森",muted:false},{name:"森",muted:false},{name:"森",muted:false},{name:"夜",muted:false}];
+const washi = (n, label) => Array.from({length:n}, () => ({name:"ワシ", token:true, label: label || "1/1"}));
+
+function initState() {
+  return { enemyLife: 20, field: [], hand: [], grave: [], pile: [], territories: T_FOREST(), route: "" };
+}
+
+const steps = [
+  // ===== 導入 =====
+  {
+    section: "intro",
+    title: "━━ 鷲ルート ━━",
+    text: "《有翼》のワシたちとトークンで空軍を組み、一斉攻撃で削り切るルート。<br>王道の <b>🦅 王鷲ルート</b> と、ワンショットの <b>👹 化け鷲ルート</b> の2本立てです。上のボタンで切り替えられます。",
+    action: s => { s.field=[]; s.hand=[{name:"王鷲"},{name:"戦列の鷲"}]; s.pile=[]; s.territories=T_FOREST(); s.enemyLife=20; return s; },
+  },
+
+  // ===== 王鷲ルート =====
+  {
+    section: "ohwashi",
+    title: "🦅 王鷲ルート：使用カード",
+    text: "・<b>王鷲</b>（キーカード／《駿足》《有翼》・有翼全体に +1/+1）<br>・<b>戦列の鷲</b>（登場で 1/1 ワシトークン3体）<br>王鷲の登場でデッキから戦列の鷲をもう1体リクルート、バフを乗せて一斉攻撃します。",
+    action: s => { s.field=[]; s.hand=[{name:"王鷲"},{name:"戦列の鷲"}]; s.pile=[]; s.territories=T_FOREST(); s.enemyLife=20; return s; },
+    highlight: ["王鷲","戦列の鷲"],
+  },
+  {
+    section: "ohwashi",
+    title: "ターン1：戦列の鷲をプレイ",
+    text: "戦列の鷲(2)を登場。誘発で <b>1/1 森林ワシトークン3体</b>を生成。<br>このトークンは次のターンには召喚酔いが取れて攻撃できます。",
+    action: s => { s.field=[{name:"戦列の鷲",muted:false,entering:true}, ...washi(3,"1/1")]; s.hand=[{name:"王鷲"}]; s.pile=[]; s.territories=T_FOREST(); return s; },
+    highlight: ["戦列の鷲"],
+  },
+  {
+    section: "ohwashi",
+    title: "ターン2：王鷲をプレイ→戦列リクルート",
+    text: "王鷲(4)を登場。誘発で<b>デッキから戦列の鷲をもう1体</b>を《駿足》付きでリクルート→その戦列も<b>トークン3体</b>生成。<br>王鷲の常時で、あなたの《有翼》全体が <b>+1/+1</b>（王鷲5・戦列3・トークン2/2）。",
+    action: s => {
+      s.field=[
+        {name:"王鷲",muted:false,entering:true},
+        {name:"戦列の鷲",muted:false},
+        {name:"戦列の鷲",muted:false,entering:true},
+        ...washi(3,"2/2"),
+        ...washi(3,"2/2 酔"),
+      ];
+      s.hand=[]; s.pile=[]; s.territories=T_FOREST();
+      return s;
+    },
+    highlight: ["王鷲"],
+  },
+  {
+    section: "ohwashi",
+    title: "ターン2：一斉攻撃で17点",
+    text: "攻撃できるのは 王鷲(駿足)・戦列×2・ターン1のトークン×3。<br><b>5＋3＋3＋2＋2＋2＝17点</b>。<br>この番に出した新トークン3体は召喚酔いで待機（「酔」表示）。相手ライフ 20→3。",
+    action: s => {
+      s.field=[
+        {name:"王鷲",muted:false},
+        {name:"戦列の鷲",muted:false},
+        {name:"戦列の鷲",muted:false},
+        ...washi(3,"2/2"),
+        ...washi(3,"2/2 酔"),
+      ];
+      s.hand=[]; s.pile=[]; s.territories=T_FOREST(); s.enemyLife=3;
+      return s;
+    },
+    badge: "🦅 王鷲アタック 17点",
+  },
+  {
+    section: "ohwashi",
+    title: "ターン3：有翼総攻撃で締め",
+    text: "次のターンには全トークンの酔いが取れ、有翼総攻撃で残り3点を削り切り。<br>💡 <b>足跡の発火</b>があれば、ターン1で戦列＋トークンの登場で4点、ターン2で王鷲＋戦列＋トークンで5点バーン。残り11点を空軍で締められます。",
+    action: s => {
+      s.field=[
+        {name:"王鷲",muted:false},
+        {name:"戦列の鷲",muted:false},
+        {name:"戦列の鷲",muted:false},
+        ...washi(6,"2/2"),
+      ];
+      s.hand=[]; s.pile=[]; s.territories=T_FOREST(); s.enemyLife=0;
+      return s;
+    },
+    badge: "🏁 フィニッシュ",
+  },
+
+  // ===== 化け鷲ルート =====
+  {
+    section: "bake",
+    title: "👹 化け鷲ルート：使用カード",
+    text: "・<b>化け鷲</b>（深淵の化け鷲／フィニッシュ）・<b>縄張り</b>（種属宣言でバフ）<br>・<b>戦列の鷲</b>・<b>反射石</b>・<b>暗がりの保管庫</b>・<b>鷲の卵</b><br>ハンドレスから戦列2体分を展開→卵のカウンターを貯めて化け鷲をリクルート、鷲バフでワンショットします。",
+    action: s => { s.field=[{name:"鷲の卵",muted:false},{name:"暗がりの保管庫",muted:false}]; s.hand=[{name:"反射石"}]; s.pile=[]; s.territories=T_FOREST(); s.enemyLife=20; return s; },
+    highlight: ["化け鷲"],
+  },
+  {
+    section: "bake",
+    title: "① 初期盤面",
+    text: "戦場に <b>鷲の卵</b>（他のワシが出るたびカウンター＋1）と <b>暗がりの保管庫</b>、手札に <b>反射石</b> がある状態からスタート。",
+    action: s => { s.field=[{name:"鷲の卵",muted:false},{name:"暗がりの保管庫",muted:false}]; s.hand=[{name:"反射石"}]; s.pile=[]; s.territories=T_FOREST(); return s; },
+    highlight: ["鷲の卵","暗がりの保管庫","反射石"],
+  },
+  {
+    section: "bake",
+    title: "② 保管庫を起動",
+    text: "暗がりの保管庫を起動（ムーブ＋①）。<b>反射石を残して手札をデッキトップへ</b>置き、引き直す効果をパイルへ。<br>この解決前に割り込みます。",
+    action: s => { s.field=[{name:"鷲の卵",muted:false},{name:"暗がりの保管庫",muted:true}]; s.hand=[{name:"反射石"}]; s.pile=["保管庫：デッキを切り直してX枚引く"]; s.territories=T_FOREST(); return s; },
+    highlight: ["暗がりの保管庫"],
+  },
+  {
+    section: "bake",
+    title: "③ 反射石をプレイ（ハンドレス）",
+    text: "パイルの上から反射石をプレイ。<b>手札0枚</b>なので効果が発動：デッキから<b>戦列の鷲を《ムーブ》状態で登場</b>→トークン3体。<br>さらに反射石の固有で<b>戦列の鷲をコピー</b>→反射石も戦列として<b>トークン3体</b>。",
+    action: s => {
+      s.field=[
+        {name:"鷲の卵",muted:false},
+        {name:"暗がりの保管庫",muted:true},
+        {name:"戦列の鷲",muted:true,entering:true},
+        {name:"反射石",muted:true,entering:true},
+        ...washi(6,"1/1"),
+      ];
+      s.hand=[]; s.pile=["保管庫：デッキを切り直してX枚引く"]; s.territories=T_FOREST();
+      return s;
+    },
+    highlight: ["反射石","戦列の鷲"],
+  },
+  {
+    section: "bake",
+    title: "④ 鷲の卵にカウンター7",
+    text: "戦列の鷲(1)＋トークン(6)＝<b>ワシ7体の登場</b>で、鷲の卵に <b>成長カウンターが7個</b>乗る。<br>（反射石はコピー前は道具なのでカウント外＝ちょうど7）",
+    action: s => {
+      s.field=[
+        {name:"鷲の卵",muted:false,label7:true},
+        {name:"暗がりの保管庫",muted:true},
+        {name:"戦列の鷲",muted:true},
+        {name:"反射石",muted:true},
+        ...washi(6,"1/1"),
+      ];
+      s.hand=[]; s.pile=["保管庫：デッキを切り直してX枚引く"]; s.territories=T_FOREST();
+      return s;
+    },
+    highlight: ["鷲の卵"],
+    badge: "🥚 鷲の卵 カウンター7",
+  },
+  {
+    section: "bake",
+    title: "⑤ 保管庫を解決（手札入れ替え）",
+    text: "パイルに積んでいた保管庫の効果が解決。デッキを切り直してカードを引き、手札を整えます。",
+    action: s => {
+      s.field=[
+        {name:"鷲の卵",muted:false,label7:true},
+        {name:"暗がりの保管庫",muted:true},
+        {name:"戦列の鷲",muted:true},
+        {name:"反射石",muted:true},
+        ...washi(6,"1/1"),
+      ];
+      s.hand=[{name:"縄張り"}]; s.pile=[]; s.territories=T_FOREST();
+      return s;
+    },
+  },
+  {
+    section: "bake",
+    title: "⑥ 鷲の卵を起動→化け鷲をリクルート",
+    text: "鷲の卵を起動（ムーブ＋生贄）。カウンター7＝コスト7以下なので、デッキから<b>化け鷲を戦場に</b>リクルート。<br>化け鷲の固有でデッキの<b>縄張りをミル→そのコピー能力を得る</b>→種属「<b>鷲</b>」を宣言。",
+    action: s => {
+      s.field=[
+        {name:"暗がりの保管庫",muted:true},
+        {name:"戦列の鷲",muted:true},
+        {name:"反射石",muted:true},
+        {name:"化け鷲",muted:false,entering:true},
+        ...washi(6,"1/1"),
+      ];
+      s.hand=[]; s.grave=[{name:"鷲の卵"},{name:"縄張り"}]; s.pile=[]; s.territories=T_FOREST();
+      return s;
+    },
+    highlight: ["化け鷲"],
+  },
+  {
+    section: "bake",
+    title: "⑦ 鷲バフ→23点でワンショット",
+    text: "宣言「鷲」により、あなたの鷲すべてが <b>《駿足》＋2/+2</b>。<br>化け鷲(3→5)＋トークン×6(1/1→3/3)＝<b>5＋3×6＝23点</b>。駿足で即攻撃、相手ライフ20を<b>ワンショット</b>！",
+    action: s => {
+      s.field=[
+        {name:"暗がりの保管庫",muted:true},
+        {name:"戦列の鷲",muted:true},
+        {name:"反射石",muted:true},
+        {name:"化け鷲",muted:false},
+        ...washi(6,"3/3 駿足"),
+      ];
+      s.hand=[]; s.grave=[{name:"鷲の卵"},{name:"縄張り"}]; s.pile=[]; s.territories=T_FOREST(); s.enemyLife=0;
+      return s;
+    },
+    badge: "👹 化け鷲 ワンショット 23点",
+  },
+
+  // ===== まとめ =====
+  {
+    section: "matome",
+    title: "✅ まとめ：鷲ルート",
+    text: "🦅 <b>王鷲ルート</b>：戦列でトークン→王鷲で戦列リクルート＆有翼+1/+1→17点。足跡の発火でバーンも上乗せ。<br>👹 <b>化け鷲ルート</b>：保管庫＋反射石でハンドレス起動→戦列2体分展開→鷲の卵カウンター7→化け鷲リクルート→縄張りコピーで鷲に+2/+2＆駿足→23点ワンショット。<br>核はどちらも<b>《有翼》/ワシの数と一斉攻撃</b>です。",
+    action: s => {
+      s.field=[
+        {name:"化け鷲",muted:false},
+        {name:"戦列の鷲",muted:false},
+        ...washi(6,"3/3 駿足"),
+      ];
+      s.hand=[]; s.pile=[]; s.territories=T_FOREST(); s.enemyLife=0;
+      return s;
+    },
+  },
+];
+
+let currentStep = 0;
+let state = initState();
+
+function getImg(name) { return Object.keys(IMAGES).find(k => name.includes(k)); }
+
+function makeFieldCard(card, highlighted) {
+  const wrap = document.createElement("div");
+  wrap.className = "card-wrap";
+  const div = document.createElement("div");
+  div.className = "card" + (card.muted ? " muted" : "") + (card.token ? " token" : "") + (highlighted ? " highlighted" : "");
+  if (card.entering) div.classList.add("entering");
+  const imgKey = getImg(card.name);
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => { div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:7px;color:#ddd;text-align:center;padding:2px;"; div.textContent = card.name; };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:8px;color:#ffe8b0;text-align:center;padding:2px;background:#2a2a1a;";
+    div.textContent = card.name;
+  }
+  wrap.appendChild(div);
+  if (card.token) {
+    const label = document.createElement("div");
+    label.className = "token-label";
+    label.textContent = card.label || "ワシ";
+    wrap.appendChild(label);
+  }
+  if (card.label7) {
+    const label = document.createElement("div");
+    label.className = "token-label";
+    label.textContent = "🥚×7";
+    wrap.appendChild(label);
+  }
+  return wrap;
+}
+
+function makeSimpleCard(name) {
+  const div = document.createElement("div");
+  div.className = "hand-card";
+  const imgKey = getImg(name);
+  if (imgKey) {
+    const img = document.createElement("img");
+    img.src = IMAGES[imgKey];
+    img.onerror = () => { div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:7px;color:#ddd;text-align:center;padding:2px;"; div.textContent = name; };
+    div.appendChild(img);
+  } else {
+    div.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:8px;color:#ffe8b0;text-align:center;padding:2px;background:#2a2a1a;";
+    div.textContent = name;
+  }
+  return div;
+}
+
+function render() {
+  const s = state;
+  const step = steps[currentStep];
+  const highlights = step.highlight || [];
+
+  document.getElementById("enemy-life-num").textContent = Math.max(0, s.enemyLife);
+  document.getElementById("enemy-life-bar").style.width = (Math.max(0, s.enemyLife) / 20 * 100) + "%";
+
+  const pf = document.getElementById("player-field");
+  pf.innerHTML = "";
+  (s.field || []).forEach(card => { pf.appendChild(makeFieldCard(card, highlights.some(h => card.name.includes(h)))); });
+
+  const pa = document.getElementById("pile-area");
+  pa.innerHTML = "";
+  (s.pile || []).forEach(eff => {
+    const el = document.createElement("div");
+    el.style.cssText = "background:rgba(80,70,0,0.7);border:1px solid #aa9900;border-radius:6px;padding:3px 6px;font-size:10px;color:#ffee88;";
+    el.textContent = "▶ " + eff;
+    pa.appendChild(el);
+  });
+
+  const ha = document.getElementById("hand-area");
+  ha.innerHTML = "";
+  (s.hand || []).forEach(c => ha.appendChild(makeSimpleCard(c.name)));
+
+  const ga = document.getElementById("grave-area");
+  ga.innerHTML = "";
+  (s.grave || []).forEach(c => ga.appendChild(makeSimpleCard(c.name)));
+
+  const ta = document.getElementById("territory-area");
+  ta.innerHTML = "";
+  (s.territories || []).forEach(t => {
+    const card = document.createElement("div");
+    card.className = "territory-card" + (t.muted ? " muted" : "");
+    card.textContent = t.muted ? t.name + "↷" : t.name;
+    ta.appendChild(card);
+  });
+
+  document.getElementById("step-title").textContent = step.title;
+  document.getElementById("step-text").innerHTML = step.text;
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${steps.length}`;
+
+  const badge = document.getElementById("loop-badge");
+  if (step.badge) {
+    badge.style.cssText = "display:block;background:#4a3a1a;color:#ffe0a0;font-size:13px;font-weight:bold;padding:5px 14px;border-radius:20px;margin-top:8px;text-align:center;border:1px solid #cc9944;";
+    badge.textContent = step.badge;
+  } else { badge.style.display = "none"; }
+}
+
+function deepCopy(s) {
+  return { ...s,
+    field: (s.field || []).map(c => ({...c})),
+    hand: (s.hand || []).map(c => ({...c})),
+    grave: (s.grave || []).map(c => ({...c})),
+    pile: [...(s.pile || [])],
+    territories: (s.territories || []).map(t => ({...t})),
+  };
+}
+
+function applyStep(idx) { state = steps[idx].action(deepCopy(state)); render(); }
+function jumpTo(idx) { stopPlay(); currentStep = idx; applyStep(currentStep); }
+function nextStep() { stopPlay(); if (currentStep < steps.length - 1) { currentStep++; applyStep(currentStep); } }
+function prevStep() { stopPlay(); if (currentStep > 0) { currentStep--; applyStep(currentStep); } }
+function resetAll() { stopPlay(); currentStep = 0; state = initState(); applyStep(0); }
+
+let playTimer = null;
+const PLAY_INTERVAL = 2600;
+function togglePlay() { if (playTimer) stopPlay(); else startPlay(); }
+function startPlay() {
+  const btn = document.getElementById("playBtn");
+  btn.textContent = "⏸ 停止"; btn.classList.add("playing");
+  playTimer = setInterval(() => { if (currentStep < steps.length - 1) { currentStep++; applyStep(currentStep); } else stopPlay(); }, PLAY_INTERVAL);
+}
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById("playBtn");
+  if (btn) { btn.textContent = "▶ 再生"; btn.classList.remove("playing"); }
+}
+
+applyStep(0);
+</script>
+</body>
+</html>
