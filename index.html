@@ -573,7 +573,7 @@ async function generateDeckImage() {
     qrUrl = buildDeckQRUrl().url;
     qrOk = true;
   } catch (_) { qrOk = false; }
-  const QR_SIZE = qrOk ? 320 : 0;
+  const QR_SIZE = qrOk ? 480 : 0;
   const QR_BAND = qrOk ? QR_SIZE + PAD * 4 : 0;
 
   const TOTAL_H = HEADER_H + Math.max(mainAreaH, sideAreaH + terrAreaH) + 50 + QR_BAND;
@@ -1168,10 +1168,12 @@ function convertCardId(id) {
 }
 
 // =============== QRコード生成（デッキ→QR） ===============
-// 1つのQRで両対応させる設計:
-//   URL = <自サイト>?deckencdata=<公式形式>&d=<自サイト形式>
-//   ・公式サイト / 本ツールの「📷 QR」 → deckencdata= を読む
-//   ・カメラでスキャン → URLが開き d= から完全復元（デッキ名・サイド・領土まで）
+// 公式ACGビルダーと同一形式のQRを出力する:
+//   URL = https://acg-builder.vercel.app/qr?ver=1&deckencdata=<zlib(level9)+Base64URL>
+//   ・公式サイト        → そのまま読める（同一デッキなら公式QRとバイト単位で一致）
+//   ・本ツールの「📷 QR」 → deckencdata= を読む
+//   ・カメラでスキャン    → 公式ビルダーが開く
+//   ※デッキ名はこの形式に含まれない。デッキ名ごと渡したい時は「🔗 URL」を使う。
 
 // QR生成ライブラリの動的読込（jsQRと同じフォールバック方式）
 async function _ensureQRLib() {
@@ -1210,30 +1212,35 @@ function _codeToOfficialId(code) {
 function encodeDeckOfficial() {
   const skipped = [];
   const flat = (entries) => {
-    const arr = [];
+    const pairs = [];
     entries.forEach(([code, cnt]) => {
       const id = _codeToOfficialId(code);
       if (id === null) { skipped.push(code); return; }
-      arr.push(id, cnt);
+      pairs.push([id, cnt]);
     });
+    // 公式の出力と同じく番号の昇順に並べる（同一デッキなら同一QRになる）
+    pairs.sort((a, b) => a[0] - b[0]);
+    const arr = [];
+    pairs.forEach(([id, cnt]) => { arr.push(id, cnt); });
     return arr;
   };
   const data = { m: flat(getDeckMain()), t: flat(getDeckTerritory()), r: flat(getDeckSide()) };
   if (typeof pako === "undefined") throw new Error("pakoライブラリが読み込まれていません");
-  const deflated = pako.deflate(JSON.stringify(data));
+  // level:9 は公式の出力と同一（実証: 公式QRのペイロードとバイト単位で一致）
+  const deflated = pako.deflate(JSON.stringify(data), { level: 9 });
   let bin = "";
   deflated.forEach(b => { bin += String.fromCharCode(b); });
   const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   return { enc: b64, skipped: skipped };
 }
 
-// QRに入れるハイブリッドURLを組み立てる
+// QRに入れるURLを組み立てる（公式ACGビルダーと同一形式）
+// 実証: 公式QRをデコードした結果 https://acg-builder.vercel.app/qr?ver=1&deckencdata=... だった。
+// 他ドメインのURLは公式に読み取ってもらえないため、公式と同じ形式で出力する。
+const OFFICIAL_QR_BASE = "https://acg-builder.vercel.app/qr?ver=1&deckencdata=";
 function buildDeckQRUrl() {
   const official = encodeDeckOfficial();
-  // 自サイト形式は既存の encodeDeck() を再利用（共通化優先）
-  const selfParam = encodeDeck().split("?d=")[1] || "";
-  const base = window.location.href.split("?")[0];
-  return { url: base + "?deckencdata=" + official.enc + "&d=" + selfParam, skipped: official.skipped };
+  return { url: OFFICIAL_QR_BASE + official.enc, skipped: official.skipped };
 }
 
 // QRをCanvasに直接描画（画像読込を挟まないのでCORS・非同期の影響を受けない）
