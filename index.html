@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #0f1a24 url('https://tayu02.github.io/acg-deckbuilder/%E8%83%8C%E6%99%AF.jpeg') center center / cover fixed; color: #e0e8d0; min-height: 100vh; padding-top: 60px; }
@@ -565,7 +566,17 @@ async function generateDeckImage() {
   const CARD_W2 = PAD + SUB_COLS * (CARD_W + PAD);
   const LIST_W = 500;
   const TOTAL_W = MAIN_W + CARD_W2 + LIST_W + PAD * 2;
-  const TOTAL_H = HEADER_H + Math.max(mainAreaH, sideAreaH + terrAreaH) + 50;
+  // QR帯（生成に失敗した場合は帯ごと作らない＝画像は従来どおり出る）
+  let qrOk = false, qrUrl = null;
+  try {
+    await _ensureQRLib();
+    qrUrl = buildDeckQRUrl().url;
+    qrOk = true;
+  } catch (_) { qrOk = false; }
+  const QR_SIZE = qrOk ? 320 : 0;
+  const QR_BAND = qrOk ? QR_SIZE + PAD * 4 : 0;
+
+  const TOTAL_H = HEADER_H + Math.max(mainAreaH, sideAreaH + terrAreaH) + 50 + QR_BAND;
 
   const canvas = document.createElement("canvas");
   canvas.width = TOTAL_W;
@@ -758,6 +769,20 @@ async function generateDeckImage() {
     listY += LINE_H;
   });
 
+  // QRを右下に描画
+  if (qrOk) {
+    const qx = TOTAL_W - QR_SIZE - PAD * 2;
+    const qy = TOTAL_H - QR_SIZE - PAD * 2;
+    try {
+      drawQRModules(ctx, qrUrl, qx, qy, QR_SIZE);
+      ctx.fillStyle = "#e0e8d0";
+      ctx.font = "20px sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText("QRでデッキを読み込めます", qx + QR_SIZE, qy - 10);
+      ctx.textAlign = "left";
+    } catch (_) {}
+  }
+
   return canvas;
 }
 
@@ -878,7 +903,7 @@ function renderDeckView() {
               ${mainTotal}枚 ${mainTotal >= 40 ? '✅' : '(40枚以上必要)'}
             </span>
           </h2>
-          <button onclick="showDeckImage()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer;">🖼 画像</button>
+          <span style="display:flex; gap:6px; flex-shrink:0;"><button onclick="showDeckQR()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">🔳 QR作成</button><button onclick="showDeckImage()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">🖼 画像</button></span>
         </div>
         ${mainHTML}
       </div>
@@ -1142,6 +1167,145 @@ function convertCardId(id) {
   return null;
 }
 
+// =============== QRコード生成（デッキ→QR） ===============
+// 1つのQRで両対応させる設計:
+//   URL = <自サイト>?deckencdata=<公式形式>&d=<自サイト形式>
+//   ・公式サイト / 本ツールの「📷 QR」 → deckencdata= を読む
+//   ・カメラでスキャン → URLが開き d= から完全復元（デッキ名・サイド・領土まで）
+
+// QR生成ライブラリの動的読込（jsQRと同じフォールバック方式）
+async function _ensureQRLib() {
+  if (typeof qrcode === "function") return;
+  const fallbacks = [
+    "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js",
+    "https://unpkg.com/qrcode-generator@1.4.4/qrcode.js",
+    "https://cdn.jsdelivr.net/gh/kazuhikoarase/qrcode-generator@1.4.4/js/qrcode.js"
+  ];
+  for (const url of fallbacks) {
+    try { await _loadScript(url); if (typeof qrcode === "function") return; } catch (_) {}
+  }
+  throw new Error("QR生成ライブラリの読み込みに失敗しました（ネットワーク状況をご確認ください）");
+}
+
+// convertCardId の逆変換（コード → 公式カード番号）
+// 実証: 全582枚が往復成功・ACG番号の衝突ゼロ
+function _codeToOfficialId(code) {
+  const m = String(code).match(/(?:^|-)(ACG|BP1|BP2|BP3|BP4|BP5|RYO)-(\d{1,3})$/);
+  if (!m) return null;
+  const n = Number(m[2]);
+  switch (m[1]) {
+    case "ACG": return (n >= 1 && n <= 164) ? n : null;
+    case "BP1": return (n >= 1 && n <= 99) ? 5000 + n : null;
+    case "BP2": return (n >= 1 && n <= 99) ? 5100 + n : null;
+    case "BP3": return (n >= 1 && n <= 99) ? 5200 + n : null;
+    case "BP4": return (n >= 1 && n <= 99) ? 5300 + n : null;
+    case "BP5": return (n >= 1 && n <= 99) ? 5400 + n : null;
+    case "RYO": return (n >= 1 && n <= 999) ? 8000 + n : null;
+  }
+  return null;
+}
+
+// 公式互換データ（zlib + Base64URL）を作る
+// 構造: { m:[番号,枚数,...], t:[領土], r:[予備] } ※v2 §7-3の実証に準拠
+function encodeDeckOfficial() {
+  const skipped = [];
+  const flat = (entries) => {
+    const arr = [];
+    entries.forEach(([code, cnt]) => {
+      const id = _codeToOfficialId(code);
+      if (id === null) { skipped.push(code); return; }
+      arr.push(id, cnt);
+    });
+    return arr;
+  };
+  const data = { m: flat(getDeckMain()), t: flat(getDeckTerritory()), r: flat(getDeckSide()) };
+  if (typeof pako === "undefined") throw new Error("pakoライブラリが読み込まれていません");
+  const deflated = pako.deflate(JSON.stringify(data));
+  let bin = "";
+  deflated.forEach(b => { bin += String.fromCharCode(b); });
+  const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return { enc: b64, skipped: skipped };
+}
+
+// QRに入れるハイブリッドURLを組み立てる
+function buildDeckQRUrl() {
+  const official = encodeDeckOfficial();
+  // 自サイト形式は既存の encodeDeck() を再利用（共通化優先）
+  const selfParam = encodeDeck().split("?d=")[1] || "";
+  const base = window.location.href.split("?")[0];
+  return { url: base + "?deckencdata=" + official.enc + "&d=" + selfParam, skipped: official.skipped };
+}
+
+// QRをCanvasに直接描画（画像読込を挟まないのでCORS・非同期の影響を受けない）
+function drawQRModules(ctx, text, x, y, size) {
+  if (typeof qrcode !== "function") throw new Error("QR生成ライブラリが読み込まれていません");
+  let qr = null;
+  for (const level of ["M", "L"]) {
+    try { const q = qrcode(0, level); q.addData(text); q.make(); qr = q; break; } catch (_) {}
+  }
+  if (!qr) throw new Error("デッキ情報が大きすぎてQRコードに収まりませんでした");
+  const n = qr.getModuleCount();
+  const QUIET = 4;
+  const cell = size / (n + QUIET * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(x, y, size, size);
+  ctx.fillStyle = "#000000";
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (qr.isDark(r, c)) {
+        ctx.fillRect(x + (c + QUIET) * cell, y + (r + QUIET) * cell, Math.ceil(cell), Math.ceil(cell));
+      }
+    }
+  }
+  return n;
+}
+
+// デッキのQRを表示（長押しで保存できる全画面オーバーレイ：画像表示と同じ方式）
+async function showDeckQR() {
+  try {
+    const mainTotal = getDeckMain().reduce((a, [, c]) => a + c, 0);
+    const sideTotal = getDeckSide().reduce((a, [, c]) => a + c, 0);
+    const terrTotal = getDeckTerritory().reduce((a, [, c]) => a + c, 0);
+    if (mainTotal + sideTotal + terrTotal === 0) { alert("デッキが空です"); return; }
+
+    await _ensureQRLib();
+    const built = buildDeckQRUrl();
+
+    const SIZE = 720;
+    const canvas = document.createElement("canvas");
+    canvas.width = SIZE; canvas.height = SIZE;
+    drawQRModules(canvas.getContext("2d"), built.url, 0, 0, SIZE);
+
+    const overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:black;z-index:9999;overflow-y:auto;";
+    const msg = document.createElement("p");
+    msg.textContent = "長押しで保存";
+    msg.style.cssText = "color:white;text-align:center;padding:16px;font-size:16px;";
+    const closeBtn = document.createElement("button");
+    closeBtn.textContent = "✕ 閉じる";
+    closeBtn.style.cssText = "display:block;margin:0 auto 12px;padding:10px 24px;background:#3a3a1a;border:1px solid #8a8a3a;border-radius:10px;color:#ffee88;font-size:16px;cursor:pointer;";
+    closeBtn.addEventListener("click", () => overlay.remove());
+    const img = document.createElement("img");
+    img.src = canvas.toDataURL("image/png");
+    img.style.cssText = "width:92%;max-width:480px;display:block;margin:0 auto;background:white;";
+    const note = document.createElement("p");
+    note.textContent = (deckName || "デッキレシピ") + "：メイン" + mainTotal + "枚／領土" + terrTotal + "枚／サイド" + sideTotal + "枚";
+    note.style.cssText = "color:#aaa;text-align:center;padding:14px 16px 40px;font-size:13px;";
+    overlay.appendChild(msg);
+    overlay.appendChild(closeBtn);
+    overlay.appendChild(img);
+    overlay.appendChild(note);
+    document.body.appendChild(overlay);
+
+    if (built.skipped.length) {
+      alert("⚠ 次のカードは公式の番号に変換できないため、QRに含まれていません:\n" + built.skipped.join("\n"));
+    }
+  } catch (e) {
+    alert("❌ QR作成失敗\n" + (e.message || e));
+    console.error("QR generate error:", e);
+  }
+}
+
 function _base64UrlDecode(str) {
   // Base64URL → Base64
   let s = String(str).replace(/-/g,"+").replace(/_/g,"/");
@@ -1209,6 +1373,16 @@ async function importDeckFromQRFile(file) {
     // 1. QR読み取り
     const qrText = await _readQRCodeFromImage(file);
     // 2. deckencdata 抽出
+    // 1.5 自サイト形式(?d=)があればそちらを優先（デッキ名・サイド・領土まで完全復元できる）
+    if (/[?&]d=[^&\s#]+/.test(qrText)) {
+      await decodeDeck(qrText);
+      const nameInput = document.getElementById("deckNameInput");
+      if (nameInput && deckName) nameInput.value = deckName;
+      updateDeckTotal();
+      if (typeof showTab === "function") showTab("deck");
+      alert("✅ QRからデッキを読み込みました");
+      return;
+    }
     const encData = _extractDeckEncData(qrText);
     if (!encData) throw new Error("QR内に deckencdata が見つかりません。\n読み取り内容: " + qrText.slice(0, 80));
     // 3. Base64URLデコード
