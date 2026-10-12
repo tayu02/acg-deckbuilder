@@ -573,8 +573,9 @@ async function generateDeckImage() {
     qrUrl = buildDeckQRUrl().url;
     qrOk = true;
   } catch (_) { qrOk = false; }
-  const QR_SIZE = qrOk ? 480 : 0;
-  const QR_BAND = qrOk ? QR_SIZE + PAD * 4 : 0;
+  const QR_SIZE = qrOk ? measureQRSize(qrUrl) : 0;   // 公式互換の実寸（1モジュール4px）
+  const QR_PAD = 40;                                   // QRを囲む白フチ
+  const QR_BAND = qrOk ? QR_SIZE + QR_PAD * 2 + PAD * 2 : 0;
 
   const TOTAL_H = HEADER_H + Math.max(mainAreaH, sideAreaH + terrAreaH) + 50 + QR_BAND;
 
@@ -771,14 +772,18 @@ async function generateDeckImage() {
 
   // QRを右下に描画
   if (qrOk) {
-    const qx = TOTAL_W - QR_SIZE - PAD * 2;
-    const qy = TOTAL_H - QR_SIZE - PAD * 2;
+    const boxW = QR_SIZE + QR_PAD * 2;
+    const bx = TOTAL_W - boxW - PAD;
+    const by = TOTAL_H - boxW - PAD;
     try {
-      drawQRModules(ctx, qrUrl, qx, qy, QR_SIZE);
+      // 周囲を白フチで囲ってから右下にQRを描く
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(bx, by, boxW, boxW);
+      drawQRModules(ctx, qrUrl, bx + QR_PAD, by + QR_PAD);
       ctx.fillStyle = "#e0e8d0";
       ctx.font = "20px sans-serif";
       ctx.textAlign = "right";
-      ctx.fillText("QRでデッキを読み込めます", qx + QR_SIZE, qy - 10);
+      ctx.fillText("QRでデッキを読み込めます", bx + boxW, by - 10);
       ctx.textAlign = "left";
     } catch (_) {}
   }
@@ -1243,8 +1248,12 @@ function buildDeckQRUrl() {
   return { url: OFFICIAL_QR_BASE + official.enc, skipped: official.skipped };
 }
 
-// QRをCanvasに直接描画（画像読込を挟まないのでCORS・非同期の影響を受けない）
-function drawQRModules(ctx, text, x, y, size) {
+// QRをCanvasに直接描画（1モジュール固定px・ピクセル完全）
+// 実証: 公式の「QR付画像を開く」は「1モジュール4px」かつ「画像の右下」の時のみ読み取れる。
+// 12px や中央配置では公式が見つけられないため、公式と同じ寸法・位置で描くこと。
+const QR_CELL = 4;   // 1モジュールの画素数（公式と同一。変更すると公式が読めなくなる）
+const QR_QUIET = 4;  // 余白のモジュール数
+function drawQRModules(ctx, text, x, y) {
   if (typeof qrcode !== "function") throw new Error("QR生成ライブラリが読み込まれていません");
   let qr = null;
   for (const level of ["M", "L"]) {
@@ -1252,19 +1261,28 @@ function drawQRModules(ctx, text, x, y, size) {
   }
   if (!qr) throw new Error("デッキ情報が大きすぎてQRコードに収まりませんでした");
   const n = qr.getModuleCount();
-  const QUIET = 4;
-  const cell = size / (n + QUIET * 2);
+  const total = QR_CELL * (n + QR_QUIET * 2);
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(x, y, size, size);
+  ctx.fillRect(x, y, total, total);
   ctx.fillStyle = "#000000";
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
       if (qr.isDark(r, c)) {
-        ctx.fillRect(x + (c + QUIET) * cell, y + (r + QUIET) * cell, Math.ceil(cell), Math.ceil(cell));
+        ctx.fillRect(x + (c + QR_QUIET) * QR_CELL, y + (r + QR_QUIET) * QR_CELL, QR_CELL, QR_CELL);
       }
     }
   }
-  return n;
+  return total;
+}
+
+// QRの一辺の画素数を先に求める（画像レイアウトの計算用）
+function measureQRSize(text) {
+  let qr = null;
+  for (const level of ["M", "L"]) {
+    try { const q = qrcode(0, level); q.addData(text); q.make(); qr = q; break; } catch (_) {}
+  }
+  if (!qr) throw new Error("デッキ情報が大きすぎてQRコードに収まりませんでした");
+  return QR_CELL * (qr.getModuleCount() + QR_QUIET * 2);
 }
 
 // デッキのQRを表示（長押しで保存できる全画面オーバーレイ：画像表示と同じ方式）
@@ -1278,10 +1296,14 @@ async function showDeckQR() {
     await _ensureQRLib();
     const built = buildDeckQRUrl();
 
-    const SIZE = 720;
+    // 実証済みの構成：白い紙の右下にQRを置く（公式の「QR付画像を開く」が読める形）
+    const PAGE = 780, MARGIN = 40;
     const canvas = document.createElement("canvas");
-    canvas.width = SIZE; canvas.height = SIZE;
-    drawQRModules(canvas.getContext("2d"), built.url, 0, 0, SIZE);
+    canvas.width = PAGE; canvas.height = PAGE;
+    const qctx = canvas.getContext("2d");
+    qctx.fillStyle = "#ffffff"; qctx.fillRect(0, 0, PAGE, PAGE);
+    const qsize = measureQRSize(built.url);
+    drawQRModules(qctx, built.url, PAGE - qsize - MARGIN, PAGE - qsize - MARGIN);
 
     const overlay = document.createElement("div");
     overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:black;z-index:9999;overflow-y:auto;";
