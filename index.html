@@ -897,6 +897,7 @@ function renderDeckView() {
         <button onclick="copyDeckURL()" style="padding:6px 12px; background:#1a3a5a; border:1px solid #4a8aaa; border-radius:8px; color:#88ccff; font-size:13px; cursor:pointer; margin-right:8px;">🔗 URL</button>
         <button onclick="document.getElementById('qrFileInput').click()" style="padding:6px 12px; background:#3a2a5a; border:1px solid #8a6aaa; border-radius:8px; color:#cc99ff; font-size:13px; cursor:pointer; margin-right:8px;">📷 QR</button>
         <input type="file" id="qrFileInput" accept="image/*" style="display:none;" onchange="if(this.files&&this.files[0]){importDeckFromQRFile(this.files[0]);this.value='';}">
+        <input type="file" id="carloxFileInput" accept=".json,application/json" style="display:none;" onchange="if(this.files&&this.files[0]){mergeIntoCarloxBackup(this.files[0]);this.value='';}">
         <button onclick="resetDeck()" style="padding:6px 12px; background:#5a1a1a; border:1px solid #aa4444; border-radius:8px; color:#ffaaaa; font-size:14px; cursor:pointer;">🗑</button>
       </div>
 
@@ -908,7 +909,7 @@ function renderDeckView() {
               ${mainTotal}枚 ${mainTotal >= 40 ? '✅' : '(40枚以上必要)'}
             </span>
           </h2>
-          <span style="display:flex; gap:6px; flex-shrink:0;"><button onclick="showDeckQR()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">🔳 QR作成</button><button onclick="showDeckImage()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">🖼 画像</button></span>
+          <span style="display:flex; gap:6px; flex-shrink:0;"><button onclick="exportForCarlox()" style="padding:4px 10px; background:#2a4a3a; border:1px solid #6aaa8a; border-radius:8px; color:#aaffdd; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">📤 carlox</button><button onclick="showDeckQR()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">🔳 QR作成</button><button onclick="showDeckImage()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">🖼 画像</button></span>
         </div>
         ${mainHTML}
       </div>
@@ -1170,6 +1171,97 @@ function convertCardId(id) {
   if (id >= 5401 && id < 5500)   return `BP5-${String(id-5400).padStart(3,"0")}`;
   if (id >= 8001 && id < 9000)   return `RYO-${String(id-8000).padStart(3,"0")}`;
   return null;
+}
+
+// =============== carlox版シミュレータ用の書き出し ===============
+// 対象: https://carlox.net/acg_fanmade_simulator/ （非公式ファンメイド・公式とは別形式）
+// 形式(実物から解明): {kind:"acg-deck-backup", version:1, exportedAt,
+//   defaultDecks:[...], userDecks:[{id,name,isDefault,spec:{main,reserve,territory}}],
+//   favoriteDeckIds:[], selectedDecks:{player,cpu}}
+// ・カードは「名前」で指定する（公式は番号）
+// ・向こうのインポートは“バックアップの復元”の可能性が高いため、
+//   既存ファイルに追記する方式にして、他のデッキを失わないようにしている。
+
+// デッキのエントリを「名前」でまとめる（同名の別コードは合算する）
+// 実証: cards.js には同名カードが2組ある（運命の帰郷 / 脱獄）。
+// これらを別行で出すと向こうで重複行になるため、必ず合算すること。
+function _toCarloxSpec(entries) {
+  const byName = new Map();
+  const missing = [];
+  entries.forEach(([code, cnt]) => {
+    const card = cards.find(c => c.code === code);
+    if (!card) { missing.push(code); return; }
+    byName.set(card.name, (byName.get(card.name) || 0) + cnt);
+  });
+  const list = [];
+  byName.forEach((count, name) => list.push({ name: name, count: count }));
+  return { list: list, missing: missing };
+}
+
+function exportForCarlox() {
+  const total = getDeckMain().reduce((a, [, c]) => a + c, 0)
+              + getDeckSide().reduce((a, [, c]) => a + c, 0)
+              + getDeckTerritory().reduce((a, [, c]) => a + c, 0);
+  if (total === 0) { alert("デッキが空です"); return; }
+  alert("carlox版シミュレータで「デッキエクスポート」したファイルを選んでください。\n\nそのファイルに今のデッキを追加した新しいファイルを書き出します。\n（既存のデッキはそのまま残ります）");
+  document.getElementById("carloxFileInput").click();
+}
+
+function mergeIntoCarloxBackup(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const backup = JSON.parse(reader.result);
+      if (backup.kind !== "acg-deck-backup") {
+        throw new Error("carloxのバックアップfile ではないようです（kind=" + backup.kind + "）");
+      }
+      const main = _toCarloxSpec(getDeckMain());
+      const side = _toCarloxSpec(getDeckSide());
+      const terr = _toCarloxSpec(getDeckTerritory());
+      const missing = [...main.missing, ...side.missing, ...terr.missing];
+
+      const name = (deckName || "ACGビルダーのデッキ").slice(0, 40);
+      const entry = {
+        id: "user-deck-" + Date.now(),
+        name: name,
+        isDefault: false,
+        spec: { main: main.list, reserve: side.list, territory: terr.list }
+      };
+      if (!Array.isArray(backup.userDecks)) backup.userDecks = [];
+      // 同じ名前のデッキがあれば差し替える（書き出すたびに増えないように）
+      const idx = backup.userDecks.findIndex(d => d && d.name === name);
+      if (idx >= 0) { entry.id = backup.userDecks[idx].id || entry.id; backup.userDecks[idx] = entry; }
+      else backup.userDecks.push(entry);
+      backup.exportedAt = new Date().toISOString();
+      if (backup.selectedDecks && typeof backup.selectedDecks === "object") {
+        backup.selectedDecks.player = entry.id;
+      }
+
+      const d = new Date();
+      const stamp = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "acg-decks-" + stamp + ".json";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+      // 1名称あたり5枚以上は公式ルール上あり得ないため警告する
+      const over = [...main.list, ...side.list].filter(e => e.count > 4).map(e => e.name + " " + e.count + "枚");
+      let msg = "✅ carlox用のファイルを書き出しました\n\n";
+      msg += "デッキ名: " + name + "\n";
+      msg += "メイン " + main.list.reduce((a, e) => a + e.count, 0) + "枚 / 領土 " + terr.list.reduce((a, e) => a + e.count, 0) + "枚 / 予備 " + side.list.reduce((a, e) => a + e.count, 0) + "枚\n\n";
+      msg += "carloxの「デッキインポート」でこのファイルを読み込んでください。";
+      if (over.length) msg += "\n\n⚠ 同名で5枚以上になっています:\n" + over.join("\n");
+      if (missing.length) msg += "\n\n⚠ 変換できなかったカード:\n" + missing.join("\n");
+      alert(msg);
+    } catch (e) {
+      alert("❌ 書き出し失敗\n" + (e.message || e));
+      console.error("carlox export error:", e);
+    }
+  };
+  reader.onerror = () => alert("❌ ファイルを読み込めませんでした");
+  reader.readAsText(file);
 }
 
 // =============== QRコード生成（デッキ→QR） ===============
