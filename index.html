@@ -1199,6 +1199,16 @@ function convertCardId(id) {
 // ・向こうのインポートは“バックアップの復元”の可能性が高いため、
 //   既存ファイルに追記する方式にして、他のデッキを失わないようにしている。
 
+// デッキ名をファイル名に使える形に整える
+// 空白はアンダースコアに（ファイル名はスペースを使わない方針）、使えない記号は除去
+function _safeFileName(name) {
+  return String(name || "").trim()
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, "_")
+    .replace(/^[.\s]+/, "")
+    .slice(0, 40);
+}
+
 // デッキのエントリを「名前」でまとめる（同名の別コードは合算する）
 // 実証: cards.js には同名カードが2組ある（運命の帰郷 / 脱獄）。
 // これらを別行で出すと向こうで重複行になるため、必ず合算すること。
@@ -1296,10 +1306,12 @@ function writeCarloxFile(backup) {
 
     const d = new Date();
     const stamp = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    const safe = _safeFileName(deckName);
+    const fileName = (safe ? safe + "_" + stamp : "acg-decks-" + stamp) + ".json";
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "acg-decks-" + stamp + ".json";
+    a.href = url; a.download = fileName;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10000);
 
@@ -1307,6 +1319,7 @@ function writeCarloxFile(backup) {
     let msg = "✅ carlox用のファイルを書き出しました\n\n";
     msg += "デッキ名: " + name + "\n";
     msg += "メイン " + main.list.reduce((a, e) => a + e.count, 0) + "枚 / 領土 " + terr.list.reduce((a, e) => a + e.count, 0) + "枚 / 予備 " + side.list.reduce((a, e) => a + e.count, 0) + "枚\n\n";
+    msg += "ファイル名: " + fileName + "\n\n";
     msg += "carloxの「デッキインポート」でこのファイルを読み込んでください。";
     if (over.length) msg += "\n\n⚠ 同名で5枚以上になっています:\n" + over.join("\n");
     if (missing.length) msg += "\n\n⚠ 変換できなかったカード:\n" + missing.join("\n");
