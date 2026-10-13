@@ -1203,12 +1203,29 @@ function exportForCarlox() {
               + getDeckSide().reduce((a, [, c]) => a + c, 0)
               + getDeckTerritory().reduce((a, [, c]) => a + c, 0);
   if (total === 0) { alert("デッキが空です"); return; }
-  // 既定は1手で書き出す。carloxに残したいデッキがある人だけ追記方式を選べるようにする。
-  const keep = confirm("carloxに残しておきたいデッキはありますか？\n\n「キャンセル」＝このデッキだけのファイルを作ります（通常はこちら）\n「OK」＝carloxで書き出したファイルを選び、そこに追加します");
-  if (keep) {
-    alert("carlox版シミュレータで「デッキエクスポート」したファイルを選んでください。");
-    document.getElementById("carloxFileInput").click();
-  } else {
+
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;";
+  const box = document.createElement("div");
+  box.style.cssText = "background:#1a2a1a;border:2px solid #4a8a4a;border-radius:14px;padding:20px;max-width:360px;width:100%;";
+  const title = document.createElement("p");
+  title.textContent = "carlox用に書き出す";
+  title.style.cssText = "color:#a8e0a8;font-size:17px;font-weight:bold;text-align:center;margin-bottom:16px;";
+  box.appendChild(title);
+
+  function addButton(label, note, bg, border, color, handler) {
+    const b = document.createElement("button");
+    b.textContent = label;
+    b.style.cssText = "display:block;width:100%;padding:12px;margin-bottom:6px;background:" + bg + ";border:1px solid " + border + ";border-radius:10px;color:" + color + ";font-size:16px;font-weight:bold;cursor:pointer;";
+    b.addEventListener("click", () => { overlay.remove(); handler(); });
+    box.appendChild(b);
+    const p = document.createElement("p");
+    p.textContent = note;
+    p.style.cssText = "color:#8aa88a;font-size:12px;text-align:center;margin-bottom:14px;";
+    box.appendChild(p);
+  }
+
+  addButton("新規保存", "このデッキだけのファイルを作ります", "#2a4a3a", "#6aaa8a", "#aaffdd", () => {
     writeCarloxFile({
       kind: "acg-deck-backup",
       version: 1,
@@ -1218,7 +1235,19 @@ function exportForCarlox() {
       favoriteDeckIds: [],
       selectedDecks: {}
     });
-  }
+  });
+  addButton("上書保存", "carloxで書き出したファイルに追加します", "#2a3a5a", "#6a8aaa", "#aaccff", () => {
+    document.getElementById("carloxFileInput").click();
+  });
+
+  const cancel = document.createElement("button");
+  cancel.textContent = "キャンセル";
+  cancel.style.cssText = "display:block;width:100%;padding:10px;background:#3a3a3a;border:1px solid #777;border-radius:10px;color:#ccc;font-size:15px;cursor:pointer;";
+  cancel.addEventListener("click", () => overlay.remove());
+  box.appendChild(cancel);
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
 }
 
 // デッキ1個を carlox形式のファイルとして書き出す（backup に追記して保存する共通処理）
