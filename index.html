@@ -1203,8 +1203,72 @@ function exportForCarlox() {
               + getDeckSide().reduce((a, [, c]) => a + c, 0)
               + getDeckTerritory().reduce((a, [, c]) => a + c, 0);
   if (total === 0) { alert("デッキが空です"); return; }
-  alert("carlox版シミュレータで「デッキエクスポート」したファイルを選んでください。\n\nそのファイルに今のデッキを追加した新しいファイルを書き出します。\n（既存のデッキはそのまま残ります）");
-  document.getElementById("carloxFileInput").click();
+  // 既定は1手で書き出す。carloxに残したいデッキがある人だけ追記方式を選べるようにする。
+  const keep = confirm("carloxに残しておきたいデッキはありますか？\n\n「キャンセル」＝このデッキだけのファイルを作ります（通常はこちら）\n「OK」＝carloxで書き出したファイルを選び、そこに追加します");
+  if (keep) {
+    alert("carlox版シミュレータで「デッキエクスポート」したファイルを選んでください。");
+    document.getElementById("carloxFileInput").click();
+  } else {
+    writeCarloxFile({
+      kind: "acg-deck-backup",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      defaultDecks: [],
+      userDecks: [],
+      favoriteDeckIds: [],
+      selectedDecks: {}
+    });
+  }
+}
+
+// デッキ1個を carlox形式のファイルとして書き出す（backup に追記して保存する共通処理）
+function writeCarloxFile(backup) {
+  try {
+    const main = _toCarloxSpec(getDeckMain());
+    const side = _toCarloxSpec(getDeckSide());
+    const terr = _toCarloxSpec(getDeckTerritory());
+    const missing = [...main.missing, ...side.missing, ...terr.missing];
+
+    const name = (deckName || "ACGビルダーのデッキ").slice(0, 40);
+    const entry = {
+      id: "user-deck-" + Date.now(),
+      name: name,
+      isDefault: false,
+      spec: { main: main.list, reserve: side.list, territory: terr.list }
+    };
+    if (!Array.isArray(backup.userDecks)) backup.userDecks = [];
+    // 同じ名前のデッキがあれば差し替える（書き出すたびに増えないように）
+    const idx = backup.userDecks.findIndex(d => d && d.name === name);
+    if (idx >= 0) { entry.id = backup.userDecks[idx].id || entry.id; backup.userDecks[idx] = entry; }
+    else backup.userDecks.push(entry);
+    backup.exportedAt = new Date().toISOString();
+    if (!backup.selectedDecks || typeof backup.selectedDecks !== "object") backup.selectedDecks = {};
+    backup.selectedDecks.player = entry.id;
+    if (!backup.selectedDecks.cpu) backup.selectedDecks.cpu = entry.id;
+    if (!Array.isArray(backup.favoriteDeckIds)) backup.favoriteDeckIds = [];
+    if (!Array.isArray(backup.defaultDecks)) backup.defaultDecks = [];
+
+    const d = new Date();
+    const stamp = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "acg-decks-" + stamp + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+    const over = [...main.list, ...side.list].filter(e => e.count > 4).map(e => e.name + " " + e.count + "枚");
+    let msg = "✅ carlox用のファイルを書き出しました\n\n";
+    msg += "デッキ名: " + name + "\n";
+    msg += "メイン " + main.list.reduce((a, e) => a + e.count, 0) + "枚 / 領土 " + terr.list.reduce((a, e) => a + e.count, 0) + "枚 / 予備 " + side.list.reduce((a, e) => a + e.count, 0) + "枚\n\n";
+    msg += "carloxの「デッキインポート」でこのファイルを読み込んでください。";
+    if (over.length) msg += "\n\n⚠ 同名で5枚以上になっています:\n" + over.join("\n");
+    if (missing.length) msg += "\n\n⚠ 変換できなかったカード:\n" + missing.join("\n");
+    alert(msg);
+  } catch (e) {
+    alert("❌ 書き出し失敗\n" + (e.message || e));
+    console.error("carlox export error:", e);
+  }
 }
 
 function mergeIntoCarloxBackup(file) {
@@ -1213,51 +1277,12 @@ function mergeIntoCarloxBackup(file) {
     try {
       const backup = JSON.parse(reader.result);
       if (backup.kind !== "acg-deck-backup") {
-        throw new Error("carloxのバックアップfile ではないようです（kind=" + backup.kind + "）");
+        throw new Error("carloxのバックアップではないようです（kind=" + backup.kind + "）");
       }
-      const main = _toCarloxSpec(getDeckMain());
-      const side = _toCarloxSpec(getDeckSide());
-      const terr = _toCarloxSpec(getDeckTerritory());
-      const missing = [...main.missing, ...side.missing, ...terr.missing];
-
-      const name = (deckName || "ACGビルダーのデッキ").slice(0, 40);
-      const entry = {
-        id: "user-deck-" + Date.now(),
-        name: name,
-        isDefault: false,
-        spec: { main: main.list, reserve: side.list, territory: terr.list }
-      };
-      if (!Array.isArray(backup.userDecks)) backup.userDecks = [];
-      // 同じ名前のデッキがあれば差し替える（書き出すたびに増えないように）
-      const idx = backup.userDecks.findIndex(d => d && d.name === name);
-      if (idx >= 0) { entry.id = backup.userDecks[idx].id || entry.id; backup.userDecks[idx] = entry; }
-      else backup.userDecks.push(entry);
-      backup.exportedAt = new Date().toISOString();
-      if (backup.selectedDecks && typeof backup.selectedDecks === "object") {
-        backup.selectedDecks.player = entry.id;
-      }
-
-      const d = new Date();
-      const stamp = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = "acg-decks-" + stamp + ".json";
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-
-      // 1名称あたり5枚以上は公式ルール上あり得ないため警告する
-      const over = [...main.list, ...side.list].filter(e => e.count > 4).map(e => e.name + " " + e.count + "枚");
-      let msg = "✅ carlox用のファイルを書き出しました\n\n";
-      msg += "デッキ名: " + name + "\n";
-      msg += "メイン " + main.list.reduce((a, e) => a + e.count, 0) + "枚 / 領土 " + terr.list.reduce((a, e) => a + e.count, 0) + "枚 / 予備 " + side.list.reduce((a, e) => a + e.count, 0) + "枚\n\n";
-      msg += "carloxの「デッキインポート」でこのファイルを読み込んでください。";
-      if (over.length) msg += "\n\n⚠ 同名で5枚以上になっています:\n" + over.join("\n");
-      if (missing.length) msg += "\n\n⚠ 変換できなかったカード:\n" + missing.join("\n");
-      alert(msg);
+      writeCarloxFile(backup);
     } catch (e) {
       alert("❌ 書き出し失敗\n" + (e.message || e));
-      console.error("carlox export error:", e);
+      console.error("carlox merge error:", e);
     }
   };
   reader.onerror = () => alert("❌ ファイルを読み込めませんでした");
