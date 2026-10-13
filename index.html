@@ -817,6 +817,23 @@ async function showDeckImage() {
   overlay.appendChild(msg);
   overlay.appendChild(closeBtn);
   overlay.appendChild(img);
+  // デッキ画像の下に、QRだけの画像も添える（画面に出して読ませる用・軽く送る用）
+  try {
+    const qrCanvas = await buildDeckQRCanvas();
+    const qrLabel = document.createElement("p");
+    qrLabel.textContent = "QRだけの画像";
+    qrLabel.style.cssText = "color:#aaa;text-align:center;padding:22px 16px 10px;font-size:14px;";
+    const qrImg = document.createElement("img");
+    qrImg.src = qrCanvas.toDataURL("image/png");
+    qrImg.style.cssText = "width:92%;max-width:480px;display:block;margin:0 auto 48px;background:white;";
+    overlay.appendChild(qrLabel);
+    overlay.appendChild(qrImg);
+  } catch (e) {
+    const err = document.createElement("p");
+    err.textContent = "QRを作れませんでした（" + (e.message || e) + "）";
+    err.style.cssText = "color:#ffaaaa;text-align:center;padding:20px 16px 40px;font-size:13px;";
+    overlay.appendChild(err);
+  }
   document.body.appendChild(overlay);
   container.innerHTML = "";
   container.appendChild(canvas);
@@ -909,7 +926,7 @@ function renderDeckView() {
               ${mainTotal}枚 ${mainTotal >= 40 ? '✅' : '(40枚以上必要)'}
             </span>
           </h2>
-          <span style="display:flex; gap:6px; flex-shrink:0;"><button onclick="exportForCarlox()" style="padding:4px 10px; background:#2a4a3a; border:1px solid #6aaa8a; border-radius:8px; color:#aaffdd; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">📤 carlox</button><button onclick="showDeckQR()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">🔳 QR作成</button><button onclick="showDeckImage()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">🖼 画像</button></span>
+          <span style="display:flex; gap:6px; flex-shrink:0;"><button onclick="exportForCarlox()" style="padding:4px 10px; background:#2a4a3a; border:1px solid #6aaa8a; border-radius:8px; color:#aaffdd; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">📤 carlox</button><button onclick="showDeckImage()" style="padding:4px 10px; background:#2a2a4a; border:1px solid #6a6aaa; border-radius:8px; color:#aaaaff; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;">🖼 画像</button></span>
         </div>
         ${mainHTML}
       </div>
@@ -1431,54 +1448,18 @@ function measureQRSize(text) {
   return QR_CELL * (qr.getModuleCount() + QR_QUIET * 2);
 }
 
-// デッキのQRを表示（長押しで保存できる全画面オーバーレイ：画像表示と同じ方式）
-async function showDeckQR() {
-  try {
-    const mainTotal = getDeckMain().reduce((a, [, c]) => a + c, 0);
-    const sideTotal = getDeckSide().reduce((a, [, c]) => a + c, 0);
-    const terrTotal = getDeckTerritory().reduce((a, [, c]) => a + c, 0);
-    if (mainTotal + sideTotal + terrTotal === 0) { alert("デッキが空です"); return; }
-
-    await _ensureQRLib();
-    const built = buildDeckQRUrl();
-
-    // 実証済みの構成：白い紙の右下にQRを置く（公式の「QR付画像を開く」が読める形）
-    const PAGE = 780, MARGIN = 40;
-    const canvas = document.createElement("canvas");
-    canvas.width = PAGE; canvas.height = PAGE;
-    const qctx = canvas.getContext("2d");
-    qctx.fillStyle = "#ffffff"; qctx.fillRect(0, 0, PAGE, PAGE);
-    const qsize = measureQRSize(built.url);
-    drawQRModules(qctx, built.url, PAGE - qsize - MARGIN, PAGE - qsize - MARGIN);
-
-    const overlay = document.createElement("div");
-    overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:black;z-index:9999;overflow-y:auto;";
-    const msg = document.createElement("p");
-    msg.textContent = "長押しで保存";
-    msg.style.cssText = "color:white;text-align:center;padding:16px;font-size:16px;";
-    const closeBtn = document.createElement("button");
-    closeBtn.textContent = "✕ 閉じる";
-    closeBtn.style.cssText = "display:block;margin:0 auto 12px;padding:10px 24px;background:#3a3a1a;border:1px solid #8a8a3a;border-radius:10px;color:#ffee88;font-size:16px;cursor:pointer;";
-    closeBtn.addEventListener("click", () => overlay.remove());
-    const img = document.createElement("img");
-    img.src = canvas.toDataURL("image/png");
-    img.style.cssText = "width:92%;max-width:480px;display:block;margin:0 auto;background:white;";
-    const note = document.createElement("p");
-    note.textContent = (deckName || "デッキレシピ") + "：メイン" + mainTotal + "枚／領土" + terrTotal + "枚／サイド" + sideTotal + "枚";
-    note.style.cssText = "color:#aaa;text-align:center;padding:14px 16px 40px;font-size:13px;";
-    overlay.appendChild(msg);
-    overlay.appendChild(closeBtn);
-    overlay.appendChild(img);
-    overlay.appendChild(note);
-    document.body.appendChild(overlay);
-
-    if (built.skipped.length) {
-      alert("⚠ 次のカードは公式の番号に変換できないため、QRに含まれていません:\n" + built.skipped.join("\n"));
-    }
-  } catch (e) {
-    alert("❌ QR作成失敗\n" + (e.message || e));
-    console.error("QR generate error:", e);
-  }
+// デッキのQRだけのcanvasを作る（白い紙の右下に置く構成。公式が読める実証済みの形）
+async function buildDeckQRCanvas() {
+  await _ensureQRLib();
+  const built = buildDeckQRUrl();
+  const PAGE = 780, MARGIN = 40;
+  const canvas = document.createElement("canvas");
+  canvas.width = PAGE; canvas.height = PAGE;
+  const qctx = canvas.getContext("2d");
+  qctx.fillStyle = "#ffffff"; qctx.fillRect(0, 0, PAGE, PAGE);
+  const qsize = measureQRSize(built.url);
+  drawQRModules(qctx, built.url, PAGE - qsize - MARGIN, PAGE - qsize - MARGIN);
+  return canvas;
 }
 
 function _base64UrlDecode(str) {
