@@ -737,7 +737,10 @@ const PHASES = ["起床フェイズ","準備フェイズ","補充フェイズ","
 // codeから画像URLを生成（acgtcg.com優先 / BP5はGitHub優先）
 function getImg(code) {
   if (!code) return "";
-  // BP5は GitHub の BT5 フォルダから直接（acgtcg.com に画像なし）
+  // BP6・BP5は GitHub の BT6・BT5 フォルダから直接（最新弾を最優先）
+  if (code.startsWith("BP6-")) {
+    return `https://raw.githubusercontent.com/tayu02/acg-deckbuilder/main/BT6/${code}.png`;
+  }
   if (code.startsWith("BP5-")) {
     return `https://raw.githubusercontent.com/tayu02/acg-deckbuilder/main/BT5/${code}.png`;
   }
@@ -1438,10 +1441,11 @@ function openMoveModal(obj, from, idx) {
 
   // 起動ボタン（そのカード自身の起動効果を通知）
   if(card && card.effect) {
+    const ownKws = parseEffectBlocks(card.effect).map(b => b.kw);
     const hasActivate =
-      (from === "field" && card.effect.includes("【起動（戦場）】")) ||
-      (from === "hand"  && (card.effect.includes("【起動（手札）】") || (typeof CARD_EFFECTS !== 'undefined' && CARD_EFFECTS[obj.code]?.activate_hand))) ||
-      (from === "grave" && card.effect.includes("【起動（墓地）】"));
+      (from === "field" && ownKws.includes("起動（戦場）")) ||
+      (from === "hand"  && (ownKws.includes("起動（手札）") || ownKws.includes("起動（手札・除外）") || (typeof CARD_EFFECTS !== 'undefined' && CARD_EFFECTS[obj.code]?.activate_hand))) ||
+      (from === "grave" && ownKws.includes("起動（墓地）"));
     if(hasActivate) {
       const aBtn = document.createElement("button");
       aBtn.className = "modal-btn";
@@ -1699,7 +1703,7 @@ const TRIGGER_MAP = {
   // 起動（手札）
   "activate_hand": {
     label: "起動できます（手札）",
-    check: (kw, cond) => kw === "起動（手札）"
+    check: (kw, cond) => kw === "起動（手札）" || kw === "起動（手札・除外）"
   },
   // 起動（墓地）
   "activate_grave": {
@@ -1712,7 +1716,16 @@ const TRIGGER_MAP = {
 function parseEffectBlocks(effect) {
   const results = [];
   const lines = effect.split('\n');
+  // 『』や（）の内側に入った行（例：『\n【誘発（戦場）】…』を得る、注釈の（\n【…】））は
+  // 他の存在が得る能力・注釈なので、このカード自身の能力として拾わない
+  let depth = 0;
   for(const line of lines) {
+    const nested = depth > 0;
+    for(const ch of line) {
+      if(ch === '『' || ch === '（') depth++;
+      else if((ch === '』' || ch === '）') && depth > 0) depth--;
+    }
+    if(nested) continue;
     const kwMatch = line.match(/^【([^】]+)】/);
     if(!kwMatch) continue;
     const kw = kwMatch[1];
@@ -3328,7 +3341,7 @@ function showScreen(name) {
 
 init();
 </script>
-<script src="effects/ui.js"></script>
-<script src="effects/effects.js"></script>
+<script src="ui.js"></script>
+<script src="effects.js"></script>
 </body>
 </html>
